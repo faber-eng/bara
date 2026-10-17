@@ -22,6 +22,8 @@ from domain.clock import Clock
 
 logger = logging.getLogger(__name__)
 
+MAX_CONCURRENT_RUNS = 3
+
 DispatchOutcome = Literal["processed", "duplicate"]
 
 
@@ -183,8 +185,13 @@ class DryingRankedHandler:
     async def _run_all(
         self, message_id: str, event: DryingRankedEvent, cases: list[Case]
     ) -> None:
-        for case in cases:
-            await self._run_one(message_id, event, case)
+        limit = asyncio.Semaphore(MAX_CONCURRENT_RUNS)
+
+        async def bounded(case: Case) -> None:
+            async with limit:
+                await self._run_one(message_id, event, case)
+
+        await asyncio.gather(*(bounded(case) for case in cases))
 
     async def _run_one(
         self, message_id: str, event: DryingRankedEvent, case: Case
