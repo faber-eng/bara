@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pytest
 
@@ -13,6 +14,7 @@ def settings() -> Settings:
         judge_mode=JudgeMode(enabled=False, max_resets_per_hour=20),
         region="asia-southeast1",
         api_url="https://api.example.test",
+        config_dir=Path(__file__).resolve().parents[3] / "config",
         models=ModelsConfig(
             reasoning=ModelRoute(
                 model="reasoning-primary",

@@ -117,8 +117,9 @@ def load_region(config_dir: Path, region_id: str) -> RegionConfig:
     try:
         return RegionConfig.model_validate({**entry, "id": region_id})
     except ValidationError as error:
+        fields = ", ".join(str(issue["loc"][0]) for issue in error.errors())
         raise UnknownRegion(
-            f"region {region_id!r} has no drying settings in {path}: {error}"
+            f"region {region_id!r} in {path} has no valid drying settings: {fields}"
         ) from error
 
 

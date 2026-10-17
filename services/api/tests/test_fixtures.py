@@ -17,6 +17,7 @@ from contracts import (
     Health,
     PublicSummary,
     Rankings,
+    TileLayer,
 )
 
 FIXTURES_DIR = Path(__file__).resolve().parents[3] / "data" / "fixtures"
@@ -30,6 +31,7 @@ FIXTURE_MODELS: dict[str, type[BaseModel]] = {
     "bulletin.json": Bulletin,
     "health.json": Health,
     "clock.json": ClockState,
+    "tiles_drying.json": TileLayer,
 }
 
 LIST_FIXTURE_MODELS: dict[str, type[BaseModel]] = {

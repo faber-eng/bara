@@ -1,12 +1,13 @@
 import firebase_admin
 from fastapi import FastAPI
 
-from adapters.factory import build_adapters
+from adapters.earthengine import EarthEngineTiles
+from adapters.factory import build_adapters, utcnow
 from adapters.gemini import ModelGateway, build_vertex_clients
 from auth import FirebaseTokenVerifier, TokenVerifier
 from config import Settings, load_settings
 from logs import configure_logging
-from routes import health, judge_probe
+from routes import health, judge_probe, tiles
 
 
 def build_app(
@@ -18,6 +19,7 @@ def build_app(
     app.state.verifier = verifier
     app.include_router(health.router)
     app.include_router(judge_probe.router)
+    app.include_router(tiles.router)
     return app
 
 
@@ -32,4 +34,6 @@ def create_app() -> FastAPI:
     gateway = ModelGateway(settings.models, build_vertex_clients(settings))
     app = build_app(settings, gateway, build_token_verifier(settings))
     app.state.adapters = build_adapters(settings)
+    app.state.tiles = EarthEngineTiles(settings.project, settings.config_dir)
+    app.state.utcnow = utcnow
     return app

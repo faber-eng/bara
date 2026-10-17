@@ -17,6 +17,7 @@ readonly APIS=(
 readonly API_ROLES=(
   roles/aiplatform.user roles/datastore.user roles/pubsub.publisher roles/cloudtasks.enqueuer
   roles/bigquery.dataEditor roles/bigquery.jobUser roles/earthengine.writer roles/secretmanager.secretAccessor
+  roles/serviceusage.serviceUsageConsumer roles/bigquery.readSessionUser
 )
 readonly JOBS_ROLES=(
   roles/earthengine.writer roles/bigquery.dataEditor roles/bigquery.jobUser roles/datastore.user

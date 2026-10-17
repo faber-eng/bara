@@ -174,8 +174,9 @@ def main(
         from google.cloud import bigquery
 
         from adapters import earthengine
+        from ee_lib import session
 
-        earthengine.initialize(project)
+        session.initialize(project)
         return drying_score(
             region=region,
             aoi=aoi,
