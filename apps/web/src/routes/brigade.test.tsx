@@ -31,7 +31,7 @@ describe("/brigade", () => {
   it("shows the escalation card with both briefs, timeline and map", async () => {
     renderApp("/brigade");
 
-    const card = await screen.findByRole("article", { name: "Escalation for case-0002" });
+    const card = await screen.findByRole("article", { name: "Escalation for case-0007" });
     expect(card).toHaveTextContent("Patroli melihat asap tipis");
     expect(card).toHaveTextContent("A patrol saw smoke wisps");
     expect(card).toHaveTextContent("Smoke wisps reported in riau-0533.");
@@ -51,7 +51,7 @@ describe("/brigade", () => {
     expect(await screen.findByText("No open escalations.")).toBeInTheDocument();
     expect(screen.getByText("0 open")).toBeInTheDocument();
     const { fetchCases } = await import("../lib/api/cases");
-    const listed = (await fetchCases("riau")).find((entry) => entry.case.id === "case-0002");
+    const listed = (await fetchCases("riau")).find((entry) => entry.case.id === "case-0007");
     expect(listed?.case.status).toBe("monitoring");
   });
 
