@@ -130,6 +130,8 @@ def test_create_app_wires_earth_engine_tiles_without_a_network_call(monkeypatch)
     monkeypatch.setattr(main, "build_dispatcher", lambda *args: "dispatcher")
     monkeypatch.setattr(main, "build_trigger", lambda *args: "trigger")
     monkeypatch.setattr(main, "build_resetter", lambda *args: "resetter")
+    monkeypatch.setattr(main, "build_case_queries", lambda *args: "cases")
+    monkeypatch.setattr(main, "build_area_queries", lambda *args: "areas")
     monkeypatch.setattr(
         main,
         "build_vertex_clients",

@@ -228,3 +228,62 @@ def test_case_create_refuses_to_overwrite_an_existing_case():
     assert repo.create(make_case(id="c1", status="open")) is True
     assert repo.create(make_case(id="c1", status="closed")) is False
     assert repo.get("c1").status == "open"
+
+
+def test_case_search_filters_by_region_and_status_newest_first():
+    from datetime import UTC, datetime
+
+    repo = make_case_repo(
+        make_case(
+            id="a",
+            region="riau",
+            status="open",
+            opened_at=datetime(2026, 7, 1, tzinfo=UTC),
+        ),
+        make_case(
+            id="b",
+            region="riau",
+            status="open",
+            opened_at=datetime(2026, 7, 2, tzinfo=UTC),
+        ),
+        make_case(id="c", region="riau", status="closed"),
+        make_case(id="d", region="other", status="open"),
+    )
+
+    assert [c.id for c in repo.search("riau", "open")] == ["b", "a"]
+    assert {c.id for c in repo.search(None, None)} == {"a", "b", "c", "d"}
+    assert {c.id for c in repo.search("riau", None)} == {"a", "b", "c"}
+
+
+def test_mark_closed_updates_only_the_close_fields():
+    from datetime import UTC, datetime
+
+    repo = make_case_repo(make_case(id="a", status="human_review"))
+    closed_at = datetime(2026, 7, 3, tzinfo=UTC)
+
+    repo.mark_closed("a", "ops-1", closed_at)
+
+    case = repo.get("a")
+    assert (case.status, case.closed_by, case.closed_at) == (
+        "closed",
+        "ops-1",
+        closed_at,
+    )
+    assert case.cell_id == "cell-1"
+
+
+def test_tasks_and_evidence_load_for_many_cases_at_once():
+    from adapters.firestore_repos import EvidenceRepository
+    from contracts import Evidence
+    from tests.fakes import make_evidence
+
+    tasks = InMemoryCollection(Task)
+    tasks.put("t1", make_task(id="t1", case_id="a"))
+    tasks.put("t2", make_task(id="t2", case_id="b"))
+    tasks.put("t3", make_task(id="t3", case_id="c"))
+    evidence = InMemoryCollection(Evidence)
+    evidence.put("e1", make_evidence(id="e1", case_id="a"))
+
+    assert {t.id for t in TaskRepository(tasks).for_cases(["a", "b"])} == {"t1", "t2"}
+    assert TaskRepository(tasks).for_cases([]) == []
+    assert [e.id for e in EvidenceRepository(evidence).for_cases(["a"])] == ["e1"]
