@@ -15,7 +15,7 @@ export type DryingEval = {
 
 export type ModelScore = {
   name: string;
-  auc: number;
+  auc: number | null;
   precisionTop10: number;
 };
 
@@ -126,10 +126,10 @@ function readDrying(raw: unknown): DryingEval | null {
 function readScore(raw: unknown): ModelScore | null {
   if (!isRecord(raw)) return null;
   const name = readString(raw.name);
-  const auc = readNumber(raw.auc);
+  const auc = readNullableNumber(raw.auc);
   const precisionTop10 = readNumber(raw.precision_top10);
-  if (name === null || auc === null || precisionTop10 === null) return null;
-  return { name, auc, precisionTop10 };
+  if (name === null || !auc.valid || precisionTop10 === null) return null;
+  return { name, auc: auc.value, precisionTop10 };
 }
 
 function readReignition(raw: unknown): ReignitionEval | null {

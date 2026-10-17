@@ -59,6 +59,17 @@ describe("parseEvalReport", () => {
     });
   });
 
+  it("keeps a null AUC from a split without positives", () => {
+    const parsed = parseEvalReport(evalJson);
+    if (!parsed.ok || parsed.report.reignition === null) throw new Error("shipped file must parse");
+    const raw = evalJson.reignition;
+    const reignition = { ...raw, served: { ...raw.served, auc: null } };
+
+    const withNull = parseEvalReport({ ...evalJson, reignition });
+
+    expect(withNull.ok && withNull.report.reignition?.served?.auc).toBeNull();
+  });
+
   it("rejects a capture rate that is text", () => {
     const drying = {
       run_at: "2026-10-18T05:00:00Z",

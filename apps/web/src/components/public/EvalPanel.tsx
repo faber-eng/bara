@@ -20,6 +20,11 @@ function rateText(rate: number | null, language: CopyLanguage): string {
   return formatPercent(rate, language);
 }
 
+function aucText(auc: number | null, language: CopyLanguage): string {
+  if (auc === null) return NO_VALUE;
+  return formatFixed(auc, 3, language);
+}
+
 function liftText(lift: number | null, language: CopyLanguage): string {
   if (lift === null) return NO_VALUE;
   return `${formatNumber(lift, language)}x`;
@@ -71,7 +76,7 @@ function DryingPart({ drying, copy, language }: SectionProps & { drying: DryingE
   );
 }
 
-type ScoreRow = { label: string; name: string; auc: number; precisionTop10: number };
+type ScoreRow = { label: string; name: string; auc: number | null; precisionTop10: number };
 
 function scoreRows(reignition: ReignitionEval, copy: EvalCopy): ScoreRow[] {
   const rows: ScoreRow[] = [{ label: copy.reignition.model, ...reignition.model }];
@@ -105,7 +110,7 @@ function ReignitionPart({
           {scoreRows(reignition, copy).map((row) => (
             <tr key={row.label}>
               <td title={row.name}>{row.label}</td>
-              <td className="num">{formatFixed(row.auc, 3, language)}</td>
+              <td className="num">{aucText(row.auc, language)}</td>
               <td className="num">{formatPercent(row.precisionTop10, language)}</td>
             </tr>
           ))}

@@ -51,7 +51,7 @@ def evidence_latency(evidence):
             "p50_ms": round(item["latency_ms"]["p50"], 1),
             "p95_ms": round(item["latency_ms"]["p95"], 1),
             "n": item["latency_ms"]["n"],
-            "where": f"local, real Vertex ({evidence['model']}), 4 reads at a time",
+            "where": f"local, real Vertex ({evidence['model']}), {evidence['concurrency']} reads at a time",
             "source": "services/api/evidence_eval_job.py",
         }
         for item in evidence["sets"]
@@ -153,13 +153,14 @@ def drying_section(drying):
         for year in drying["years"]
     ]
     first, last = drying["follow_weeks"]
+    spread = last - first + 1
     return f"""## Drying score: capture rate and lift
 
 Run {day(drying["run_at"])}, region `{drying["region"]}`, top {percent(drying["top_share"])} of cells.
 
-{table(["Year", "Weeks", "Hotspots (n)", "In top 10%", "Capture rate", "Lift"], rows)}
+{table(["Year", "Weeks", "Detection-weeks (n)", "In top 10%", "Capture rate", "Lift"], rows)}
 
-How it was made. For each ISO week 20 to 44 of the year (2026: the weeks that `bara.cell_weekly_drying` holds), take the top 10% of the region's peat cells by `drying_score`. Count the MODIS FIRMS detections (`bara.firms_detections`, confidence 30 or more) that fall inside a peat cell {first} to {last} weeks after the scored week, and the share of them inside the top 10% cells. That share is the capture rate; lift is the capture rate divided by 10%, so 1.00x is no better than chance. Counts are pooled over the weeks; a detection is counted once for each scored week whose window holds it (up to 4 times). A week counts only when its window ends on or before {drying["detections_through"]} (the detection table's last refresh minus 2 days). The 2019 and 2023 weeks were scored with the same `jobs.drying_score` as the live weeks. Rows: `bara.eval_drying`.
+How it was made. For each ISO week of the year that `bara.cell_weekly_drying` holds (the commands below score weeks 20 to 44 of 2019 and 2023; 2026 holds the live weeks), take the top {percent(drying["top_share"])} of the region's peat cells by `drying_score`. Count the MODIS FIRMS detections (`bara.firms_detections`, the same detections the re-ignition labels use) that fall inside a peat cell {first} to {last} weeks after the scored week, and the share of them inside the top cells. That share is the capture rate; lift is the capture rate divided by {percent(drying["top_share"])}, so 1.00x is no better than chance. Counts are pooled over the weeks: a detection is counted once for each scored week whose window holds it (up to {spread} times), so the n column counts detection-weeks, not distinct detections. A week counts only when its window ends on or before {drying["detections_through"]}: the detection table is rebuilt daily from FIRMS up to the day before the newest image, and this date is its last rebuild minus 2 days, so a window with no detection before it is a real zero, not missing data. The 2019 and 2023 weeks were scored with the same `jobs.drying_score` as the live weeks. Rows: `bara.eval_drying`.
 
 A year with few hotspots inside the peat cells (see the n column) gives a rate that rests on a small count.
 
@@ -169,6 +170,32 @@ A year with few hotspots inside the peat cells (see the n column) gives a rate t
 
 def score_row(label, score):
     return [label, f"`{score['name']}`", three(score["auc"]), percent(score["precision_top10"]), percent(score["recall_top10"])]
+
+
+def best_model_auc(reignition):
+    scores = [reignition[key]["auc"] for key in ("model", "served")]
+    known = [score for score in scores if score is not None]
+    if not known:
+        return None
+    return max(known)
+
+
+def reignition_reading(reignition):
+    model_auc = best_model_auc(reignition)
+    baseline_auc = reignition["baseline"]["auc"]
+    positives = reignition["positives"]
+    if model_auc is None or baseline_auc is None:
+        return f"An AUC is missing: the {reignition['split']} split needs both classes."
+    if baseline_auc >= model_auc:
+        return (
+            f"Read it honestly: on the {reignition['split']} split the baseline is at least as good as both models. "
+            f"The split holds only {positives} positives, so the gap is inside the noise, and the model is not shown "
+            "to be better than the simple rule."
+        )
+    return (
+        f"The best model beats the baseline on the {reignition['split']} split. The split holds {positives} positives, "
+        "so read the gap with that count in mind."
+    )
 
 
 def reignition_section(reignition):
@@ -187,7 +214,7 @@ Run {day(reignition["run_at"])}, region `{reignition["region"]}`, {reignition["s
 
 How it was made. `jobs.train_reignition` trains a BigQuery ML logistic regression on the 2015 to 2024 Riau fire events and scores the 2026 test events, which the model never sees. AUC is the rank AUC; precision and recall are over the top 10% of events by score, with ties at the cut sharing the slots left. The baseline ranks the same events by `detection_days`. Rows: `bara.eval_reignition` (newest run).
 
-Read it honestly: on the test split the baseline beats both models. The test split holds only {reignition["positives"]} positives, so the gap is inside the noise, and the model is not shown to be better than the simple rule. The served model leaves out rain after the quiet date, which is not known on the day.
+{reignition_reading(reignition)} The served model leaves out rain after the quiet date, which is not known on the day.
 
 {code(REIGNITION_COMMANDS)}
 """
@@ -215,6 +242,10 @@ def evidence_set_block(item):
 Latency from file to verdict: p50 {milliseconds(latency["p50"])}, p95 {milliseconds(latency["p95"])} (n = {latency["n"]})."""
 
 
+def set_counts(evidence):
+    return ", ".join(f"{item['n']} {KIND_NAMES[item['kind']].lower()}" for item in evidence["sets"])
+
+
 def evidence_section(evidence):
     if evidence is None:
         return not_run("Gemini verdict accuracy")
@@ -225,7 +256,7 @@ Run {day(evidence["run_at"])}, model `{evidence["model"]}`.
 
 {blocks}
 
-How it was made. `evidence_eval_job.py` reads every row of `data/eval/labels.csv` (40 photos from Wikimedia Commons and the U.S. Fish and Wildlife Service, and 10 voice notes recorded by the team) with the same `EvidenceReader` and prompt that production uses, with no verdict cache. The task type is `dam_check` when the labelled subject is a canal dam, else `patrol_recheck`. A failed read counts as wrong. A field whose label is `unknown` is left out of that field's accuracy and matrix, so `n` per field can be smaller than the set. Several dam photos are weak matches (UK moorland dams and weirs, not Indonesian canal blocks; see the `notes` column of `labels.csv`). Rows: `bara.eval_evidence`.
+How it was made. `evidence_eval_job.py` reads every row of `data/eval/labels.csv` ({set_counts(evidence)}; photos from Wikimedia Commons and the U.S. Fish and Wildlife Service, voice notes recorded by the team), {evidence["concurrency"]} at a time, with the same `EvidenceReader` and prompt that production uses, with no verdict cache. The task type is `dam_check` when the labelled subject is a canal dam, else `patrol_recheck`. A failed read counts as wrong. A field whose label is `unknown` is left out of that field's accuracy and matrix, so `n` per field can be smaller than the set. Several dam photos are weak matches (UK moorland dams and weirs, not Indonesian canal blocks; see the `notes` column of `labels.csv`). Rows: `bara.eval_evidence`.
 
 {code(EVIDENCE_COMMANDS)}
 """
@@ -241,7 +272,7 @@ Run {day(agent["run_at"])}, model `{agent["model"]}`: {agent["passed"]} of {agen
 
 {table(["Case", "Result"], rows)}
 
-How it was made. `services/api/evals/agent.test.json` holds the 8 cases of §6.5; each user message is the real run input the coordinator gets. `adk eval` runs the real coordinator (instructions `agent-v6`) on Vertex, with tools wired to an in-memory world and fixed evidence verdicts (no vision call). A case passes when the agent calls exactly the expected tools in the expected order with the expected ids, roles and task types (custom metric `tool_trajectory_subset_args`; free-text arguments such as `reason` are not compared). In production, a high-risk or second overdue is escalated in code before the agent runs (`overdue_events.py`); cases 4 and 6 test the agent's own rule.
+How it was made. `services/api/evals/agent.test.json` holds {agent["cases"]} cases, the §6.5 list; each user message is the real run input the coordinator gets. `adk eval` runs the real coordinator and its production instructions on Vertex, with tools wired to an in-memory world and fixed evidence verdicts (no vision call). A case passes when the agent calls exactly the expected tools in the expected order with the expected ids, roles and task types (custom metric `tool_trajectory_subset_args`; free-text arguments such as `reason` are not compared). In production, a high-risk or second overdue is escalated in code before the agent runs (`overdue_events.py`); the cases `overdue_high_risk_escalates` and `second_overdue_escalates` test the agent's own rule.
 
 {code(AGENT_COMMANDS)}
 """
@@ -269,7 +300,7 @@ def summary_rows(merged):
     drying = merged.get("drying")
     if drying is not None:
         for year in drying["years"]:
-            rows.append([f"Drying lift {year['year']}", times(year["lift"]), f"{count(year['hotspots'])} hotspots", day(drying["run_at"])])
+            rows.append([f"Drying lift {year['year']}", times(year["lift"]), f"{count(year['hotspots'])} detection-weeks", day(drying["run_at"])])
     reignition = merged.get("reignition")
     if reignition is not None:
         model, baseline = reignition["model"], reignition["baseline"]

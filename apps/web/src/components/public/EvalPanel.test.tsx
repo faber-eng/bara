@@ -33,7 +33,7 @@ const FULL = {
         fields: [{ field: "dam_state", correct: 22, n: 33, accuracy: 0.667 }],
       },
       {
-        kind: "voice",
+        kind: "audio",
         n: 9,
         failed: 0,
         fields: [{ field: "smoke", correct: 9, n: 9, accuracy: 1 }],
