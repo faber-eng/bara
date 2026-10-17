@@ -22,8 +22,10 @@ class RecordingTasksClient:
         return f"projects/{project}/locations/{location}/queues/{queue}"
 
     def create_task(self, *, parent, task):
+        if task.name in {made.name for _, made in self.created}:
+            raise gax.AlreadyExists("task exists")
         self.created.append((parent, task))
-        return SimpleNamespace(name=f"{parent}/tasks/generated-1")
+        return SimpleNamespace(name=task.name)
 
     def delete_task(self, *, name):
         self.deleted.append(name)
@@ -85,12 +87,6 @@ def test_schedule_time_converts_other_zones_to_the_same_instant():
     assert client.created[0][1].schedule_time == DEADLINE
 
 
-def test_schedule_returns_the_cloud_task_name():
-    scheduler, _ = make_scheduler()
-
-    assert scheduler.schedule("t1", DEADLINE) == f"{QUEUE_PATH}/tasks/generated-1"
-
-
 def test_schedule_rejects_a_naive_deadline():
     scheduler, client = make_scheduler()
 
@@ -144,3 +140,31 @@ def test_live_queue_exists():
     )
 
     assert queue.name.endswith("task-deadlines")
+
+
+def test_the_cloud_task_name_is_deterministic_from_id_and_deadline():
+    scheduler, _ = make_scheduler()
+
+    name = scheduler.schedule("t1", DEADLINE)
+
+    epoch = int(DEADLINE.timestamp())
+    assert name == f"{QUEUE_PATH}/tasks/t1-{epoch}"
+
+
+def test_a_retried_schedule_returns_the_same_name_on_already_exists():
+    scheduler, client = make_scheduler()
+
+    first = scheduler.schedule("t1", DEADLINE)
+    second = scheduler.schedule("t1", DEADLINE)
+
+    assert second == first
+    assert len(client.created) == 1
+
+
+def test_a_new_deadline_gets_a_new_name():
+    scheduler, _ = make_scheduler()
+
+    first = scheduler.schedule("t1", DEADLINE)
+    second = scheduler.schedule("t1", DEADLINE + timedelta(hours=1))
+
+    assert second != first

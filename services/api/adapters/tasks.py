@@ -32,6 +32,7 @@ class DeadlineScheduler:
         if not TASK_ID.match(task_id):
             raise InvalidTaskId(f"invalid task id: {task_id!r}")
         task = tasks_v2.Task(
+            name=self._task_name(task_id, deadline_at),
             http_request=tasks_v2.HttpRequest(
                 http_method=tasks_v2.HttpMethod.POST,
                 url=f"{self._api_url}/api/internal/deadline/{task_id}",
@@ -42,8 +43,15 @@ class DeadlineScheduler:
             ),
             schedule_time=require_aware(deadline_at),
         )
-        created = self._client.create_task(parent=self._queue_path, task=task)
+        try:
+            created = self._client.create_task(parent=self._queue_path, task=task)
+        except gax.AlreadyExists:
+            return task.name
         return created.name
+
+    def _task_name(self, task_id: str, deadline_at: datetime) -> str:
+        epoch = int(require_aware(deadline_at).timestamp())
+        return f"{self._queue_path}/tasks/{task_id}-{epoch}"
 
     def cancel(self, cloud_task_name: str | None) -> None:
         if cloud_task_name is None:

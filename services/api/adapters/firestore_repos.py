@@ -52,3 +52,8 @@ class FirestoreClockStore:
 
     def put(self, settings: ClockSettings) -> None:
         self._settings.put(CLOCK_DOCUMENT, settings)
+
+    def add_seconds(self, seconds: int, updated_by: str) -> None:
+        self._settings.add(
+            CLOCK_DOCUMENT, "offset_seconds", seconds, {"updated_by": updated_by}
+        )

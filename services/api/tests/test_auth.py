@@ -237,3 +237,34 @@ def test_the_firebase_verifier_turns_a_malformed_token_into_invalid_token():
             FirebaseTokenVerifier(app).verify("not-a-jwt")
     finally:
         firebase_admin.delete_app(app)
+
+
+def test_the_firebase_verifier_maps_a_certificate_fetch_failure_to_unavailable(
+    monkeypatch,
+):
+    from firebase_admin import auth as firebase_auth
+
+    from auth import FirebaseTokenVerifier, VerifierUnavailable
+
+    def fail(token, app=None):
+        raise firebase_auth.CertificateFetchError("down", cause=None)
+
+    monkeypatch.setattr(firebase_auth, "verify_id_token", fail)
+
+    with pytest.raises(VerifierUnavailable):
+        FirebaseTokenVerifier().verify("any-token")
+
+
+def test_an_unavailable_verifier_is_503_not_401(settings):
+    from auth import VerifierUnavailable
+
+    class DownVerifier:
+        def verify(self, token):
+            raise VerifierUnavailable("CertificateFetchError")
+
+    client, _ = make_client(settings, judge=False)
+    client.app.state.verifier = DownVerifier()
+
+    response = client.get("/api/auth/ops-probe", headers=bearer("tok"))
+
+    assert response.status_code == 503

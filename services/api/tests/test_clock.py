@@ -1,3 +1,4 @@
+import math
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -110,3 +111,57 @@ def test_a_naive_utcnow_is_rejected():
 
     with pytest.raises(ValueError):
         clock.now()
+
+
+@pytest.mark.parametrize("hours", [math.inf, -math.inf, math.nan, 1e9, 24 * 365 + 1])
+def test_advance_rejects_non_finite_and_over_cap_hours(hours):
+    clock, store = make_clock()
+
+    with pytest.raises(ValueError):
+        clock.advance(hours, "judge-1")
+
+    assert store.get() == ClockSettings(offset_seconds=0, updated_by="seed")
+
+
+def test_advance_accepts_exactly_the_per_call_cap():
+    clock, _ = make_clock()
+
+    clock.advance(24 * 365, "judge-1")
+
+    assert clock.now() == REAL_NOW + timedelta(hours=24 * 365)
+
+
+def test_advance_rejects_a_total_over_ten_years():
+    clock, store = make_clock()
+    for _ in range(10):
+        clock.advance(24 * 365, "judge-1")
+    before = store.get()
+
+    with pytest.raises(ValueError):
+        clock.advance(24 * 365, "judge-1")
+
+    assert store.get() == before
+
+
+def test_two_advances_on_separate_clocks_both_count():
+    store = InMemoryClockStore(None)
+    first = Clock(store, lambda: REAL_NOW)
+    second = Clock(store, lambda: REAL_NOW)
+
+    first.advance(5, "a")
+    second.advance(7, "b")
+
+    assert first.now() == REAL_NOW + timedelta(hours=12)
+
+
+def test_a_stale_read_does_not_lose_the_other_advance():
+    class StaleStore(InMemoryClockStore):
+        def get(self):
+            return ClockSettings(offset_seconds=0, updated_by="stale")
+
+    store = StaleStore(None)
+    clock = Clock(store, lambda: REAL_NOW)
+    clock.advance(5, "a")
+    clock.advance(7, "b")
+
+    assert store._settings.offset_seconds == 12 * 3600

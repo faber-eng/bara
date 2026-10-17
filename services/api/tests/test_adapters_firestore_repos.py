@@ -6,8 +6,14 @@ from adapters.firestore_repos import (
     FirestoreClockStore,
     TaskRepository,
 )
+from adapters.store import FirestoreCollection
 from contracts import Case, ClockSettings, ProcessedEvent, Task
-from tests.fakes import InMemoryCollection, make_case, make_task
+from tests.fakes import (
+    InMemoryCollection,
+    StubFirestoreClient,
+    make_case,
+    make_task,
+)
 
 NOW = datetime(2026, 10, 20, 12, 0, tzinfo=UTC)
 
@@ -96,3 +102,26 @@ def test_clock_store_round_trips_settings_under_the_clock_document():
 
     assert store.get() == settings
     assert collection.get("clock") == settings
+
+
+def test_clock_store_add_seconds_creates_then_accumulates():
+    collection = InMemoryCollection(ClockSettings)
+    store = FirestoreClockStore(collection)
+
+    store.add_seconds(3600, "a")
+    store.add_seconds(60, "b")
+
+    assert store.get() == ClockSettings(offset_seconds=3660, updated_by="b")
+
+
+def test_clock_store_add_seconds_uses_a_firestore_increment():
+    client = StubFirestoreClient()
+    store = FirestoreClockStore(FirestoreCollection(client, "settings", ClockSettings))
+
+    store.add_seconds(100, "a")
+    store.add_seconds(50, "b")
+
+    assert client.stores["settings"]["clock"] == {
+        "offset_seconds": 150,
+        "updated_by": "b",
+    }
