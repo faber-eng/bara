@@ -1,8 +1,8 @@
-from datetime import date
+from datetime import UTC, date, datetime
 
 import ee
 
-from ee_lib import drying, grid, session
+from ee_lib import drying, fires, grid, session
 from ee_lib.config import DataConfig, RegionConfig
 from ee_lib.weeks import DryingWindow
 
@@ -60,3 +60,16 @@ class EarthEngineSource:
             tileScale=MEASURE_TILE_SCALE,
         )
         return [feature["properties"] for feature in compute_features(measured)]
+
+    def firms_last_day(self, before: date) -> date:
+        millis = fires.firms_last_millis(self._data, before).getInfo()
+        if millis is None:
+            raise EarthEngineError(
+                f"no FIRMS day in the {fires.FIRMS_LOOKBACK_DAYS} days before {before}"
+            )
+        return datetime.fromtimestamp(millis / 1000, UTC).date()
+
+    def fire_detections(
+        self, aoi: dict, buffer_m: int, start: date, end: date
+    ) -> list[dict]:
+        return compute_features(fires.detections(self._data, aoi, buffer_m, start, end))

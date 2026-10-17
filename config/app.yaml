@@ -4,6 +4,10 @@ datasets:
   chirps: UCSB-CHG/CHIRPS/DAILY
   peat: projects/sat-io/open-datasets/GLOBAL-PEATLAND-DATABASE
   osm_lines: bigquery-public-data.geo_openstreetmap.planet_features_lines
+  firms: FIRMS
+  viirs_snpp: NASA/LANCE/SNPP_VIIRS/C2
+  viirs_noaa20: NASA/LANCE/NOAA20_VIIRS/C2
+  burned_area: MODIS/061/MCD64A1
 drying:
   wet_baseline_months: [1, 2, 3]       # Jan-Mar wet-season reference
   s1_window_days: 12
@@ -16,6 +20,8 @@ reignition:
   label_radius_m: 1000
   recheck_spots_per_fire: 3
   recheck_after_hours: 48
+  history_from_year: 2001              # prior_years_burned counts years from here
+  split_years: { train: [2015, 2024], valid: 2025, test: 2026 }
 tasks:
   default_deadline_hours: { dam_check: 72, dam_repair: 168, patrol_recheck: 24 }
   human_review_confidence: 0.7         # verdict confidence below this goes to a person

@@ -83,6 +83,21 @@ class FakeEarth:
         return list(self.measurements)
 
 
+class FakeFireEarth:
+    def __init__(self, features_by_year=None, firms_last=None):
+        self.features_by_year = dict(features_by_year or {})
+        self.firms_last = firms_last
+        self.calls: list[tuple[str, object]] = []
+
+    def firms_last_day(self, before):
+        self.calls.append(("firms_last_day", before))
+        return self.firms_last
+
+    def fire_detections(self, aoi, buffer_m, start, end):
+        self.calls.append(("fire_detections", (buffer_m, start, end)))
+        return list(self.features_by_year.get(start.year, []))
+
+
 class FakeDocumentRef:
     def __init__(self, store: dict, path: str, doc_id: str):
         self.store = store

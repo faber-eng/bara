@@ -31,6 +31,10 @@ class Datasets(Config):
     chirps: str
     peat: str
     osm_lines: str
+    firms: str
+    viirs_snpp: str
+    viirs_noaa20: str
+    burned_area: str
 
 
 class DryingWeights(Config):
@@ -56,12 +60,50 @@ class DryingConfig(Config):
         return self
 
 
+class SplitYears(Config):
+    train: tuple[int, int]
+    valid: int
+    test: int
+
+    @model_validator(mode="after")
+    def check_order(self) -> "SplitYears":
+        if not self.train[0] <= self.train[1] < self.valid < self.test:
+            raise ValueError("split_years must be train [first, last] < valid < test")
+        return self
+
+
+class ReignitionConfig(Config):
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    quiet_days: PositiveInt
+    label_window_days: tuple[PositiveInt, PositiveInt]
+    label_radius_m: PositiveInt
+    recheck_spots_per_fire: PositiveInt
+    history_from_year: int
+    split_years: SplitYears
+
+    @model_validator(mode="after")
+    def check_window(self) -> "ReignitionConfig":
+        if self.label_window_days[0] > self.label_window_days[1]:
+            raise ValueError("label_window_days must be [first, last]")
+        if self.history_from_year > self.split_years.train[0]:
+            raise ValueError("history_from_year must not be after the first train year")
+        return self
+
+
 class DataConfig(Config):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
     grid_cell_m: PositiveInt
     datasets: Datasets
     drying: DryingConfig
+    reignition: ReignitionConfig
+
+    @model_validator(mode="after")
+    def check_label_radius(self) -> "DataConfig":
+        if self.reignition.label_radius_m < self.grid_cell_m:
+            raise ValueError("reignition.label_radius_m must be at least grid_cell_m")
+        return self
 
 
 class RegionConfig(Config):
