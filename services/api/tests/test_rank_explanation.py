@@ -69,16 +69,6 @@ def test_a_text_number_that_is_a_wrong_figure_is_rejected():
         check(text=GOOD_TEXT.replace("90.5", "91.5"))
 
 
-def test_a_text_number_rounded_to_its_written_precision_passes():
-    facts = {**FACTS, "drying_score": 90.5321}
-    check_explanation(
-        GOOD_TEXT.replace("90.5", "90.53"),
-        {**GOOD_CITED, "drying_score": 90.5321},
-        facts,
-        "riau-1-1",
-    )
-
-
 def test_a_text_without_cited_numbers_is_rejected():
     with pytest.raises(ExplanationRejected, match="no cited"):
         check(text="The cell is drying fast.", cited={})
@@ -260,3 +250,104 @@ def test_a_ranking_document_of_another_week_is_left_alone():
 
 def test_the_prompt_version_is_named():
     assert EXPLAIN_PROMPT_VERSION == "explain-v1"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Cell riau-1-1 ranks 1 with a drying score of 90.5 and a canal 140 m away.",
+    ],
+)
+def test_an_integer_written_for_a_whole_value_passes(text):
+    check(text=text, cited={"drying_score": 90.5, "rank": 1, "canal_dist_m": 140.0})
+
+
+@pytest.mark.parametrize(
+    "text,bad",
+    [
+        ("Rank 1 with a drying score of 90.", "90"),
+        ("Rank 1, score 90.5, deficit 0.", "0"),
+    ],
+)
+def test_a_rounded_or_stray_number_is_rejected(text, bad):
+    facts = {**FACTS, "peat_class": 2}
+    with pytest.raises(ExplanationRejected, match="not cited"):
+        check_explanation(text, {"drying_score": 90.5, "rank": 1}, facts, "riau-1-1")
+
+
+def test_digits_inside_field_names_are_not_numbers():
+    text = "Rank 1 with s1_anom_db of -4.2 and rain_30d_mm of 180.0 near Sentinel-1."
+    check_explanation(
+        text,
+        {"rank": 1, "s1_anom_db": -4.2, "rain_30d_mm": 180.0},
+        FACTS,
+        "riau-1-1",
+    )
+
+
+def test_a_field_cited_twice_is_retried():
+    dup = reply()
+    body = json.loads(dup.text)
+    body["cited"].append({"field": "rank", "value": 1})
+    doubled = types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(
+                content=types.Content(
+                    role="model", parts=[types.Part(text=json.dumps(body))]
+                )
+            )
+        ]
+    )
+    world = World([doubled, reply()])
+
+    assert world.explain().text == GOOD_TEXT
+    assert len(world.model.calls) == 2
+
+
+def test_a_model_error_is_not_remembered_for_the_week():
+    world = World(
+        [errors.APIError(503, {"error": {"code": 503, "message": "x"}}), reply()]
+    )
+
+    assert world.explain() is None
+    assert world.explain().text == GOOD_TEXT
+
+
+def test_two_requests_at_once_make_one_model_call():
+    world = World([reply()])
+
+    async def both():
+        return await asyncio.gather(
+            world.explainer.explain("riau-1-1"), world.explainer.explain("riau-1-1")
+        )
+
+    first, second = asyncio.run(both())
+
+    assert first == second
+    assert len(world.model.calls) == 1
+
+
+def test_a_store_failure_still_returns_the_explanation(caplog):
+    world = World([reply()])
+
+    def down(*args):
+        raise RuntimeError("firestore is down")
+
+    world.explainer._rankings.set_explanation = down
+
+    with caplog.at_level(logging.ERROR):
+        explanation = world.explain()
+
+    assert explanation.text == GOOD_TEXT
+    events = [r.fields["event"] for r in caplog.records if hasattr(r, "fields")]
+    assert "explain_rank_store_failed" in events
+
+
+def test_a_facts_failure_gives_null_not_an_exception():
+    class Broken:
+        def get_area_facts(self, cell_id):
+            raise RuntimeError("bigquery is down")
+
+    world = World([], facts=Broken())
+
+    assert world.explain() is None

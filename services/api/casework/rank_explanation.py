@@ -66,7 +66,7 @@ CitedField = Literal[*FIELDS]
 
 class CitedEntry(BaseModel):
     field: CitedField
-    value: float
+    value: int | float
 
 
 class ExplainOutput(BaseModel):
@@ -115,6 +115,8 @@ def read_reply(
             f"the text has {count} sentences, more than {MAX_SENTENCES}"
         )
     cited = {entry.field: entry.value for entry in output.cited}
+    if len(cited) != len(output.cited):
+        raise ExplanationRejected("a field is cited twice")
     check_explanation(output.text, cited, values, cell_id)
     return RankExplanation(text=output.text, cited=cited)
 
@@ -133,6 +135,10 @@ def log_event(level: int, message: str, event: str, **fields: object) -> None:
     )
 
 
+class ModelUnavailable(Exception):
+    pass
+
+
 class RankExplainer:
     def __init__(
         self, *, model: TextModel, facts: AreaFacts, rankings: RankingRepository
@@ -140,9 +146,19 @@ class RankExplainer:
         self._model = model
         self._facts = facts
         self._rankings = rankings
-        self._settled: dict[tuple[str, str], RankExplanation | None] = {}
+        self._settled: dict[tuple[str, str], asyncio.Task[RankExplanation | None]] = {}
 
     async def explain(self, cell_id: str) -> RankExplanation | None:
+        try:
+            return await self._explain(cell_id)
+        except Exception:
+            logger.exception(
+                "explain_rank failed",
+                extra={"fields": {"event": "explain_rank_error", "cell_id": cell_id}},
+            )
+            return None
+
+    async def _explain(self, cell_id: str) -> RankExplanation | None:
         facts = await asyncio.to_thread(self._facts.get_area_facts, cell_id)
         if "error" in facts:
             log_event(
@@ -154,10 +170,14 @@ class RankExplainer:
             return None
         key = (cell_id, facts["week"])
         if key not in self._settled:
-            self._settled[key] = await self._generate(cell_id, facts)
-        explanation = self._settled[key]
+            self._settled[key] = asyncio.create_task(self._generate(cell_id, facts))
+        try:
+            explanation = await self._settled[key]
+        except ModelUnavailable:
+            self._settled.pop(key, None)
+            return None
         if explanation is not None:
-            self._store(facts, explanation)
+            await asyncio.to_thread(self._store, facts, explanation)
         return explanation
 
     async def _generate(self, cell_id: str, facts: dict) -> RankExplanation | None:
@@ -175,6 +195,7 @@ class RankExplainer:
                     "explain_rank reply rejected",
                     "explain_rank_rejected",
                     cell_id=cell_id,
+                    week=facts["week"],
                     attempt=attempt,
                     error=str(error),
                 )
@@ -184,24 +205,43 @@ class RankExplainer:
                     "explain_rank model error",
                     "explain_rank_model_error",
                     cell_id=cell_id,
+                    week=facts["week"],
                     error=type(error).__name__,
                 )
-                break
+                raise ModelUnavailable from error
         log_event(
             logging.ERROR,
-            "explain_rank stored null",
+            "explain_rank gave up, the cell shows no explanation",
             "explain_rank_failed",
             cell_id=cell_id,
+            week=facts["week"],
         )
         return None
 
     def _store(self, facts: dict, explanation: RankExplanation) -> None:
-        ranked = self._rankings.cell(facts["region"], facts["cell_id"])
-        if ranked is None or iso_week_label(ranked.week_start) != facts["week"]:
-            return
+        fields = {"cell_id": facts["cell_id"], "week": facts["week"]}
         try:
+            ranked = self._rankings.cell(facts["region"], facts["cell_id"])
+            if ranked is None or iso_week_label(ranked.week_start) != facts["week"]:
+                log_event(
+                    logging.INFO,
+                    "explain_rank not stored",
+                    "explain_rank_not_stored",
+                    **fields,
+                )
+                return
             self._rankings.set_explanation(
                 facts["region"], facts["cell_id"], explanation
             )
         except DocumentNotFound:
-            return
+            log_event(
+                logging.INFO,
+                "explain_rank not stored",
+                "explain_rank_not_stored",
+                **fields,
+            )
+        except Exception:
+            logger.exception(
+                "explain_rank store failed",
+                extra={"fields": {"event": "explain_rank_store_failed", **fields}},
+            )
