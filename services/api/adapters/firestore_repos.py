@@ -17,6 +17,7 @@ from contracts import (
     Message,
     ProcessedEvent,
     RankedCell,
+    RankedDam,
     Task,
     Volunteer,
     VolunteerRole,
@@ -46,10 +47,16 @@ class CaseRepository:
         live = [case for case in for_dam if case.status != "closed"]
         if not live:
             return None
-        return min(live, key=lambda case: case.opened_at)
+        return min(live, key=lambda case: (case.opened_at, case.id))
 
     def get(self, case_id: str) -> Case | None:
         return self._cases.get(case_id)
+
+    def create(self, case: Case) -> bool:
+        return self._cases.create_if_absent(case.id, case)
+
+    def delete(self, case_id: str) -> None:
+        self._cases.delete_many([case_id])
 
 
 class VolunteerRepository:
@@ -150,6 +157,15 @@ class RankingRepository:
         return self._cells_for(region).where(Filter("rank", "<=", limit))
 
 
+class RankedDamRepository:
+    def __init__(self, dams_for: Callable[[str], Collection[RankedDam]]):
+        self._dams_for = dams_for
+
+    def top(self, region: str, limit: int) -> list[RankedDam]:
+        ranked = self._dams_for(region).where(Filter("rank", "<=", limit))
+        return sorted(ranked, key=lambda dam: dam.rank)
+
+
 class DamRepository:
     def __init__(self, dams: Collection[Dam]):
         self._dams = dams
@@ -172,6 +188,7 @@ class AgentRunRepository:
 @dataclass(frozen=True)
 class AgentRepositories:
     rankings: RankingRepository
+    ranked_dams: RankedDamRepository
     volunteers: VolunteerRepository
     dams: DamRepository
     agent_runs: AgentRunRepository
@@ -183,6 +200,9 @@ def build_agent_repositories(db: firestore.Client) -> AgentRepositories:
             lambda region: FirestoreCollection(
                 db, f"rankings/{region}/cells", RankedCell
             )
+        ),
+        ranked_dams=RankedDamRepository(
+            lambda region: FirestoreCollection(db, f"rankings/{region}/dams", RankedDam)
         ),
         volunteers=VolunteerRepository(
             FirestoreCollection(db, "volunteers", Volunteer)

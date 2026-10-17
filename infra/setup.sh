@@ -24,6 +24,11 @@ readonly JOBS_ROLES=(
   roles/pubsub.publisher roles/serviceusage.serviceUsageConsumer roles/bigquery.readSessionUser
 )
 readonly API_SERVICE=bara-api
+readonly PUSH_TOPICS=(drying.ranked)
+readonly PUSH_INVOKER=bara-tasks-invoker
+readonly PUSH_ACK_DEADLINE=600
+readonly PUSH_MAX_ATTEMPTS=5
+readonly API_TIMEOUT=600
 readonly IMAGE_REPO=bara
 readonly CI_SECRETS=(maps-key firebase-web-config)
 readonly CI_PROJECT_ROLES=(
@@ -52,9 +57,9 @@ anything that already exists is left as it is.
 Prints one line per resource: "ok" (exists), "made" or "would make".
 Exit codes: 0 done, 1 a gcloud call failed, 2 usage error, 3 no project, 4 tool missing.
 
-The Cloud Build service account bara-build and its grants need the deployed bara-api
-service and the secrets maps-key and firebase-web-config. Push subscriptions and their
-run.invoker grants wait for the bara-api event route. The scheduler job bara-drying-weekly
+The Cloud Build service account bara-build and its grants, and the Pub/Sub push
+subscriptions (with their grants and the 600 s request timeout), need the deployed
+bara-api service; bara-build also needs the secrets maps-key and firebase-web-config. The scheduler job bara-drying-weekly
 is created at once; its run.invoker grant on the Cloud Run job bara-drying waits for the
 first Cloud Build deploy of that job.
 EOF
@@ -265,6 +270,80 @@ grant_secret_role() {
     --member "serviceAccount:$BINDING_MEMBER" --role "$BINDING_ROLE" --quiet --format none
 }
 
+api_url() {
+  gcloud run services describe "$API_SERVICE" --region "$REGION" --project "$PROJECT" \
+    --format='value(status.url)'
+}
+
+project_number() {
+  gcloud projects describe "$PROJECT" --format='value(projectNumber)'
+}
+
+pubsub_agent() {
+  echo "service-$(project_number)@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+subscription_name() {
+  echo "$1.push"
+}
+
+subscription_exists() {
+  gcloud pubsub subscriptions describe "$1" --project "$PROJECT" >/dev/null 2>&1
+}
+
+create_push_subscription() {
+  local topic="${1%.push}" url
+  url="$(api_url)"
+  if [[ -z "$url" ]]; then
+    echo "cannot read the $API_SERVICE URL" >&2
+    exit 1
+  fi
+  gcloud pubsub subscriptions create "$1" --project "$PROJECT" --topic "$topic" \
+    --push-endpoint "$url/api/events/$topic" \
+    --push-auth-service-account "$(sa_email "$PUSH_INVOKER")" \
+    --push-auth-token-audience "$url" \
+    --ack-deadline "$PUSH_ACK_DEADLINE" \
+    --dead-letter-topic "projects/$PROJECT/topics/$DLQ_TOPIC" \
+    --max-delivery-attempts "$PUSH_MAX_ATTEMPTS" --quiet >/dev/null
+}
+
+has_topic_role() {
+  split_binding "$1"
+  policy_has_binding "$BINDING_ROLE" "$BINDING_MEMBER" \
+    gcloud pubsub topics get-iam-policy "$BINDING_NAME" --project "$PROJECT"
+}
+
+grant_topic_role() {
+  split_binding "$1"
+  with_retry gcloud pubsub topics add-iam-policy-binding "$BINDING_NAME" --project "$PROJECT" \
+    --member "serviceAccount:$BINDING_MEMBER" --role "$BINDING_ROLE" --quiet --format none
+}
+
+has_subscription_role() {
+  split_binding "$1"
+  subscription_exists "$BINDING_NAME" || return 1
+  policy_has_binding "$BINDING_ROLE" "$BINDING_MEMBER" \
+    gcloud pubsub subscriptions get-iam-policy "$BINDING_NAME" --project "$PROJECT"
+}
+
+grant_subscription_role() {
+  split_binding "$1"
+  with_retry gcloud pubsub subscriptions add-iam-policy-binding "$BINDING_NAME" --project "$PROJECT" \
+    --member "serviceAccount:$BINDING_MEMBER" --role "$BINDING_ROLE" --quiet --format none
+}
+
+has_api_timeout() {
+  local current
+  current="$(gcloud run services describe "$API_SERVICE" --region "$REGION" --project "$PROJECT" \
+    --format='value(spec.template.spec.timeoutSeconds)')"
+  [[ "$current" == "$1" ]]
+}
+
+set_api_timeout() {
+  gcloud run services update "$API_SERVICE" --region "$REGION" --project "$PROJECT" \
+    --timeout "$1" --quiet >/dev/null
+}
+
 require_api_service() {
   if ! gcloud run services describe "$API_SERVICE" --region "$REGION" --project "$PROJECT" >/dev/null 2>&1; then
     echo "Cloud Run service $API_SERVICE not found in $REGION" >&2
@@ -414,6 +493,23 @@ setup_schedules() {
   done
 }
 
+setup_push() {
+  local topic subscription agent invoker
+  agent="$(pubsub_agent)"
+  invoker="$(sa_email "$PUSH_INVOKER")"
+  require_api_service
+  ensure api-timeout "$API_TIMEOUT" has_api_timeout set_api_timeout
+  ensure service-role "$API_SERVICE|$invoker|roles/run.invoker" has_service_role grant_service_role
+  ensure sa-user "$invoker|$agent|roles/iam.serviceAccountTokenCreator" has_sa_user grant_sa_user
+  ensure topic-role "$DLQ_TOPIC|$agent|roles/pubsub.publisher" has_topic_role grant_topic_role
+  for topic in "${PUSH_TOPICS[@]}"; do
+    subscription="$(subscription_name "$topic")"
+    ensure subscription "$subscription" subscription_exists create_push_subscription
+    ensure subscription-role "$subscription|$agent|roles/pubsub.subscriber" \
+      has_subscription_role grant_subscription_role
+  done
+}
+
 main() {
   parse_args "$@"
   require_tools gcloud bq
@@ -431,6 +527,7 @@ main() {
   setup_ci
   setup_jobs_deploy_access
   setup_schedules
+  setup_push
 }
 
 main "$@"

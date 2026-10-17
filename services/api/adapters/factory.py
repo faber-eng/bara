@@ -19,6 +19,7 @@ from adapters.firestore_repos import (
     DamRepository,
     EventLog,
     FirestoreClockStore,
+    RankedDamRepository,
     RankingRepository,
     TaskRepository,
     VolunteerRepository,
@@ -51,6 +52,7 @@ class Adapters:
     scheduler: DeadlineScheduler | None
     cells: CellRepository
     rankings: RankingRepository
+    ranked_dams: RankedDamRepository
     volunteers: VolunteerRepository
     dams: DamRepository
     agent_runs: AgentRunRepository
@@ -100,6 +102,7 @@ def build_adapters(settings: Settings) -> Adapters:
         scheduler=build_scheduler(settings),
         cells=CellRepository(warehouse),
         rankings=agent_repos.rankings,
+        ranked_dams=agent_repos.ranked_dams,
         volunteers=agent_repos.volunteers,
         dams=agent_repos.dams,
         agent_runs=agent_repos.agent_runs,

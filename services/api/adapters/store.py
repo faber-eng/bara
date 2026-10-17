@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Literal, NamedTuple, Protocol
 
 from google.api_core import exceptions as gax
@@ -6,6 +6,8 @@ from google.cloud.firestore_v1 import Increment
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from contracts import Contract
+
+BATCH_LIMIT = 400
 
 FilterOp = Literal["==", "<", "<=", ">", ">=", "in"]
 
@@ -34,6 +36,8 @@ class Collection[T: Contract](Protocol):
     ) -> None: ...
 
     def where(self, *filters: Filter) -> list[T]: ...
+
+    def delete_many(self, doc_ids: Iterable[str]) -> None: ...
 
 
 class FirestoreCollection[T: Contract]:
@@ -75,6 +79,14 @@ class FirestoreCollection[T: Contract]:
         for item in filters:
             query = query.where(filter=FieldFilter(item.field, item.op, item.value))
         return [self._model.model_validate(s.to_dict()) for s in query.stream()]
+
+    def delete_many(self, doc_ids: Iterable[str]) -> None:
+        pending = list(doc_ids)
+        for start in range(0, len(pending), BATCH_LIMIT):
+            batch = self._client.batch()
+            for doc_id in pending[start : start + BATCH_LIMIT]:
+                batch.delete(self._document(doc_id))
+            batch.commit()
 
     def _document(self, doc_id: str):
         return self._client.collection(self._name).document(doc_id)
