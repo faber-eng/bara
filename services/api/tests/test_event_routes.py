@@ -9,6 +9,7 @@ from adapters.gemini import ModelGateway
 from contracts import Case, ProcessedEvent, RankedDam
 from events import DryingRankedHandler, EventDispatcher
 from tests.fakes import (
+    FakeExplanationFiller,
     FakeModels,
     FakeVerifier,
     InMemoryCollection,
@@ -50,6 +51,7 @@ def make_world(settings):
         cases=CaseRepository(cases),
         ranked_dams=RankedDamRepository(lambda region: dams),
         agent=agent,
+        explanations=FakeExplanationFiller(),
         clock=FixedClock(),
         max_cases=3,
     )

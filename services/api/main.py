@@ -29,6 +29,7 @@ from casework.escalation import Acknowledger, BrigadeInbox, Escalator
 from casework.evidence_check import EvidenceChecker
 from casework.evidence_intake import EvidenceIntake
 from casework.evidence_reader import EvidenceReader
+from casework.explanation_batch import ExplanationPrecomputer
 from casework.inbox import InboxReader
 from casework.messenger import Messenger
 from casework.rank_explanation import RankExplainer
@@ -275,11 +276,13 @@ def build_dispatcher(
     checker: EvidenceChecker,
     assigner: TaskAssigner,
     escalator: Escalator,
+    explanations: ExplanationPrecomputer,
 ) -> EventDispatcher:
     drying_ranked = DryingRankedHandler(
         cases=adapters.cases,
         ranked_dams=adapters.ranked_dams,
         agent=agent,
+        explanations=explanations,
         clock=adapters.clock,
         max_cases=settings.agent.max_cases_per_trigger,
     )
@@ -385,6 +388,15 @@ def build_rank_explainer(
     )
 
 
+def build_explanation_precomputer(
+    settings: Settings, adapters: Adapters, gateway: ModelGateway
+) -> ExplanationPrecomputer:
+    return ExplanationPrecomputer(
+        explainer=build_rank_explainer(settings, adapters, gateway),
+        rankings=adapters.rankings,
+    )
+
+
 def build_public_queries(settings: Settings, adapters: Adapters) -> PublicQueries:
     return PublicQueries(
         rankings=adapters.rankings,
@@ -424,6 +436,7 @@ def create_app() -> FastAPI:
         checker,
         build_assigner(settings, app.state.adapters, gateway),
         escalator,
+        build_explanation_precomputer(settings, app.state.adapters, gateway),
     )
     app.state.evidence_intake = build_intake(app.state.adapters)
     app.state.inbox_reader = build_inbox(app.state.adapters)

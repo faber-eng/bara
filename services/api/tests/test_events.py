@@ -12,6 +12,7 @@ from events import (
     decode_push,
 )
 from tests.fakes import (
+    FakeExplanationFiller,
     InMemoryCollection,
     make_case,
     make_drying_ranked_event,
@@ -39,7 +40,14 @@ class FixedClock:
 
 
 class World:
-    def __init__(self, dams: list[RankedDam], open_cases=(), fail_for=None, limit=3):
+    def __init__(
+        self,
+        dams: list[RankedDam],
+        open_cases=(),
+        fail_for=None,
+        limit=3,
+        explanations=None,
+    ):
         self.case_store = InMemoryCollection(Case)
         for case in open_cases:
             self.case_store.put(case.id, case)
@@ -47,12 +55,14 @@ class World:
         for dam in dams:
             dam_store.put(dam.dam_id, dam)
         self.agent = FakeAgent(fail_for)
+        self.explanations = explanations or FakeExplanationFiller()
         self.cases = CaseRepository(self.case_store)
         self.event_store = InMemoryCollection(ProcessedEvent)
         self.handler = DryingRankedHandler(
             cases=self.cases,
             ranked_dams=RankedDamRepository(lambda region: dam_store),
             agent=self.agent,
+            explanations=self.explanations,
             clock=FixedClock(),
             max_cases=limit,
         )
@@ -365,3 +375,23 @@ def test_a_failing_run_does_not_block_or_fail_the_others():
 
     assert outcome == "processed"
     assert sorted(agent.finished) == ["case-m-1-dam-1", "case-m-1-dam-3"]
+
+
+def test_the_explanations_of_the_region_are_filled_once_per_ranking():
+    world = World(five_dams())
+
+    world.deliver()
+
+    assert world.explanations.regions == ["riau"]
+
+
+def test_a_failed_explanation_fill_does_not_fail_the_event_or_the_cases(caplog):
+    world = World(five_dams(), explanations=FakeExplanationFiller(fail=True))
+
+    outcome = world.deliver()
+
+    assert outcome == "processed"
+    assert len(world.agent.runs) == 3
+    assert "explanations_precompute_failed" in [
+        record.fields["event"] for record in caplog.records if hasattr(record, "fields")
+    ]

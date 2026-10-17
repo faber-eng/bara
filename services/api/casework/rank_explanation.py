@@ -13,44 +13,50 @@ from casework.messenger import sentence_count
 from config import Role
 from contracts import RankExplanation
 from domain.rank_explanation import (
+    EXPLAIN_PROMPT_VERSION,
+    FIELD_WORDS,
     FIELDS,
     ExplanationRejected,
+    Shown,
     check_explanation,
     known_values,
+    shown_values,
 )
 from domain.weeks import iso_week_label
 
 logger = logging.getLogger(__name__)
 
-EXPLAIN_PROMPT_VERSION = "explain-v1"
+EXPLAIN_ROLE: Role = "fast"
 MAX_SENTENCES = 3
 ATTEMPTS = 2
 
 SYSTEM_INSTRUCTION = f"""\
 You explain to an operations officer why one grid cell of tropical peatland \
 ranks where it does for drying this week. The user message holds the cell's \
-facts in one block between <<<FACTS and FACTS>>>: the cell id and one number \
-per field.
+facts in one block between <<<FACTS and FACTS>>>: the cell id and a list of \
+facts, each with "field", "name", "written" and "number".
 
-Write "text": 2 to {MAX_SENTENCES} short sentences of plain English that name \
-the fields that drive the rank. Rules for numbers:
-- Write each number exactly as the facts write it: same digits, same sign, no \
-rounding, no percent sign, no unit conversion. rain_deficit_pct is a fraction, \
-so 0.31 stays 0.31.
-- Use only numbers from the facts. No other number appears in the text: no \
-week number, no count, no date. The cell id may appear as written.
-- Say what a number means in words next to it (for example "canal_dist_m of \
-140.0 m is close to a canal").
+Write "text": 2 to {MAX_SENTENCES} short sentences of plain English for a \
+non-specialist that say what drives the rank. Rules:
+- Refer to a fact by its "name", never by its "field". Do not write names \
+such as drying_score or canal_dist_m.
+- Write each number exactly as its "written" says: same digits, same unit. \
+The facts are already rounded; do not round again, convert or recompute.
+- Use only the facts. No other number appears in the text: no week number, no \
+count, no date. The cell id may appear as written.
+- Say what a number means in words next to it (for example "2.5 km from the \
+nearest canal is far, so drainage is slow").
 
 Write "cited": one entry for each number in the text, with "field" (one of \
-{", ".join(FIELDS)}) and "value" (the number from the facts). Every number in \
-the text has an entry, and every entry's number appears in the text.
+{", ".join(FIELDS)}) and "value" (the fact's "number"). Every number in the \
+text has an entry, and every entry's number appears in the text.
 
-Example for the facts drying_score 88.4, rank 3, canal_dist_m 95.0:
+Example for the facts drying_score 88.4 (name "drying score"), rank 3 (name \
+"rank this week"), canal_dist_m 95 m (name "distance to the nearest canal"):
 text: "Cell riau-1-1 ranks 3 this week with a drying score of 88.4. It lies \
-only 95.0 m from a canal, so the peat drains quickly."
+only 95 m from the nearest canal, so the peat drains quickly."
 cited: [{{"field": "rank", "value": 3}}, {{"field": "drying_score", "value": \
-88.4}}, {{"field": "canal_dist_m", "value": 95.0}}]
+88.4}}, {{"field": "canal_dist_m", "value": 95}}]
 
 Reply with one JSON object with "text" and "cited".
 """
@@ -87,8 +93,18 @@ class AreaFacts(Protocol):
     def get_area_facts(self, cell_id: str) -> dict: ...
 
 
-def render_facts(cell_id: str, values: dict[str, float]) -> str:
-    data = {"cell_id": cell_id, **values}
+def render_fact(field: str, shown: Shown) -> dict[str, object]:
+    return {
+        "field": field,
+        "name": FIELD_WORDS[field],
+        "written": shown.written,
+        "number": shown.number,
+    }
+
+
+def render_facts(cell_id: str, shown: dict[str, Shown]) -> str:
+    facts = [render_fact(field, value) for field, value in shown.items()]
+    data = {"cell_id": cell_id, "facts": facts}
     return FACTS_FENCE.format(data=json.dumps(data, indent=2))
 
 
@@ -118,7 +134,9 @@ def read_reply(
     if len(cited) != len(output.cited):
         raise ExplanationRejected("a field is cited twice")
     check_explanation(output.text, cited, values, cell_id)
-    return RankExplanation(text=output.text, cited=cited)
+    return RankExplanation(
+        text=output.text, cited=cited, prompt_version=EXPLAIN_PROMPT_VERSION
+    )
 
 
 def log_event(level: int, message: str, event: str, **fields: object) -> None:
@@ -181,14 +199,15 @@ class RankExplainer:
         return explanation
 
     async def _generate(self, cell_id: str, facts: dict) -> RankExplanation | None:
-        values = known_values(facts)
-        contents = render_facts(cell_id, values)
+        shown = shown_values(known_values(facts))
+        numbers = {field: value.number for field, value in shown.items()}
+        contents = render_facts(cell_id, shown)
         for attempt in range(1, ATTEMPTS + 1):
             try:
                 response = await self._model.generate(
-                    "reasoning", contents, generation_config()
+                    EXPLAIN_ROLE, contents, generation_config()
                 )
-                return read_reply(response, values, cell_id)
+                return read_reply(response, numbers, cell_id)
             except ExplanationRejected as error:
                 log_event(
                     logging.WARNING,
