@@ -163,3 +163,19 @@ def test_an_open_escalation_shows_only_the_handover():
     assert [entry.text for entry in timeline[1:]] == [
         "Escalated to brigade contact-daops"
     ]
+
+
+def test_a_task_entry_shows_the_due_time_in_wib_not_raw_iso():
+    task = make_task(
+        id="t1",
+        created_at=at(1),
+        deadline_at=datetime(2026, 10, 19, 22, 4, 58, 204295, tzinfo=UTC),
+        assignee_id="patrol-hana",
+        type="patrol_recheck",
+    )
+
+    timeline = build_timeline(make_case(opened_at=at(0)), [task], [], [], [], [])
+
+    assert "Task patrol_recheck given to patrol-hana, due Tue 20 Oct, 05:04 WIB" in [
+        entry.text for entry in timeline
+    ]
