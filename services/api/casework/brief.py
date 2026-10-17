@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from dataclasses import dataclass
 from typing import Annotated, Literal, Protocol
 
@@ -9,29 +10,50 @@ from pydantic import BaseModel, Field, ValidationError
 
 from casework.messenger import sentence_count
 from config import Role
-from contracts import CaseType, TimelineEntry
+from domain.brief import (
+    ENGLISH,
+    INDONESIAN,
+    BriefFacts,
+    phrase_block,
+    template_text,
+)
 
 logger = logging.getLogger(__name__)
 
-BRIEF_PROMPT_VERSION = "brief-v1"
+BRIEF_PROMPT_VERSION = "brief-v2"
 MAX_SENTENCES = 3
 ATTEMPTS = 2
+ENGLISH_MARKERS = ("the", "is", "or", "because", "case")
+SNAKE_CASE = re.compile(r"\b[a-z0-9]+_[a-z0-9_]+\b")
+ENGLISH_WORD = re.compile(r"\b(?:" + "|".join(ENGLISH_MARKERS) + r")\b", re.IGNORECASE)
 
 BriefSource = Literal["gemini", "template"]
 
 SYSTEM_INSTRUCTION = f"""\
 You write one escalation brief for a fire brigade (Manggala Agni or BPBD) in \
 Riau, Indonesia. A peat-fire prevention programme sends it when a case needs a \
-crew. The user message holds the case in one block between <<<CASE and CASE>>>.
+crew. The user message holds the facts in one block between <<<CASE and CASE>>>: \
+the same facts twice, under "id" in Indonesian and under "en" in English, with \
+every number already written.
 
-Write the brief twice: brief_id in Indonesian and brief_en in English, each in \
-at most {MAX_SENTENCES} short sentences. Say:
-1. what was found and where: the cell, and the dam when there is one;
-2. why it needs a crew now: the reason, with the drying_score or p_reignite \
-when given;
-3. what to do: send a crew to check and put out fire, or to secure the dam.
-Use only facts from the case block. Copy every number exactly as given. No \
-greeting and no sign-off.
+Write brief_id from the "id" facts only, in natural Indonesian, and brief_en \
+from the "en" facts only, in English. Each is at most {MAX_SENTENCES} short \
+sentences, in this order:
+1. what was found and where: temuan / found;
+2. why a crew is needed now: every item of alasan / reasons;
+3. what to do: tindakan / action.
+Copy every number, cell id and dam id exactly as the facts write it. brief_id \
+is all Indonesian: no English word and no field name. No greeting and no \
+sign-off.
+
+Example for the facts temuan "Risiko bendungan di sel riau-180-77, bendungan \
+dam-riau-016", alasan ["skor kekeringan 96,7, di atas batas 80", "tugas \
+pemeriksaan bendungan lewat tenggat", "belum ada foto dari lapangan"], tindakan \
+"Kirim regu untuk memeriksa dan mengamankan bendungan.":
+brief_id: "Risiko bendungan ditemukan di sel riau-180-77, bendungan \
+dam-riau-016. Regu dibutuhkan sekarang karena skor kekeringan 96,7, di atas \
+batas 80, tugas pemeriksaan bendungan sudah lewat tenggat, dan belum ada foto \
+dari lapangan. Kirim regu untuk memeriksa dan mengamankan bendungan."
 
 Reply with one JSON object:
 - brief_id: the brief in Indonesian.
@@ -55,18 +77,6 @@ class BriefOutput(BaseModel):
 
 
 @dataclass(frozen=True)
-class BriefFacts:
-    case_type: CaseType
-    cell_id: str
-    dam_id: str | None
-    drying_score: float | None
-    p_reignite: float | None
-    reason: str
-    timeline: list[TimelineEntry]
-    map_url: str
-
-
-@dataclass(frozen=True)
 class Brief:
     brief_id: str
     brief_en: str
@@ -84,14 +94,8 @@ class TextModel(Protocol):
 
 def render_facts(facts: BriefFacts) -> str:
     data = {
-        "case_type": facts.case_type,
-        "cell_id": facts.cell_id,
-        "dam_id": facts.dam_id,
-        "drying_score": facts.drying_score,
-        "p_reignite": facts.p_reignite,
-        "reason": facts.reason,
-        "map_url": facts.map_url,
-        "timeline": [entry.model_dump(mode="json") for entry in facts.timeline],
+        "id": phrase_block(facts, INDONESIAN),
+        "en": phrase_block(facts, ENGLISH),
     }
     return CASE_FENCE.format(data=json.dumps(data, indent=2, ensure_ascii=False))
 
@@ -114,6 +118,16 @@ def check_text(text: str) -> None:
         )
 
 
+def english_leaks(text: str) -> list[str]:
+    return SNAKE_CASE.findall(text) + ENGLISH_WORD.findall(text)
+
+
+def check_indonesian(text: str) -> None:
+    leaks = english_leaks(text)
+    if leaks:
+        raise BriefRejected(f"the Indonesian brief has English: {', '.join(leaks)}")
+
+
 def read_reply(response: types.GenerateContentResponse) -> BriefOutput:
     text = response.text
     if text is None:
@@ -124,38 +138,14 @@ def read_reply(response: types.GenerateContentResponse) -> BriefOutput:
         raise BriefRejected(f"the reply is not the brief schema: {error}") from None
     check_text(output.brief_id)
     check_text(output.brief_en)
+    check_indonesian(output.brief_id)
     return output
 
 
-def risk_phrase_en(facts: BriefFacts) -> str:
-    if facts.drying_score is not None:
-        return f" Drying score {facts.drying_score:g} of 100."
-    if facts.p_reignite is not None:
-        return f" Re-ignition chance {facts.p_reignite:g}."
-    return ""
-
-
-def risk_phrase_id(facts: BriefFacts) -> str:
-    if facts.drying_score is not None:
-        return f" Skor kekeringan {facts.drying_score:g} dari 100."
-    if facts.p_reignite is not None:
-        return f" Peluang menyala kembali {facts.p_reignite:g}."
-    return ""
-
-
-def place_of(facts: BriefFacts) -> str:
-    if facts.dam_id is None:
-        return facts.cell_id
-    return f"{facts.cell_id} ({facts.dam_id})"
-
-
 def template_brief(facts: BriefFacts) -> Brief:
-    place = place_of(facts)
     return Brief(
-        brief_id=f"Kasus di {place} perlu regu.{risk_phrase_id(facts)} "
-        f"Alasan: {facts.reason}",
-        brief_en=f"The case in {place} needs a crew.{risk_phrase_en(facts)} "
-        f"Reason: {facts.reason}",
+        brief_id=template_text(facts, INDONESIAN),
+        brief_en=template_text(facts, ENGLISH),
         source="template",
     )
 
