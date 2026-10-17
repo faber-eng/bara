@@ -24,7 +24,13 @@ export type Channel = "web" | "whatsapp";
 export type BulletinSource = "gemini" | "template";
 
 export type Subject = "canal_dam" | "burned_peat" | "smoke_scene" | "other";
-export type DamState = "intact" | "damaged" | "broken" | "overtopped" | "not_applicable" | "unknown";
+export type DamState =
+  | "intact"
+  | "damaged"
+  | "broken"
+  | "overtopped"
+  | "not_applicable"
+  | "unknown";
 export type Smoke = "none" | "wisps" | "plume" | "unknown";
 export type HotGround = "none" | "possible" | "clear" | "unknown";
 export type OpenFlame = "yes" | "no" | "unknown";
@@ -98,7 +104,13 @@ export type Evidence = {
   uploaded_by: string;
 };
 
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
 export type ToolCall = {
   name: string;

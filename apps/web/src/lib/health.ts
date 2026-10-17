@@ -1,9 +1,4 @@
-export type Health = {
-  status: string;
-  models: { reasoning: string; fast: string };
-  fallback_used: boolean;
-  git_sha: string;
-};
+import type { Health } from "./contracts";
 
 const HEALTH_PATH = "/api/health";
 const HEALTH_TIMEOUT_MS = 5_000;
