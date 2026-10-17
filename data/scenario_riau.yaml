@@ -23,3 +23,25 @@ evidence_fixtures:
   - { id: burned-smoke, kind: photo, path: photos/burned_smoke_01.jpg, expect: { subject: burned_peat, smoke: wisps } }
   - { id: burned-clear, kind: photo, path: photos/burned_clear_01.jpg, expect: { subject: burned_peat, smoke: none } }
   - { id: voice-broken-dam, kind: audio, path: voice/voice01.ogg, expect: { transcript_contains: jebol } }
+
+fire_event:
+  event_id: fire-riau-2026-demo-01
+  source: example (placed inside the AOI; p_reignite precomputed for the scenario, not scored)
+  start_date: "2026-07-12"
+  quiet_date: "2026-07-30"
+  cells:
+    - cell_id: riau-182-61
+      p_reignite: 0.82
+      top_features:
+        - { feature: drying_score, attribution: 0.41 }
+        - { feature: days_since_last_detection, attribution: 0.22 }
+    - cell_id: riau-183-61
+      p_reignite: 0.74
+      top_features:
+        - { feature: drying_score, attribution: 0.37 }
+        - { feature: canal_dist_m, attribution: 0.18 }
+    - cell_id: riau-182-60
+      p_reignite: 0.68
+      top_features:
+        - { feature: drying_score, attribution: 0.33 }
+        - { feature: peat_class, attribution: 0.15 }
