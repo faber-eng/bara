@@ -6,21 +6,21 @@ describe("sourceFor", () => {
     vi.unstubAllEnvs();
   });
 
-  it("defaults the ops reads, the clock and the tiles to live and the brigade inbox to its fixture", () => {
+  it("defaults every area to live", () => {
     vi.unstubAllEnvs();
 
     expect(sourceFor("rankings")).toBe("live");
     expect(sourceFor("cases")).toBe("live");
     expect(sourceFor("caseDetail")).toBe("live");
-    expect(sourceFor("escalations")).toBe("fixture");
+    expect(sourceFor("escalations")).toBe("live");
     expect(sourceFor("tiles")).toBe("live");
     expect(sourceFor("clock")).toBe("live");
   });
 
-  it("lets the environment switch one area to live", () => {
-    vi.stubEnv("VITE_SOURCE_ESCALATIONS", "live");
+  it("lets the environment switch one area to its fixture", () => {
+    vi.stubEnv("VITE_SOURCE_ESCALATIONS", "fixture");
 
-    expect(sourceFor("escalations")).toBe("live");
+    expect(sourceFor("escalations")).toBe("fixture");
   });
 
   it("ignores an unknown value", () => {
