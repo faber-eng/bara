@@ -61,6 +61,7 @@ def test_event_windows_end_at_the_quiet_date():
     )
 
     assert windows.s1 == DateRange(date(2019, 7, 29), QUIET)
+    assert windows.s1_previous == DateRange(date(2019, 7, 17), date(2019, 7, 29))
     assert windows.rain_7d_before == DateRange(date(2019, 8, 3), QUIET)
     assert windows.rain_14d_before == DateRange(date(2019, 7, 27), QUIET)
     assert windows.rain_7d_after == DateRange(QUIET, date(2019, 8, 17))

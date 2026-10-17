@@ -68,6 +68,10 @@ def event_windows(
     after = DateRange(quiet_date, quiet_date + timedelta(days=RAIN_AFTER_DAYS))
     return EventWindows(
         s1=before(s1_days),
+        s1_previous=DateRange(
+            quiet_date - timedelta(days=2 * s1_days),
+            quiet_date - timedelta(days=s1_days),
+        ),
         rain_7d_before=covered(before(RAIN_BEFORE_SHORT_DAYS), chirps_last),
         rain_14d_before=covered(before(RAIN_BEFORE_LONG_DAYS), chirps_last),
         rain_7d_after=covered(after, chirps_last),
