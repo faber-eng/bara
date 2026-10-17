@@ -28,6 +28,7 @@ from case_queries import CaseQueries
 from casework.area_ranking import AreaRanker
 from casework.assignment import TaskAssigner
 from casework.brief import BriefWriter
+from casework.bulletin import BulletinJob, BulletinWriter
 from casework.deadline import DeadlineHandler
 from casework.escalation import Acknowledger, BrigadeInbox, Escalator
 from casework.evidence_check import EvidenceChecker
@@ -84,6 +85,10 @@ GZIP_MIN_BYTES = 1024
 GZIP_LEVEL = 5
 
 
+def skip_bulletin() -> None:
+    return None
+
+
 def cors_origins(settings: Settings) -> list[str]:
     return [
         f"https://{settings.project}.web.app",
@@ -105,6 +110,7 @@ def build_app(
     app.state.reset_limiter = FailureLimiter(
         settings.judge_mode.max_resets_per_hour, RESET_WINDOW_SECONDS
     )
+    app.state.bulletin_job = skip_bulletin
     app.state.public_limiter = RequestLimiter(
         PUBLIC_MAX_REQUESTS, PUBLIC_WINDOW_SECONDS
     )
@@ -287,12 +293,14 @@ def build_dispatcher(
     assigner: TaskAssigner,
     escalator: Escalator,
     explanations: ExplanationPrecomputer,
+    bulletin: BulletinWriter,
 ) -> EventDispatcher:
     drying_ranked = DryingRankedHandler(
         cases=adapters.cases,
         ranked_dams=adapters.ranked_dams,
         agent=agent,
         explanations=explanations,
+        bulletin=bulletin,
         clock=adapters.clock,
         max_cases=settings.agent.max_cases_per_trigger,
         region=full_flow_region(settings.config_dir),
@@ -409,6 +417,21 @@ def build_explanation_precomputer(
     )
 
 
+def build_bulletin_writer(
+    settings: Settings,
+    adapters: Adapters,
+    gateway: ModelGateway,
+    queries: PublicQueries,
+) -> BulletinWriter:
+    return BulletinWriter(
+        model=gateway,
+        model_name=settings.models.fast.model,
+        summaries=queries,
+        bulletins=adapters.bulletins,
+        now=utcnow,
+    )
+
+
 def build_public_queries(settings: Settings, adapters: Adapters) -> PublicQueries:
     return PublicQueries(
         rankings=adapters.rankings,
@@ -448,6 +471,13 @@ def create_app() -> FastAPI:
     gateway = ModelGateway(settings.models, build_vertex_clients(settings))
     app = build_app(settings, gateway, build_token_verifier(settings))
     app.state.adapters = build_adapters(settings)
+    public_queries = build_public_queries(settings, app.state.adapters)
+    bulletin_writer = build_bulletin_writer(
+        settings, app.state.adapters, gateway, public_queries
+    )
+    app.state.bulletin_job = BulletinJob(
+        bulletin_writer, full_flow_region(settings.config_dir)
+    )
     checker = build_checker(settings, app.state.adapters, gateway)
     escalator = build_escalator(app.state.adapters, gateway)
     app.state.agent = build_agent_service(
@@ -461,6 +491,7 @@ def create_app() -> FastAPI:
         build_assigner(settings, app.state.adapters, gateway),
         escalator,
         build_explanation_precomputer(settings, app.state.adapters, gateway),
+        bulletin_writer,
     )
     app.state.evidence_intake = build_intake(app.state.adapters)
     app.state.inbox_reader = build_inbox(app.state.adapters)
@@ -480,7 +511,7 @@ def create_app() -> FastAPI:
     app.state.rank_explainer = build_rank_explainer(
         settings, app.state.adapters, gateway
     )
-    app.state.public_queries = build_public_queries(settings, app.state.adapters)
+    app.state.public_queries = public_queries
     app.state.tiles = build_tiles(settings, app.state.adapters)
     app.state.area_ranker = build_area_ranker(settings)
     app.state.utcnow = utcnow

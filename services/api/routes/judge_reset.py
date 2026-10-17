@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
 from auth import Principal, require_role
 from contracts import ClockState
@@ -30,9 +30,11 @@ def reject_when_limited(request: Request, uid: str) -> None:
 @router.post("/reset", response_model=ClockState)
 def reset_scenario(
     request: Request,
+    background: BackgroundTasks,
     principal: Annotated[Principal, Depends(require_role("judge"))],
 ) -> ClockState:
     reject_when_limited(request, principal.uid)
     resetter: ScenarioResetter = request.app.state.resetter
     resetter.reset(principal.uid)
+    background.add_task(request.app.state.bulletin_job)
     return read_clock_state(request.app.state)
