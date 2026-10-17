@@ -131,6 +131,10 @@ def build_dam_case(
     )
 
 
+class ExplanationFiller(Protocol):
+    async def run(self, region: str) -> object: ...
+
+
 class DryingRankedHandler:
     def __init__(
         self,
@@ -138,12 +142,14 @@ class DryingRankedHandler:
         cases: CaseRepository,
         ranked_dams: RankedDamRepository,
         agent: AgentRunner,
+        explanations: ExplanationFiller,
         clock: Clock,
         max_cases: int,
     ):
         self._cases = cases
         self._ranked_dams = ranked_dams
         self._agent = agent
+        self._explanations = explanations
         self._clock = clock
         self._max_cases = max_cases
 
@@ -151,7 +157,29 @@ class DryingRankedHandler:
         if not isinstance(event, DryingRankedEvent):
             raise MalformedPush("not a drying.ranked event")
         opened = self._open_cases(message_id, event)
-        asyncio.run(self._run_all(message_id, event, opened))
+        asyncio.run(self._run_everything(message_id, event, opened))
+
+    async def _run_everything(
+        self, message_id: str, event: DryingRankedEvent, cases: list[Case]
+    ) -> None:
+        await asyncio.gather(
+            self._run_all(message_id, event, cases),
+            self._fill_explanations(event.region),
+        )
+
+    async def _fill_explanations(self, region: str) -> None:
+        try:
+            await self._explanations.run(region)
+        except Exception:
+            logger.exception(
+                "explanations precompute failed",
+                extra={
+                    "fields": {
+                        "event": "explanations_precompute_failed",
+                        "region": region,
+                    }
+                },
+            )
 
     def _open_cases(self, message_id: str, event: DryingRankedEvent) -> list[Case]:
         dams = self._ranked_dams.top(event.region, self._max_cases)

@@ -10,9 +10,15 @@ from adapters.firestore_repos import RankingRepository
 from casework.rank_explanation import (
     EXPLAIN_PROMPT_VERSION,
     RankExplainer,
+    render_facts,
 )
 from contracts import RankedCell, RankExplanation
-from domain.rank_explanation import ExplanationRejected, check_explanation
+from domain.rank_explanation import (
+    ExplanationRejected,
+    check_explanation,
+    shown_numbers,
+    shown_values,
+)
 from tests.fakes import InMemoryCollection, make_ranked_cell
 
 FACTS = {
@@ -26,7 +32,7 @@ FACTS = {
 }
 GOOD_TEXT = (
     "Cell riau-1-1 ranks 1 with a drying score of 90.5. "
-    "The radar anomaly is -4.2 dB and the canal is 140.0 m away."
+    "The radar dryness signal is -4.2 dB and the nearest canal is 140 m away."
 )
 GOOD_CITED = {
     "drying_score": 90.5,
@@ -37,7 +43,12 @@ GOOD_CITED = {
 
 
 def check(text=GOOD_TEXT, cited=None):
-    check_explanation(text, GOOD_CITED if cited is None else cited, FACTS, "riau-1-1")
+    check_explanation(
+        text,
+        GOOD_CITED if cited is None else cited,
+        shown_numbers(FACTS),
+        "riau-1-1",
+    )
 
 
 def test_a_text_whose_numbers_are_all_cited_and_exact_passes():
@@ -157,11 +168,13 @@ def test_a_valid_reply_is_returned_and_stored_on_the_ranked_cell():
 
     explanation = world.explain()
 
-    assert explanation == RankExplanation(text=GOOD_TEXT, cited=GOOD_CITED)
+    assert explanation == RankExplanation(
+        text=GOOD_TEXT, cited=GOOD_CITED, prompt_version=EXPLAIN_PROMPT_VERSION
+    )
     assert world.stored() == explanation
     assert world.facts.calls == ["riau-1-1"]
     role, contents, config = world.model.calls[0]
-    assert role == "reasoning"
+    assert role == "fast"
     assert "<<<FACTS" in contents
     assert "90.5" in contents
     assert config.response_mime_type == "application/json"
@@ -249,13 +262,14 @@ def test_a_ranking_document_of_another_week_is_left_alone():
 
 
 def test_the_prompt_version_is_named():
-    assert EXPLAIN_PROMPT_VERSION == "explain-v1"
+    assert EXPLAIN_PROMPT_VERSION == "explain-v2"
 
 
 @pytest.mark.parametrize(
     "text",
     [
         "Cell riau-1-1 ranks 1 with a drying score of 90.5 and a canal 140 m away.",
+        "Cell riau-1-1 ranks 1 with a drying score of 90.5 and a canal 140.0 m away.",
     ],
 )
 def test_an_integer_written_for_a_whole_value_passes(text):
@@ -270,7 +284,7 @@ def test_an_integer_written_for_a_whole_value_passes(text):
     ],
 )
 def test_a_rounded_or_stray_number_is_rejected(text, bad):
-    facts = {**FACTS, "peat_class": 2}
+    facts = shown_numbers({**FACTS, "peat_class": 2})
     with pytest.raises(ExplanationRejected, match="not cited"):
         check_explanation(text, {"drying_score": 90.5, "rank": 1}, facts, "riau-1-1")
 
@@ -279,8 +293,8 @@ def test_digits_inside_field_names_are_not_numbers():
     text = "Rank 1 with s1_anom_db of -4.2 and rain_30d_mm of 180.0 near Sentinel-1."
     check_explanation(
         text,
-        {"rank": 1, "s1_anom_db": -4.2, "rain_30d_mm": 180.0},
-        FACTS,
+        {"rank": 1, "s1_anom_db": -4.2, "rain_30d_mm": 180},
+        shown_numbers(FACTS),
         "riau-1-1",
     )
 
@@ -351,3 +365,82 @@ def test_a_facts_failure_gives_null_not_an_exception():
     world = World([], facts=Broken())
 
     assert world.explain() is None
+
+
+LIVE = {
+    "drying_score": 96.84027719188221,
+    "rank": 1,
+    "s1_anom_db": -5.0767897814995315,
+    "rain_30d_mm": 183.6,
+    "rain_deficit_pct": 0.3149,
+    "canal_dist_m": 2504.7206600213553,
+    "peat_class": 1,
+}
+
+
+def test_live_values_are_rounded_for_reading():
+    written = {field: shown.written for field, shown in shown_values(LIVE).items()}
+
+    assert written == {
+        "drying_score": "96.8",
+        "rank": "1",
+        "s1_anom_db": "-5.1 dB",
+        "rain_30d_mm": "184 mm",
+        "rain_deficit_pct": "31%",
+        "canal_dist_m": "2.5 km",
+        "peat_class": "1",
+    }
+
+
+def test_a_distance_under_a_kilometre_is_whole_metres():
+    assert shown_values({"canal_dist_m": 139.6})["canal_dist_m"].written == "140 m"
+
+
+def test_the_facts_block_names_each_fact_in_plain_words_with_its_written_form():
+    block = render_facts("riau-1-1", shown_values(LIVE))
+
+    assert "radar dryness signal" in block
+    assert "distance to the nearest canal" in block
+    assert '"written": "2.5 km"' in block
+    assert "2504" not in block
+    assert "96.84" not in block
+
+
+ROUNDED_TEXT = (
+    "Cell riau-1-1 ranks 1 with a drying score of 96.8. The radar dryness "
+    "signal is -5.1 dB and the nearest canal is 2.5 km away."
+)
+ROUNDED_CITED = {
+    "drying_score": 96.8,
+    "rank": 1,
+    "s1_anom_db": -5.1,
+    "canal_dist_m": 2.5,
+}
+
+
+def test_a_correctly_rounded_text_passes_the_number_check():
+    check_explanation(ROUNDED_TEXT, ROUNDED_CITED, shown_numbers(LIVE), "riau-1-1")
+
+
+@pytest.mark.parametrize(
+    "old,new",
+    [("96.8", "96.9"), ("-5.1", "-5.2"), ("2.5 km", "3.5 km"), ("96.8", "96.84")],
+)
+def test_an_invented_or_unrounded_number_in_the_text_fails_the_number_check(old, new):
+    text = ROUNDED_TEXT.replace(old, new)
+
+    with pytest.raises(ExplanationRejected):
+        check_explanation(text, ROUNDED_CITED, shown_numbers(LIVE), "riau-1-1")
+
+
+def test_a_cited_value_that_is_the_unrounded_figure_fails_the_number_check():
+    cited = {**ROUNDED_CITED, "drying_score": 96.84027719188221}
+
+    with pytest.raises(ExplanationRejected, match="drying_score"):
+        check_explanation(ROUNDED_TEXT, cited, shown_numbers(LIVE), "riau-1-1")
+
+
+def test_the_stored_explanation_names_the_prompt_version():
+    world = World([reply()])
+
+    assert world.explain().prompt_version == EXPLAIN_PROMPT_VERSION

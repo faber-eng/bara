@@ -178,7 +178,11 @@ export type RankingComponents = {
   peat_class: 1 | 2;
 };
 
-export type RankExplanation = { text: string; cited: { [field: string]: Scalar } };
+export type RankExplanation = {
+  text: string;
+  cited: { [field: string]: Scalar };
+  prompt_version?: string | null;
+};
 
 export type RankedCell = {
   cell_id: string;

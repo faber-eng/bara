@@ -273,6 +273,7 @@ class RankingComponents(Contract):
 class RankExplanation(Contract):
     text: str
     cited: dict[str, Scalar]
+    prompt_version: str | None = None
 
 
 class RankedCell(Contract):

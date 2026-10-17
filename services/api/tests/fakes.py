@@ -518,6 +518,17 @@ def make_escalation(**overrides):
     return Escalation(**{**fields, **overrides})
 
 
+class FakeExplanationFiller:
+    def __init__(self, fail: bool = False):
+        self.regions: list[str] = []
+        self._fail = fail
+
+    async def run(self, region: str) -> None:
+        self.regions.append(region)
+        if self._fail:
+            raise RuntimeError("model down")
+
+
 def make_ranked_cell(**overrides):
     from datetime import date
 
@@ -697,6 +708,7 @@ APP_BUILDER_STUBS = {
     "build_case_queries": "cases",
     "build_area_queries": "areas",
     "build_rank_explainer": "explainer",
+    "build_explanation_precomputer": "precomputer",
     "build_public_queries": "public",
     "build_run_streamer": "streamer",
     "build_tiles": "tiles",

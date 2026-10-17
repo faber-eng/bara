@@ -16,6 +16,7 @@ from adapters.firestore_repos import (
 from contracts import CellFacts, RankedCell, Rankings, TrendPoint
 from domain.case_view import past_checks
 from domain.geo import nearby
+from domain.rank_explanation import is_current
 from domain.rankings import newest_week_by_rank
 from domain.weeks import iso_week_label
 
@@ -34,6 +35,8 @@ def needs_explanation(facts: CellFacts) -> bool:
 
 def current_explanation(ranked: RankedCell | None, week_start: date):
     if ranked is None or ranked.week_start != week_start:
+        return None
+    if not is_current(ranked.explanation):
         return None
     return ranked.explanation
 

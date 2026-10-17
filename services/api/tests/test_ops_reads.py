@@ -35,6 +35,7 @@ from contracts import (
     Verdict,
 )
 from domain.clock import Clock
+from domain.rank_explanation import EXPLAIN_PROMPT_VERSION
 from tests.fakes import (
     FakeModels,
     FakeVerifier,
@@ -395,7 +396,11 @@ def test_cell_facts_has_trend_nearby_dams_checks_and_the_stored_explanation(sett
     world.ranked_cells.put(
         "riau-1-1",
         make_ranked_cell(
-            explanation={"text": "dry", "cited": {"rain_deficit_pct": 0.31}}
+            explanation={
+                "text": "dry",
+                "cited": {"rain_deficit_pct": 31},
+                "prompt_version": EXPLAIN_PROMPT_VERSION,
+            }
         ),
     )
     world.add_case("c1", cell_id="riau-1-1")
@@ -437,7 +442,9 @@ def test_cell_facts_has_trend_nearby_dams_checks_and_the_stored_explanation(sett
 def test_a_missing_explanation_is_made_on_the_cell_route_only(settings):
     world = World([weekly_row()])
     world.ranked_cells.put("riau-1-1", make_ranked_cell())
-    world.explainer.result = RankExplanation(text="dry", cited={"rank": 1})
+    world.explainer.result = RankExplanation(
+        text="dry", cited={"rank": 1}, prompt_version=EXPLAIN_PROMPT_VERSION
+    )
     client = world.client(settings)
 
     listed = client.get("/api/rankings/riau", headers=OPS)
@@ -445,20 +452,60 @@ def test_a_missing_explanation_is_made_on_the_cell_route_only(settings):
 
     assert listed.status_code == 200
     assert world.explainer.calls == ["riau-1-1"]
-    assert detail.json()["explanation"] == {"text": "dry", "cited": {"rank": 1}}
+    assert detail.json()["explanation"]["text"] == "dry"
 
 
 def test_a_stored_explanation_is_not_made_again(settings):
     world = World([weekly_row()])
     world.ranked_cells.put(
         "riau-1-1",
-        make_ranked_cell(explanation={"text": "kept", "cited": {"rank": 1}}),
+        make_ranked_cell(
+            explanation={
+                "text": "kept",
+                "cited": {"rank": 1},
+                "prompt_version": EXPLAIN_PROMPT_VERSION,
+            }
+        ),
     )
 
     body = world.client(settings).get("/api/cells/riau-1-1", headers=OPS).json()
 
     assert body["explanation"]["text"] == "kept"
     assert world.explainer.calls == []
+
+
+def test_an_explanation_of_an_older_prompt_version_is_made_again(settings):
+    world = World([weekly_row()])
+    world.ranked_cells.put(
+        "riau-1-1",
+        make_ranked_cell(
+            explanation={
+                "text": "raw 96.84",
+                "cited": {"rank": 1},
+                "prompt_version": "explain-v1",
+            }
+        ),
+    )
+    world.explainer.result = RankExplanation(
+        text="new", cited={"rank": 1}, prompt_version=EXPLAIN_PROMPT_VERSION
+    )
+
+    body = world.client(settings).get("/api/cells/riau-1-1", headers=OPS).json()
+
+    assert body["explanation"]["text"] == "new"
+    assert world.explainer.calls == ["riau-1-1"]
+
+
+def test_an_explanation_with_no_prompt_version_is_made_again(settings):
+    world = World([weekly_row()])
+    world.ranked_cells.put(
+        "riau-1-1",
+        make_ranked_cell(explanation={"text": "old", "cited": {"rank": 1}}),
+    )
+
+    world.client(settings).get("/api/cells/riau-1-1", headers=OPS)
+
+    assert world.explainer.calls == ["riau-1-1"]
 
 
 def test_a_failed_explanation_leaves_the_cell_with_null(settings):

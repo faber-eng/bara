@@ -88,8 +88,9 @@ def test_build_dispatcher_handles_every_pushed_topic_and_trigger_wires_offline(
     agent = main.build_agent_service(settings, adapters, gateway, checker, escalator)
 
     assigner = main.build_assigner(settings, adapters, gateway)
+    precomputer = main.build_explanation_precomputer(settings, adapters, gateway)
     dispatcher = main.build_dispatcher(
-        settings, adapters, agent, checker, assigner, escalator
+        settings, adapters, agent, checker, assigner, escalator, precomputer
     )
     trigger = main.build_trigger(settings, adapters)
 
