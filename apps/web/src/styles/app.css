@@ -884,6 +884,8 @@ fieldset.join-fieldset {
 .area-cells {
   padding-left: var(--space-4);
   margin: 0;
+}
+
 .pub {
   padding: 28px;
   display: grid;
