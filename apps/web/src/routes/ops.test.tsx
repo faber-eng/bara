@@ -91,6 +91,50 @@ describe("/ops", () => {
     expect(await screen.findByRole("table")).toBeInTheDocument();
   });
 
+  it("opens the review queue from ?tab=review", async () => {
+    renderApp("/ops?tab=review");
+
+    expect(await screen.findByText(/riau-0277/)).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Review queue/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.queryByText(/riau-0412/)).not.toBeInTheDocument();
+  });
+
+  it("writes the region to the URL and shows the Congo note with no case actions", async () => {
+    const { router } = renderApp("/ops?tab=review");
+    await screen.findByText(/riau-0277/);
+
+    fireEvent.click(screen.getByRole("button", { name: "Congo" }));
+
+    await waitFor(() =>
+      expect(router.state.location.search).toMatchObject({ region: "congo_cuvette" }),
+    );
+    expect(await screen.findAllByText(/Congo shows rankings and map layers only/)).not.toHaveLength(
+      0,
+    );
+    expect(screen.queryByRole("button", { name: "Review" })).not.toBeInTheDocument();
+  });
+
+  it("returns to Riau and drops the week when the region switches back", async () => {
+    const { router } = renderApp("/ops?region=congo_cuvette&week=2026-W25");
+    await screen.findByRole("heading", { level: 1, name: "Ops dashboard" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Riau" }));
+
+    await waitFor(() => expect(router.state.location.search.region).toBeUndefined());
+    expect(router.state.location.search.week).toBeUndefined();
+  });
+
+  it("ignores an unknown region or week in the URL", async () => {
+    const { router } = renderApp("/ops?region=mars&week=soon");
+    await screen.findByRole("heading", { level: 1, name: "Ops dashboard" });
+
+    expect(router.state.location.search.region).toBeUndefined();
+    expect(router.state.location.search.week).toBeUndefined();
+  });
+
   it("ignores an unknown tab value", async () => {
     renderApp("/ops?tab=weird");
 

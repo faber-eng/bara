@@ -53,7 +53,7 @@ describe("fetchRankings", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    expect((await fetchRankings("riau")).cells).toHaveLength(200);
+    expect((await fetchRankings("riau", undefined)).cells).toHaveLength(200);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -62,8 +62,18 @@ describe("fetchRankings", () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json(fixture));
     vi.stubGlobal("fetch", fetchMock);
 
-    await fetchRankings("riau");
+    await fetchRankings("riau", undefined);
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/rankings/riau");
+  });
+
+  it("adds the week to the path when one is asked", async () => {
+    vi.stubEnv("VITE_SOURCE_RANKINGS", "live");
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(fixture));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchRankings("congo_cuvette", "2026-W30");
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/rankings/congo_cuvette?week=2026-W30");
   });
 });

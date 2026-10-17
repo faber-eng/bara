@@ -5,6 +5,7 @@ import { caseDetailQuery } from "../../lib/api/queries";
 import type { CaseDetail } from "../../lib/contracts";
 import { canCloseCase, spaced } from "../../lib/ops/caseDrawer";
 import { statusChip } from "../../lib/ops/statusChip";
+import { ruleEscalationEntries } from "../../lib/ops/timelineOrigin";
 import { useCaseFollow } from "../../lib/ops/useCaseFollow";
 import { AgentRuns } from "./AgentRuns";
 import { CaseTimeline } from "./CaseTimeline";
@@ -81,7 +82,7 @@ function DrawerBody({ detail }: { detail: CaseDetail }) {
       <DrawerHead detail={detail} />
       <section className="drawer-section" aria-label="Timeline">
         <h3>Timeline</h3>
-        <CaseTimeline entries={detail.timeline} />
+        <CaseTimeline entries={detail.timeline} ruleMade={ruleEscalationEntries(detail)} />
       </section>
       <section className="drawer-section" aria-label="Evidence">
         <h3>Evidence</h3>

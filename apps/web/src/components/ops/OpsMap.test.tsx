@@ -27,6 +27,7 @@ const fakeMap = {
     push: (layer: unknown) => layers.push(layer),
     getArray: () => layers,
     removeAt: (index: number) => layers.splice(index, 1),
+    insertAt: (index: number, layer: unknown) => layers.splice(index, 0, layer),
   },
 };
 
@@ -54,6 +55,10 @@ function renderMap(selectedCellId?: string) {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <OpsMap
+        region="riau"
+        week={undefined}
+        onRegionChange={() => {}}
+        onWeekChange={() => {}}
         selectedCellId={selectedCellId}
         focus={null}
         onCellSelect={() => {}}
@@ -94,7 +99,7 @@ describe("OpsMap", () => {
 
     await waitFor(() => expect(layers).toHaveLength(1));
     expect(screen.getByText("Drying score (0 to 100)")).toBeInTheDocument();
-    expect(screen.getByText(/2026-W42/)).toBeInTheDocument();
+    expect(screen.getByText("Week 2026-W30.")).toBeInTheDocument();
   });
 
   it("asks /api/tiles/drying for the region with no week when the source is live", async () => {
@@ -123,7 +128,9 @@ describe("OpsMap", () => {
     stubApi({ "GET /api/tiles/drying?region=riau": () => new Response("x", { status: 502 }) });
     renderMap();
 
-    expect(await screen.findByText("Drying layer is unavailable right now.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Drying score layer is unavailable right now."),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("map")).toBeInTheDocument();
     expect(layers).toHaveLength(0);
   });

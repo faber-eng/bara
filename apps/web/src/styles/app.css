@@ -885,3 +885,158 @@ fieldset.join-fieldset {
   padding-left: var(--space-4);
   margin: 0;
 }
+
+.ops-map {
+  display: flex;
+  flex-direction: column;
+}
+.ops-map-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 420px;
+}
+.map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.week-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.week-slider input {
+  width: 180px;
+}
+.layer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  min-height: 32px;
+}
+.map-notes {
+  position: absolute;
+  top: 56px;
+  left: 12px;
+  right: 12px;
+  display: grid;
+  gap: 6px;
+  pointer-events: none;
+}
+.map-notes .map-note {
+  position: static;
+}
+.map-legend {
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+}
+.legend-swatches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+.legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border-radius: 3px;
+}
+.component-bars {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+}
+.component-bars li {
+  display: grid;
+  grid-template-columns: 72px 1fr 64px;
+  align-items: center;
+  gap: 6px;
+}
+.component-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ash-gray);
+}
+.component-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--risk-4);
+}
+.component-value {
+  text-align: right;
+}
+.cited-number {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted;
+  cursor: help;
+}
+.review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+}
+.review-row-actions {
+  display: flex;
+  gap: 8px;
+}
+.review-form {
+  display: grid;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+.review-form fieldset {
+  display: grid;
+  gap: 6px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.review-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+}
+.review-note {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.review-note textarea {
+  font: inherit;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.timeline-origin {
+  margin-left: 8px;
+}

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchDryingTiles, parseTileLayer } from "./tiles";
+import { fetchTileLayer, parseTileLayer } from "./tiles";
 
 vi.mock("../auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
 
@@ -29,7 +29,7 @@ describe("parseTileLayer", () => {
   });
 });
 
-describe("fetchDryingTiles", () => {
+describe("fetchTileLayer", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
@@ -39,7 +39,7 @@ describe("fetchDryingTiles", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await fetchDryingTiles("riau");
+    const result = await fetchTileLayer("drying", "riau", undefined);
 
     expect(result.layer).toBe("drying");
     expect(fetchMock).not.toHaveBeenCalled();
@@ -50,8 +50,27 @@ describe("fetchDryingTiles", () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json(layer));
     vi.stubGlobal("fetch", fetchMock);
 
-    await fetchDryingTiles("riau");
+    await fetchTileLayer("drying", "riau", undefined);
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/tiles/drying?region=riau");
+  });
+
+  it.each([
+    ["peat", "riau", "2026-W30", "/api/tiles/peat?region=riau&week=2026-W30"],
+    ["burn_scars", "riau", undefined, "/api/tiles/burn_scars?region=riau"],
+    [
+      "reignition",
+      "congo_cuvette",
+      "2026-W21",
+      "/api/tiles/reignition?region=congo_cuvette&week=2026-W21",
+    ],
+  ] as const)("asks for %s in %s", async (kind, region, week, path) => {
+    vi.stubEnv("VITE_SOURCE_TILES", "live");
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ...layer, layer: kind }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchTileLayer(kind, region, week);
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(path);
   });
 });

@@ -10,7 +10,7 @@ function renderTab(selected: string | undefined = undefined, onSelect = vi.fn())
   const queryClient = new QueryClient();
   render(
     <QueryClientProvider client={queryClient}>
-      <CasesTab selectedCaseId={selected} onSelect={onSelect} />
+      <CasesTab region="riau" selectedCaseId={selected} onSelect={onSelect} />
     </QueryClientProvider>,
   );
   return onSelect;
@@ -110,5 +110,17 @@ describe("CasesTab", () => {
     );
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
+  });
+
+  it("shows the Congo note and lists no cases", () => {
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CasesTab region="congo_cuvette" selectedCaseId={undefined} onSelect={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText(/Congo shows rankings and map layers only/)).toBeInTheDocument();
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
   });
 });

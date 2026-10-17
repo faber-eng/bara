@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { brigadeContactId } from "../brigade/contact";
+import type { TileLayerKind } from "../contracts";
 import { fetchAllCells } from "./allCells";
 import { fetchCaseDetail } from "./caseDetail";
 import { fetchCases } from "./cases";
@@ -7,12 +8,13 @@ import { fetchCellFacts } from "./cellFacts";
 import { fetchClock } from "./clock";
 import { fetchBrigadeInbox } from "./escalations";
 import { fetchRankings } from "./rankings";
-import { fetchDryingTiles } from "./tiles";
+import { fetchTileLayer } from "./tiles";
 
 const CLOCK_REFRESH_MS = 60_000;
 const CLOCK_RETRIES = 2;
 const CLOCK_RETRY_DELAY_MS = 1_000;
 const OPS_STALE_MS = 30_000;
+const WEEK_STALE_MS = 10 * 60_000;
 const TILES_STALE_MS = 30 * 60_000;
 const ALL_CELLS_STALE_MS = 30 * 60_000;
 
@@ -25,11 +27,12 @@ export const clockQuery = queryOptions({
   retryDelay: CLOCK_RETRY_DELAY_MS,
 });
 
-export function rankingsQuery(region: string) {
+export function rankingsQuery(region: string, week?: string) {
   return queryOptions({
-    queryKey: ["rankings", region],
-    queryFn: ({ signal }) => fetchRankings(region, signal),
-    staleTime: OPS_STALE_MS,
+    queryKey: ["rankings", region, week ?? "latest"],
+    queryFn: ({ signal }) => fetchRankings(region, week, signal),
+    staleTime: week === undefined ? OPS_STALE_MS : WEEK_STALE_MS,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }
@@ -53,10 +56,14 @@ export function casesQuery(region: string) {
   });
 }
 
-export function dryingTilesQuery(region: string) {
+const WEEKLY_LAYERS: readonly TileLayerKind[] = ["drying", "burn_scars", "reignition"];
+
+export function tileLayerQuery(layer: TileLayerKind, region: string, week?: string) {
+  const weekKey = WEEKLY_LAYERS.includes(layer) ? (week ?? "latest") : "static";
+  const requestedWeek = weekKey === "static" ? undefined : week;
   return queryOptions({
-    queryKey: ["tiles", "drying", region],
-    queryFn: ({ signal }) => fetchDryingTiles(region, signal),
+    queryKey: ["tiles", layer, region, weekKey],
+    queryFn: ({ signal }) => fetchTileLayer(layer, region, requestedWeek, signal),
     staleTime: TILES_STALE_MS,
     refetchOnWindowFocus: false,
     retry: false,

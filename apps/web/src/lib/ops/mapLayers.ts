@@ -1,4 +1,4 @@
-import type { TileLayer } from "../contracts";
+import type { TileLayerKind } from "../contracts";
 
 export type MapTypeId = "roadmap" | "terrain" | "hybrid";
 
@@ -10,34 +10,82 @@ export const MAP_TYPES: readonly { id: MapTypeId; label: string }[] = [
 
 export const DEFAULT_MAP_TYPE: MapTypeId = "hybrid";
 
-export type MapLayerSpec = {
-  id: string;
-  label: string;
-  urlTemplate: string;
-  defaultOpacity: number;
-  legend: { low: string; high: string };
-};
+export type LegendSpec =
+  | { kind: "ramp"; low: string; high: string }
+  | { kind: "swatches"; items: readonly { color: string; label: string }[] };
 
 export type LayerOpacities = Record<string, number>;
 
-const DRYING_OPACITY = 0.7;
+export type LayerDefinition = {
+  id: TileLayerKind;
+  label: string;
+  weekly: boolean;
+  defaultOpacity: number;
+  defaultOn: boolean;
+  legend: LegendSpec;
+};
 
-export function buildMapLayers(drying: TileLayer | undefined): MapLayerSpec[] {
-  const layers: MapLayerSpec[] = [];
-  if (drying !== undefined) {
-    layers.push({
-      id: "drying",
-      label: "Drying score",
-      urlTemplate: drying.url_template,
-      defaultOpacity: DRYING_OPACITY,
-      legend: { low: "0", high: "100" },
-    });
-  }
-  return layers;
+export const LAYER_DEFINITIONS: readonly LayerDefinition[] = [
+  {
+    id: "drying",
+    label: "Drying score",
+    weekly: true,
+    defaultOpacity: 0.7,
+    defaultOn: true,
+    legend: { kind: "ramp", low: "0 low", high: "100 high" },
+  },
+  {
+    id: "peat",
+    label: "Peat",
+    weekly: false,
+    defaultOpacity: 0.6,
+    defaultOn: false,
+    legend: {
+      kind: "swatches",
+      items: [
+        { color: "#8fb996", label: "Peat class 1" },
+        { color: "#2f5d3a", label: "Peat class 2" },
+      ],
+    },
+  },
+  {
+    id: "burn_scars",
+    label: "Burn scars",
+    weekly: true,
+    defaultOpacity: 0.7,
+    defaultOn: false,
+    legend: { kind: "swatches", items: [{ color: "#4a2c1a", label: "Burned area" }] },
+  },
+  {
+    id: "reignition",
+    label: "Re-ignition risk",
+    weekly: true,
+    defaultOpacity: 0.7,
+    defaultOn: false,
+    legend: { kind: "ramp", low: "0 low", high: "1 high" },
+  },
+];
+
+export type EnabledLayers = Record<TileLayerKind, boolean>;
+
+export function defaultEnabledLayers(): EnabledLayers {
+  return {
+    drying: true,
+    peat: false,
+    burn_scars: false,
+    reignition: false,
+  };
 }
 
-export function layerOpacity(layer: MapLayerSpec, overrides: LayerOpacities): number {
-  return overrides[layer.id] ?? layer.defaultOpacity;
+export function enabledKinds(enabled: EnabledLayers): TileLayerKind[] {
+  return LAYER_DEFINITIONS.filter((definition) => enabled[definition.id]).map(
+    (definition) => definition.id,
+  );
+}
+
+export function definitionFor(kind: TileLayerKind): LayerDefinition {
+  const found = LAYER_DEFINITIONS.find((definition) => definition.id === kind);
+  return found ?? (LAYER_DEFINITIONS[0] as LayerDefinition);
 }
 
 export function clampOpacity(value: number): number {

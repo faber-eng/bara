@@ -1,15 +1,20 @@
+import { regionById } from "../../lib/ops/region";
 import type { OpsTab } from "../../lib/ops/tabs";
 import { CaseDrawer } from "./CaseDrawer";
 import { CasesTab } from "./CasesTab";
 import { RankedAreasTab } from "./RankedAreasTab";
+import { ReviewQueueTab } from "./ReviewQueueTab";
 
-const TAB_LABELS = { ranked: "Ranked areas", cases: "Cases" } as const satisfies Record<
-  OpsTab,
-  string
->;
-const TAB_ORDER: readonly OpsTab[] = ["ranked", "cases"];
+const TAB_LABELS = {
+  ranked: "Ranked areas",
+  cases: "Cases",
+  review: "Review queue",
+} as const satisfies Record<OpsTab, string>;
+const TAB_ORDER: readonly OpsTab[] = ["ranked", "cases", "review"];
 
 type OpsPanelProps = {
+  region: string;
+  week: string | undefined;
   tab: OpsTab;
   selectedCaseId: string | undefined;
   selectedCellId: string | undefined;
@@ -21,10 +26,19 @@ type OpsPanelProps = {
 
 type TabBodyProps = Pick<
   OpsPanelProps,
-  "tab" | "selectedCaseId" | "selectedCellId" | "onCellSelect" | "onCaseSelect" | "onCaseClear"
+  | "region"
+  | "week"
+  | "tab"
+  | "selectedCaseId"
+  | "selectedCellId"
+  | "onCellSelect"
+  | "onCaseSelect"
+  | "onCaseClear"
 >;
 
 function TabBody({
+  region,
+  week,
   tab,
   selectedCaseId,
   selectedCellId,
@@ -32,14 +46,25 @@ function TabBody({
   onCaseSelect,
   onCaseClear,
 }: TabBodyProps) {
-  if (selectedCaseId !== undefined)
+  if (selectedCaseId !== undefined && regionById(region).casework)
     return <CaseDrawer caseId={selectedCaseId} onBack={onCaseClear} />;
-  if (tab === "ranked")
-    return <RankedAreasTab selectedCellId={selectedCellId} onCellSelect={onCellSelect} />;
-  return <CasesTab selectedCaseId={selectedCaseId} onSelect={onCaseSelect} />;
+  if (tab === "ranked") {
+    return (
+      <RankedAreasTab
+        region={region}
+        week={week}
+        selectedCellId={selectedCellId}
+        onCellSelect={onCellSelect}
+      />
+    );
+  }
+  if (tab === "review") return <ReviewQueueTab region={region} onCaseSelect={onCaseSelect} />;
+  return <CasesTab region={region} selectedCaseId={selectedCaseId} onSelect={onCaseSelect} />;
 }
 
 export function OpsPanel({
+  region,
+  week,
   tab,
   selectedCaseId,
   selectedCellId,
@@ -65,6 +90,8 @@ export function OpsPanel({
       </div>
       <div className="ops-panel-body" role="tabpanel" aria-label={TAB_LABELS[tab]}>
         <TabBody
+          region={region}
+          week={week}
           tab={tab}
           selectedCaseId={selectedCaseId}
           selectedCellId={selectedCellId}

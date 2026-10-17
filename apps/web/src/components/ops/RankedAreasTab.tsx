@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import { isNotFoundError } from "../../lib/api/client";
 import { rankingsQuery } from "../../lib/api/queries";
 import type { RankedCell } from "../../lib/contracts";
 import { rowSelection } from "../../lib/ops/cellSelection";
-import { OPS_REGION } from "../../lib/ops/region";
+import { componentBars } from "../../lib/ops/componentBars";
+import { regionById } from "../../lib/ops/region";
+import { ExplanationText } from "./ExplanationText";
 import { QueryState } from "./QueryState";
 
 const SCORE_STEP = 20;
@@ -25,6 +28,22 @@ function factsText(cell: RankedCell): string {
   const canal = `canal ${Math.round(cell.components.canal_dist_m)} m`;
   const rain = `rain deficit ${Math.round(cell.components.rain_deficit_pct * 100)}%`;
   return `${canal} · ${rain} · ${radarText(cell)}`;
+}
+
+function ComponentBars({ components }: { components: RankedCell["components"] }) {
+  return (
+    <ul className="component-bars" aria-label="Score components">
+      {componentBars(components).map((bar) => (
+        <li key={bar.key} title={`${bar.label}: ${bar.value}`}>
+          <span className="component-label">{bar.label}</span>
+          <span className="component-track" aria-hidden="true">
+            <span className="component-fill" style={{ width: `${Math.round(bar.share * 100)}%` }} />
+          </span>
+          <span className="component-value num">{bar.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function RankChange({ value }: { value: number | null }) {
@@ -61,9 +80,10 @@ function RankedRow({ cell, selected, onSelect }: RowProps) {
           {cell.cell_id}
         </button>
         <span className="ops-meta">{factsText(cell)}</span>
+        <ComponentBars components={cell.components} />
         {cell.explanation !== null && (
           <span className="ops-meta ops-explain">
-            <span className="chip chip-gemini">Gemini</span> {cell.explanation.text}
+            <ExplanationText explanation={cell.explanation} />
           </span>
         )}
       </td>
@@ -115,27 +135,48 @@ function RankedTable({ cells, week, selectedCellId, onSelect }: TableProps) {
 }
 
 type RankedAreasTabProps = {
+  region: string;
+  week: string | undefined;
   selectedCellId: string | undefined;
   onCellSelect: (cellId: string) => void;
 };
 
-export function RankedAreasTab({ selectedCellId, onCellSelect }: RankedAreasTabProps) {
-  const rankings = useQuery(rankingsQuery(OPS_REGION));
+export function RankedAreasTab({
+  region,
+  week,
+  selectedCellId,
+  onCellSelect,
+}: RankedAreasTabProps) {
+  const rankings = useQuery({
+    ...rankingsQuery(region, week),
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[1] === region ? previous : undefined,
+  });
+  if (isNotFoundError(rankings.error)) {
+    return (
+      <p className="ops-state">
+        No ranked areas for {regionById(region).label}
+        {week === undefined ? " yet." : ` in ${week}.`}
+      </p>
+    );
+  }
   return (
-    <QueryState
-      query={rankings}
-      label="ranked areas"
-      emptyText="No ranked areas for this week."
-      isEmpty={(data) => data.cells.length === 0}
-    >
-      {(data) => (
-        <RankedTable
-          cells={data.cells}
-          week={data.week}
-          selectedCellId={selectedCellId}
-          onSelect={onCellSelect}
-        />
-      )}
-    </QueryState>
+    <div aria-busy={rankings.isPlaceholderData}>
+      <QueryState
+        query={rankings}
+        label="ranked areas"
+        emptyText="No ranked areas for this week."
+        isEmpty={(data) => data.cells.length === 0}
+      >
+        {(data) => (
+          <RankedTable
+            cells={data.cells}
+            week={data.week}
+            selectedCellId={selectedCellId}
+            onSelect={onCellSelect}
+          />
+        )}
+      </QueryState>
+    </div>
   );
 }
