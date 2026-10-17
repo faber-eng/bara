@@ -10,6 +10,8 @@ STEP_IDS = [
     "pipelines-gate",
     "web-gate",
     "image",
+    "image-jobs",
+    "deploy-jobs",
     "deploy-api",
     "deploy-hosting",
     "verify",
@@ -45,6 +47,58 @@ def test_dependency_graph(steps):
     assert sorted(steps["deploy-api"]["waitFor"]) == ["image", "web-gate"]
     assert steps["deploy-hosting"]["waitFor"] == ["deploy-api"]
     assert steps["verify"]["waitFor"] == ["deploy-hosting"]
+
+
+def descendants(steps, root: str) -> set[str]:
+    found = {root}
+    changed = True
+    while changed:
+        changed = False
+        for step_id, step in steps.items():
+            if step_id not in found and found & set(step["waitFor"]):
+                found.add(step_id)
+                changed = True
+    return found
+
+
+def test_jobs_path_hangs_off_the_pipelines_gate_only(steps):
+    assert steps["image-jobs"]["waitFor"] == ["pipelines-gate"]
+    assert steps["deploy-jobs"]["waitFor"] == ["image-jobs"]
+
+
+def test_nothing_waits_for_the_jobs_path(steps):
+    jobs_path = {"image-jobs", "deploy-jobs"}
+    for step_id, step in steps.items():
+        if step_id not in jobs_path:
+            assert not jobs_path & set(step["waitFor"]), step_id
+    assert descendants(steps, "image-jobs") == jobs_path
+
+
+def test_a_failing_jobs_path_does_not_fail_the_build(steps):
+    assert steps["image-jobs"]["allowFailure"] is True
+    assert steps["deploy-jobs"]["allowFailure"] is True
+    for step_id in ("deploy-api", "deploy-hosting", "verify"):
+        assert "allowFailure" not in steps[step_id]
+
+
+def test_image_jobs_builds_from_the_pipelines_dockerfile_and_pushes_the_sha_tag(steps):
+    text = command_text(steps["image-jobs"])
+    assert "-f services/pipelines/Dockerfile" in text
+    assert "${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA" in text
+    assert "docker push" in text
+
+
+def test_deploy_jobs_runs_the_weekly_job_as_bara_jobs_on_the_new_image(steps):
+    text = command_text(steps["deploy-jobs"])
+    assert "gcloud run jobs deploy bara-drying" in text
+    assert (
+        "--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA"
+        in text
+    )
+    assert "--service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com" in text
+    assert "--args=jobs.weekly_rankings,--region,riau" in text
+    assert "--max-retries=0" in text
+    assert "--allow-unauthenticated" not in text
 
 
 def test_every_wait_for_names_a_real_step(steps):
