@@ -1,13 +1,18 @@
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import get_args
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from contracts import (
     Bulletin,
     CaseDetail,
+    CaseStatus,
+    CaseSummary,
     CellFacts,
+    ClockState,
     Escalation,
     Health,
     PublicSummary,
@@ -24,6 +29,11 @@ FIXTURE_MODELS: dict[str, type[BaseModel]] = {
     "public_summary.json": PublicSummary,
     "bulletin.json": Bulletin,
     "health.json": Health,
+    "clock.json": ClockState,
+}
+
+LIST_FIXTURE_MODELS: dict[str, type[BaseModel]] = {
+    "cases.json": CaseSummary,
 }
 
 
@@ -44,7 +54,7 @@ def renamed(document: dict, key: str) -> dict:
 def test_every_fixture_file_has_a_contract():
     on_disk = {path.name for path in FIXTURES_DIR.glob("*.json")}
 
-    assert on_disk == set(FIXTURE_MODELS)
+    assert on_disk == set(FIXTURE_MODELS) | set(LIST_FIXTURE_MODELS)
 
 
 @pytest.mark.parametrize("name", FIXTURE_MODELS)
@@ -64,3 +74,33 @@ def test_renaming_a_nested_task_field_fails():
 
     with pytest.raises(ValidationError):
         CaseDetail.model_validate(case_detail)
+
+
+@pytest.mark.parametrize("name", LIST_FIXTURE_MODELS)
+def test_list_fixture_validates_against_its_contract(name):
+    TypeAdapter(list[LIST_FIXTURE_MODELS[name]]).validate_python(load_fixture(name))
+
+
+def test_renaming_a_case_summary_key_fails():
+    cases = load_fixture("cases.json")
+    cases[0] = renamed(cases[0], "task_status")
+
+    with pytest.raises(ValidationError):
+        TypeAdapter(list[CaseSummary]).validate_python(cases)
+
+
+def test_cases_fixture_covers_every_case_status():
+    statuses = {entry["case"]["status"] for entry in load_fixture("cases.json")}
+
+    assert statuses == set(get_args(CaseStatus))
+
+
+def test_cases_fixture_deadlines_are_relative_to_the_clock_fixture():
+    now = datetime.fromisoformat(load_fixture("clock.json")["now"])
+    cases = TypeAdapter(list[CaseSummary]).validate_python(load_fixture("cases.json"))
+    gaps = [entry.next_deadline_at - now for entry in cases if entry.next_deadline_at]
+
+    assert timedelta(days=3, hours=9) in gaps
+    assert any(timedelta(0) < gap < timedelta(hours=1) for gap in gaps)
+    assert timedelta(hours=-2) in gaps
+    assert any(entry.next_deadline_at is None for entry in cases)

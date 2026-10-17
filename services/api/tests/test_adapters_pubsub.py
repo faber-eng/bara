@@ -33,6 +33,7 @@ def make_event():
         id="evt-1",
         occurred_at=datetime(2026, 10, 17, 12, 0, tzinfo=UTC),
         region="riau",
+        example=False,
         payload=CaseEscalated(case_id="c1", escalation_id="e1"),
     )
 
@@ -81,6 +82,7 @@ def test_publish_accepts_each_event_type_on_its_own_topic():
         id="evt-2",
         occurred_at=datetime(2026, 10, 17, 12, 0, tzinfo=UTC),
         region="riau",
+        example=False,
         payload=TaskOverdue(task_id="t1", case_id="c1", attempt=1),
     )
 
