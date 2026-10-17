@@ -1,14 +1,23 @@
+from datetime import UTC, date, datetime
+
 import ee
 import google.auth
 
-from ee_lib import grid
+from ee_lib import drying, grid
 from ee_lib.config import DataConfig, RegionConfig
+from ee_lib.weeks import DryingWindow
 
 EE_SCOPES = (
     "https://www.googleapis.com/auth/earthengine",
     "https://www.googleapis.com/auth/cloud-platform",
 )
 PAGE_SIZE = 1000
+MEASURE_SCALE_M = 100
+MEASURE_TILE_SCALE = 4
+
+
+class EarthEngineError(Exception):
+    pass
 
 
 def initialize(project: str) -> None:
@@ -36,3 +45,28 @@ class EarthEngineSource:
 
     def peat_cells(self, region: RegionConfig, aoi: dict) -> list[dict]:
         return compute_features(grid.peat_cells(aoi, region, self._data))
+
+    def chirps_last_day(self, before: date) -> date:
+        millis = drying.chirps_last_millis(self._data, before).getInfo()
+        if millis is None:
+            raise EarthEngineError(
+                f"no CHIRPS day in the {drying.CHIRPS_LOOKBACK_DAYS} days before {before}"
+            )
+        return datetime.fromtimestamp(millis / 1000, UTC).date()
+
+    def drying_inputs(
+        self,
+        region: RegionConfig,
+        aoi: dict,
+        cells_table: str,
+        week_start: date,
+        window: DryingWindow,
+    ) -> list[dict]:
+        image = drying.inputs_image(self._data, region, aoi, week_start, window)
+        measured = image.reduceRegions(
+            collection=drying.cells_collection(cells_table, region),
+            reducer=ee.Reducer.mean(),
+            scale=MEASURE_SCALE_M,
+            tileScale=MEASURE_TILE_SCALE,
+        )
+        return [feature["properties"] for feature in compute_features(measured)]
