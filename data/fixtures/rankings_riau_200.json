@@ -1,0 +1,5256 @@
+{
+  "region": "riau",
+  "week": "2026-W30",
+  "cells": [
+    {
+      "cell_id": "riau-0101",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4393,
+        "lon": 102.0866
+      },
+      "components": {
+        "s1_anom_db": -2.9,
+        "rain_30d_mm": 119.7,
+        "rain_deficit_pct": 0.94,
+        "canal_dist_m": 2606.1,
+        "peat_class": 2
+      },
+      "drying_score": 97.0,
+      "rank": 1,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0102",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.568,
+        "lon": 102.4707
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 131.9,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 2631.8,
+        "peat_class": 2
+      },
+      "drying_score": 96.9,
+      "rank": 2,
+      "rank_change": 1,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 2 because rain is 95% below normal and a canal runs 2631 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.95,
+          "canal_dist_m": 2631.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0103",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5922,
+        "lon": 102.4229
+      },
+      "components": {
+        "s1_anom_db": -3.1,
+        "rain_30d_mm": 70.1,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 1221.6,
+        "peat_class": 1
+      },
+      "drying_score": 96.8,
+      "rank": 3,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0104",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3813,
+        "lon": 101.8891
+      },
+      "components": {
+        "s1_anom_db": -3.1,
+        "rain_30d_mm": 126.4,
+        "rain_deficit_pct": 0.88,
+        "canal_dist_m": 1102.1,
+        "peat_class": 2
+      },
+      "drying_score": 96.5,
+      "rank": 4,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0105",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3592,
+        "lon": 101.8507
+      },
+      "components": {
+        "s1_anom_db": 0.6,
+        "rain_30d_mm": 56.2,
+        "rain_deficit_pct": 0.92,
+        "canal_dist_m": 2270.7,
+        "peat_class": 2
+      },
+      "drying_score": 96.4,
+      "rank": 5,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0106",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2829,
+        "lon": 102.015
+      },
+      "components": {
+        "s1_anom_db": -1.0,
+        "rain_30d_mm": 121.0,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 166.7,
+        "peat_class": 1
+      },
+      "drying_score": 96.3,
+      "rank": 6,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0107",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4523,
+        "lon": 101.8214
+      },
+      "components": {
+        "s1_anom_db": -0.0,
+        "rain_30d_mm": 101.6,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 1944.9,
+        "peat_class": 2
+      },
+      "drying_score": 96.2,
+      "rank": 7,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0108",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4556,
+        "lon": 102.1728
+      },
+      "components": {
+        "s1_anom_db": -0.2,
+        "rain_30d_mm": 31.9,
+        "rain_deficit_pct": 0.93,
+        "canal_dist_m": 1272.5,
+        "peat_class": 2
+      },
+      "drying_score": 96.1,
+      "rank": 8,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 8 because rain is 93% below normal and a canal runs 1272 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.93,
+          "canal_dist_m": 1272.5
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0109",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.207,
+        "lon": 102.0219
+      },
+      "components": {
+        "s1_anom_db": -2.7,
+        "rain_30d_mm": 120.8,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 2664.9,
+        "peat_class": 1
+      },
+      "drying_score": 96.0,
+      "rank": 9,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0110",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7796,
+        "lon": 101.8702
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 83.7,
+        "rain_deficit_pct": 0.94,
+        "canal_dist_m": 68.1,
+        "peat_class": 2
+      },
+      "drying_score": 95.6,
+      "rank": 10,
+      "rank_change": 2,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 10 because rain is 94% below normal and a canal runs 68 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.94,
+          "canal_dist_m": 68.1
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0111",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2724,
+        "lon": 101.9971
+      },
+      "components": {
+        "s1_anom_db": -0.7,
+        "rain_30d_mm": 53.6,
+        "rain_deficit_pct": 0.92,
+        "canal_dist_m": 362.2,
+        "peat_class": 2
+      },
+      "drying_score": 95.5,
+      "rank": 11,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 11 because rain is 92% below normal and a canal runs 362 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.92,
+          "canal_dist_m": 362.2
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0112",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3595,
+        "lon": 102.2059
+      },
+      "components": {
+        "s1_anom_db": -0.1,
+        "rain_30d_mm": 27.8,
+        "rain_deficit_pct": 0.9,
+        "canal_dist_m": 1358.2,
+        "peat_class": 1
+      },
+      "drying_score": 95.3,
+      "rank": 12,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0113",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3058,
+        "lon": 101.8915
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 134.9,
+        "rain_deficit_pct": 0.82,
+        "canal_dist_m": 2206.1,
+        "peat_class": 2
+      },
+      "drying_score": 95.2,
+      "rank": 13,
+      "rank_change": -2,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 13 because rain is 82% below normal and a canal runs 2206 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.82,
+          "canal_dist_m": 2206.1
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0114",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5643,
+        "lon": 102.1255
+      },
+      "components": {
+        "s1_anom_db": -2.6,
+        "rain_30d_mm": 123.1,
+        "rain_deficit_pct": 0.87,
+        "canal_dist_m": 1206.7,
+        "peat_class": 1
+      },
+      "drying_score": 95.1,
+      "rank": 14,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0115",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4571,
+        "lon": 102.4615
+      },
+      "components": {
+        "s1_anom_db": -0.2,
+        "rain_30d_mm": 127.0,
+        "rain_deficit_pct": 0.93,
+        "canal_dist_m": 2791.2,
+        "peat_class": 1
+      },
+      "drying_score": 94.9,
+      "rank": 15,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 15 because rain is 93% below normal and a canal runs 2791 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.93,
+          "canal_dist_m": 2791.2
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0116",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7815,
+        "lon": 102.4304
+      },
+      "components": {
+        "s1_anom_db": -2.3,
+        "rain_30d_mm": 50.4,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 1668.8,
+        "peat_class": 2
+      },
+      "drying_score": 94.8,
+      "rank": 16,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0117",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5789,
+        "lon": 102.3264
+      },
+      "components": {
+        "s1_anom_db": -2.9,
+        "rain_30d_mm": 87.3,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 1449.2,
+        "peat_class": 2
+      },
+      "drying_score": 94.5,
+      "rank": 17,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0118",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7794,
+        "lon": 101.8159
+      },
+      "components": {
+        "s1_anom_db": 0.2,
+        "rain_30d_mm": 84.6,
+        "rain_deficit_pct": 0.94,
+        "canal_dist_m": 853.6,
+        "peat_class": 1
+      },
+      "drying_score": 94.4,
+      "rank": 18,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0119",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7958,
+        "lon": 101.9531
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 129.2,
+        "rain_deficit_pct": 0.91,
+        "canal_dist_m": 2647.3,
+        "peat_class": 1
+      },
+      "drying_score": 94.3,
+      "rank": 19,
+      "rank_change": -2,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0120",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4903,
+        "lon": 102.4576
+      },
+      "components": {
+        "s1_anom_db": -2.8,
+        "rain_30d_mm": 96.3,
+        "rain_deficit_pct": 0.84,
+        "canal_dist_m": 81.2,
+        "peat_class": 1
+      },
+      "drying_score": 94.2,
+      "rank": 20,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 20 because rain is 84% below normal and a canal runs 81 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.84,
+          "canal_dist_m": 81.2
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0121",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3382,
+        "lon": 102.3324
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 72.6,
+        "rain_deficit_pct": 0.94,
+        "canal_dist_m": 1143.2,
+        "peat_class": 1
+      },
+      "drying_score": 94.1,
+      "rank": 21,
+      "rank_change": 1,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0122",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2689,
+        "lon": 102.0542
+      },
+      "components": {
+        "s1_anom_db": -1.9,
+        "rain_30d_mm": 32.4,
+        "rain_deficit_pct": 0.89,
+        "canal_dist_m": 671.3,
+        "peat_class": 1
+      },
+      "drying_score": 93.9,
+      "rank": 22,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0123",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7528,
+        "lon": 102.3214
+      },
+      "components": {
+        "s1_anom_db": 0.3,
+        "rain_30d_mm": 137.4,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 1185.3,
+        "peat_class": 2
+      },
+      "drying_score": 93.8,
+      "rank": 23,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0124",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.212,
+        "lon": 102.3541
+      },
+      "components": {
+        "s1_anom_db": -0.4,
+        "rain_30d_mm": 154.7,
+        "rain_deficit_pct": 0.79,
+        "canal_dist_m": 2421.5,
+        "peat_class": 1
+      },
+      "drying_score": 93.7,
+      "rank": 24,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0125",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2009,
+        "lon": 102.2942
+      },
+      "components": {
+        "s1_anom_db": -1.2,
+        "rain_30d_mm": 62.9,
+        "rain_deficit_pct": 0.8,
+        "canal_dist_m": 2799.5,
+        "peat_class": 2
+      },
+      "drying_score": 93.6,
+      "rank": 25,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 25 because rain is 80% below normal and a canal runs 2799 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.8,
+          "canal_dist_m": 2799.5
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0126",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7634,
+        "lon": 101.8365
+      },
+      "components": {
+        "s1_anom_db": -0.0,
+        "rain_30d_mm": 35.7,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 2041.5,
+        "peat_class": 2
+      },
+      "drying_score": 93.5,
+      "rank": 26,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0127",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3148,
+        "lon": 102.2806
+      },
+      "components": {
+        "s1_anom_db": -1.3,
+        "rain_30d_mm": 50.4,
+        "rain_deficit_pct": 0.81,
+        "canal_dist_m": 951.7,
+        "peat_class": 1
+      },
+      "drying_score": 93.3,
+      "rank": 27,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 27 because rain is 81% below normal and a canal runs 951 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.81,
+          "canal_dist_m": 951.7
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0128",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7478,
+        "lon": 101.918
+      },
+      "components": {
+        "s1_anom_db": -1.1,
+        "rain_30d_mm": 154.3,
+        "rain_deficit_pct": 0.95,
+        "canal_dist_m": 2313.2,
+        "peat_class": 2
+      },
+      "drying_score": 92.9,
+      "rank": 28,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0129",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5405,
+        "lon": 102.4559
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 60.1,
+        "rain_deficit_pct": 0.88,
+        "canal_dist_m": 2424.3,
+        "peat_class": 1
+      },
+      "drying_score": 92.8,
+      "rank": 29,
+      "rank_change": -1,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0130",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6429,
+        "lon": 101.8171
+      },
+      "components": {
+        "s1_anom_db": -2.4,
+        "rain_30d_mm": 43.8,
+        "rain_deficit_pct": 0.84,
+        "canal_dist_m": 285.1,
+        "peat_class": 2
+      },
+      "drying_score": 92.6,
+      "rank": 30,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0131",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7427,
+        "lon": 102.3777
+      },
+      "components": {
+        "s1_anom_db": 0.6,
+        "rain_30d_mm": 157.0,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 2343.0,
+        "peat_class": 2
+      },
+      "drying_score": 92.5,
+      "rank": 31,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0132",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6573,
+        "lon": 102.2166
+      },
+      "components": {
+        "s1_anom_db": 0.6,
+        "rain_30d_mm": 97.9,
+        "rain_deficit_pct": 0.8,
+        "canal_dist_m": 2694.9,
+        "peat_class": 2
+      },
+      "drying_score": 92.3,
+      "rank": 32,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0133",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5404,
+        "lon": 101.913
+      },
+      "components": {
+        "s1_anom_db": -1.5,
+        "rain_30d_mm": 31.3,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 752.5,
+        "peat_class": 1
+      },
+      "drying_score": 92.2,
+      "rank": 33,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0134",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4396,
+        "lon": 102.081
+      },
+      "components": {
+        "s1_anom_db": 0.3,
+        "rain_30d_mm": 119.1,
+        "rain_deficit_pct": 0.79,
+        "canal_dist_m": 1862.9,
+        "peat_class": 1
+      },
+      "drying_score": 91.8,
+      "rank": 34,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0135",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.667,
+        "lon": 102.0299
+      },
+      "components": {
+        "s1_anom_db": 0.2,
+        "rain_30d_mm": 46.5,
+        "rain_deficit_pct": 0.82,
+        "canal_dist_m": 2412.6,
+        "peat_class": 2
+      },
+      "drying_score": 91.7,
+      "rank": 35,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0136",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3804,
+        "lon": 101.9459
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 76.9,
+        "rain_deficit_pct": 0.85,
+        "canal_dist_m": 2226.6,
+        "peat_class": 2
+      },
+      "drying_score": 91.6,
+      "rank": 36,
+      "rank_change": -2,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 36 because rain is 85% below normal and a canal runs 2226 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.85,
+          "canal_dist_m": 2226.6
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0137",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5841,
+        "lon": 102.0953
+      },
+      "components": {
+        "s1_anom_db": -0.3,
+        "rain_30d_mm": 155.3,
+        "rain_deficit_pct": 0.79,
+        "canal_dist_m": 1632.9,
+        "peat_class": 2
+      },
+      "drying_score": 91.4,
+      "rank": 37,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0138",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3021,
+        "lon": 102.3607
+      },
+      "components": {
+        "s1_anom_db": -1.0,
+        "rain_30d_mm": 33.6,
+        "rain_deficit_pct": 0.8,
+        "canal_dist_m": 2259.4,
+        "peat_class": 1
+      },
+      "drying_score": 90.9,
+      "rank": 38,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0139",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2412,
+        "lon": 102.0032
+      },
+      "components": {
+        "s1_anom_db": -2.5,
+        "rain_30d_mm": 119.1,
+        "rain_deficit_pct": 0.86,
+        "canal_dist_m": 2461.0,
+        "peat_class": 2
+      },
+      "drying_score": 90.7,
+      "rank": 39,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0140",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3145,
+        "lon": 102.0177
+      },
+      "components": {
+        "s1_anom_db": -0.6,
+        "rain_30d_mm": 34.5,
+        "rain_deficit_pct": 0.88,
+        "canal_dist_m": 2102.0,
+        "peat_class": 2
+      },
+      "drying_score": 90.3,
+      "rank": 40,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0141",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4326,
+        "lon": 102.2134
+      },
+      "components": {
+        "s1_anom_db": -2.7,
+        "rain_30d_mm": 128.1,
+        "rain_deficit_pct": 0.87,
+        "canal_dist_m": 836.1,
+        "peat_class": 2
+      },
+      "drying_score": 90.2,
+      "rank": 41,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0142",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.772,
+        "lon": 102.0929
+      },
+      "components": {
+        "s1_anom_db": -2.9,
+        "rain_30d_mm": 134.7,
+        "rain_deficit_pct": 0.92,
+        "canal_dist_m": 710.9,
+        "peat_class": 2
+      },
+      "drying_score": 90.1,
+      "rank": 42,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0143",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.333,
+        "lon": 102.3647
+      },
+      "components": {
+        "s1_anom_db": -2.6,
+        "rain_30d_mm": 150.0,
+        "rain_deficit_pct": 0.9,
+        "canal_dist_m": 2769.9,
+        "peat_class": 1
+      },
+      "drying_score": 90.0,
+      "rank": 43,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0144",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6156,
+        "lon": 102.0243
+      },
+      "components": {
+        "s1_anom_db": -0.8,
+        "rain_30d_mm": 59.4,
+        "rain_deficit_pct": 0.92,
+        "canal_dist_m": 848.7,
+        "peat_class": 2
+      },
+      "drying_score": 89.9,
+      "rank": 44,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 44 because rain is 92% below normal and a canal runs 848 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.92,
+          "canal_dist_m": 848.7
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0145",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2156,
+        "lon": 102.0397
+      },
+      "components": {
+        "s1_anom_db": 0.0,
+        "rain_30d_mm": 135.7,
+        "rain_deficit_pct": 0.89,
+        "canal_dist_m": 1996.7,
+        "peat_class": 2
+      },
+      "drying_score": 89.8,
+      "rank": 45,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 45 because rain is 89% below normal and a canal runs 1996 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.89,
+          "canal_dist_m": 1996.7
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0146",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5986,
+        "lon": 102.3877
+      },
+      "components": {
+        "s1_anom_db": -3.0,
+        "rain_30d_mm": 49.2,
+        "rain_deficit_pct": 0.88,
+        "canal_dist_m": 358.5,
+        "peat_class": 1
+      },
+      "drying_score": 89.7,
+      "rank": 46,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0147",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5088,
+        "lon": 102.0244
+      },
+      "components": {
+        "s1_anom_db": -0.6,
+        "rain_30d_mm": 90.3,
+        "rain_deficit_pct": 0.83,
+        "canal_dist_m": 1621.1,
+        "peat_class": 1
+      },
+      "drying_score": 89.6,
+      "rank": 47,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0148",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3316,
+        "lon": 102.051
+      },
+      "components": {
+        "s1_anom_db": -1.7,
+        "rain_30d_mm": 59.3,
+        "rain_deficit_pct": 0.92,
+        "canal_dist_m": 959.3,
+        "peat_class": 2
+      },
+      "drying_score": 89.5,
+      "rank": 48,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 48 because rain is 92% below normal and a canal runs 959 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.92,
+          "canal_dist_m": 959.3
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0149",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5185,
+        "lon": 102.1719
+      },
+      "components": {
+        "s1_anom_db": -2.8,
+        "rain_30d_mm": 111.9,
+        "rain_deficit_pct": 0.85,
+        "canal_dist_m": 2049.4,
+        "peat_class": 2
+      },
+      "drying_score": 89.4,
+      "rank": 49,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0150",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.759,
+        "lon": 102.4365
+      },
+      "components": {
+        "s1_anom_db": -0.8,
+        "rain_30d_mm": 29.5,
+        "rain_deficit_pct": 0.84,
+        "canal_dist_m": 1082.4,
+        "peat_class": 1
+      },
+      "drying_score": 89.3,
+      "rank": 50,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0151",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7734,
+        "lon": 102.0825
+      },
+      "components": {
+        "s1_anom_db": -3.1,
+        "rain_30d_mm": 52.9,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 757.8,
+        "peat_class": 2
+      },
+      "drying_score": 89.1,
+      "rank": 51,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0152",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2604,
+        "lon": 102.384
+      },
+      "components": {
+        "s1_anom_db": -1.2,
+        "rain_30d_mm": 108.6,
+        "rain_deficit_pct": 0.87,
+        "canal_dist_m": 109.4,
+        "peat_class": 1
+      },
+      "drying_score": 88.9,
+      "rank": 52,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0153",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4207,
+        "lon": 102.0441
+      },
+      "components": {
+        "s1_anom_db": -0.7,
+        "rain_30d_mm": 60.1,
+        "rain_deficit_pct": 0.83,
+        "canal_dist_m": 996.9,
+        "peat_class": 1
+      },
+      "drying_score": 88.8,
+      "rank": 53,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0154",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6755,
+        "lon": 102.465
+      },
+      "components": {
+        "s1_anom_db": -3.0,
+        "rain_30d_mm": 121.0,
+        "rain_deficit_pct": 0.88,
+        "canal_dist_m": 2097.0,
+        "peat_class": 2
+      },
+      "drying_score": 88.5,
+      "rank": 54,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0155",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3251,
+        "lon": 102.3545
+      },
+      "components": {
+        "s1_anom_db": -1.8,
+        "rain_30d_mm": 131.7,
+        "rain_deficit_pct": 0.92,
+        "canal_dist_m": 727.3,
+        "peat_class": 2
+      },
+      "drying_score": 88.2,
+      "rank": 55,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0156",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3828,
+        "lon": 101.9025
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 43.8,
+        "rain_deficit_pct": 0.76,
+        "canal_dist_m": 2367.9,
+        "peat_class": 1
+      },
+      "drying_score": 88.0,
+      "rank": 56,
+      "rank_change": -4,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0157",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2549,
+        "lon": 102.3823
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 58.2,
+        "rain_deficit_pct": 0.73,
+        "canal_dist_m": 2238.9,
+        "peat_class": 2
+      },
+      "drying_score": 87.8,
+      "rank": 57,
+      "rank_change": 3,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0158",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7886,
+        "lon": 102.2116
+      },
+      "components": {
+        "s1_anom_db": -2.3,
+        "rain_30d_mm": 117.6,
+        "rain_deficit_pct": 0.73,
+        "canal_dist_m": 687.4,
+        "peat_class": 2
+      },
+      "drying_score": 87.6,
+      "rank": 58,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 58 because rain is 73% below normal and a canal runs 687 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.73,
+          "canal_dist_m": 687.4
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0159",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3423,
+        "lon": 102.3584
+      },
+      "components": {
+        "s1_anom_db": -3.2,
+        "rain_30d_mm": 72.6,
+        "rain_deficit_pct": 0.74,
+        "canal_dist_m": 200.6,
+        "peat_class": 1
+      },
+      "drying_score": 87.5,
+      "rank": 59,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0160",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6712,
+        "lon": 101.9974
+      },
+      "components": {
+        "s1_anom_db": -1.5,
+        "rain_30d_mm": 55.6,
+        "rain_deficit_pct": 0.92,
+        "canal_dist_m": 2642.9,
+        "peat_class": 1
+      },
+      "drying_score": 87.4,
+      "rank": 60,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0161",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5011,
+        "lon": 102.3735
+      },
+      "components": {
+        "s1_anom_db": -1.4,
+        "rain_30d_mm": 53.8,
+        "rain_deficit_pct": 0.81,
+        "canal_dist_m": 2387.2,
+        "peat_class": 2
+      },
+      "drying_score": 87.2,
+      "rank": 61,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 61 because rain is 81% below normal and a canal runs 2387 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.81,
+          "canal_dist_m": 2387.2
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0162",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4201,
+        "lon": 102.4103
+      },
+      "components": {
+        "s1_anom_db": -1.6,
+        "rain_30d_mm": 153.9,
+        "rain_deficit_pct": 0.88,
+        "canal_dist_m": 2430.0,
+        "peat_class": 1
+      },
+      "drying_score": 87.0,
+      "rank": 62,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 62 because rain is 88% below normal and a canal runs 2430 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.88,
+          "canal_dist_m": 2430.0
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0163",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4696,
+        "lon": 101.8496
+      },
+      "components": {
+        "s1_anom_db": 0.4,
+        "rain_30d_mm": 125.8,
+        "rain_deficit_pct": 0.85,
+        "canal_dist_m": 934.4,
+        "peat_class": 2
+      },
+      "drying_score": 86.8,
+      "rank": 63,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 63 because rain is 85% below normal and a canal runs 934 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.85,
+          "canal_dist_m": 934.4
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0164",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4008,
+        "lon": 102.0041
+      },
+      "components": {
+        "s1_anom_db": -1.1,
+        "rain_30d_mm": 121.6,
+        "rain_deficit_pct": 0.86,
+        "canal_dist_m": 666.9,
+        "peat_class": 1
+      },
+      "drying_score": 86.7,
+      "rank": 64,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0165",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6557,
+        "lon": 102.3795
+      },
+      "components": {
+        "s1_anom_db": -2.5,
+        "rain_30d_mm": 129.8,
+        "rain_deficit_pct": 0.9,
+        "canal_dist_m": 1205.1,
+        "peat_class": 2
+      },
+      "drying_score": 86.1,
+      "rank": 65,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0166",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6733,
+        "lon": 102.2976
+      },
+      "components": {
+        "s1_anom_db": -3.3,
+        "rain_30d_mm": 49.2,
+        "rain_deficit_pct": 0.72,
+        "canal_dist_m": 1494.8,
+        "peat_class": 1
+      },
+      "drying_score": 85.9,
+      "rank": 66,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0167",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3478,
+        "lon": 101.9401
+      },
+      "components": {
+        "s1_anom_db": 0.0,
+        "rain_30d_mm": 32.5,
+        "rain_deficit_pct": 0.73,
+        "canal_dist_m": 1219.3,
+        "peat_class": 2
+      },
+      "drying_score": 85.8,
+      "rank": 67,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 67 because rain is 73% below normal and a canal runs 1219 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.73,
+          "canal_dist_m": 1219.3
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0168",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7538,
+        "lon": 102.3055
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 154.0,
+        "rain_deficit_pct": 0.71,
+        "canal_dist_m": 247.2,
+        "peat_class": 1
+      },
+      "drying_score": 85.7,
+      "rank": 68,
+      "rank_change": 0,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0169",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7219,
+        "lon": 102.0715
+      },
+      "components": {
+        "s1_anom_db": -0.5,
+        "rain_30d_mm": 44.2,
+        "rain_deficit_pct": 0.86,
+        "canal_dist_m": 907.2,
+        "peat_class": 1
+      },
+      "drying_score": 85.1,
+      "rank": 69,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0170",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6363,
+        "lon": 102.0763
+      },
+      "components": {
+        "s1_anom_db": -1.7,
+        "rain_30d_mm": 76.2,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 1221.2,
+        "peat_class": 2
+      },
+      "drying_score": 84.7,
+      "rank": 70,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 70 because rain is 78% below normal and a canal runs 1221 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.78,
+          "canal_dist_m": 1221.2
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0171",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2211,
+        "lon": 102.352
+      },
+      "components": {
+        "s1_anom_db": -3.2,
+        "rain_30d_mm": 78.3,
+        "rain_deficit_pct": 0.7,
+        "canal_dist_m": 694.4,
+        "peat_class": 1
+      },
+      "drying_score": 84.3,
+      "rank": 71,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0172",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5878,
+        "lon": 101.9797
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 59.5,
+        "rain_deficit_pct": 0.8,
+        "canal_dist_m": 2013.0,
+        "peat_class": 1
+      },
+      "drying_score": 84.0,
+      "rank": 72,
+      "rank_change": null,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0173",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5251,
+        "lon": 102.4897
+      },
+      "components": {
+        "s1_anom_db": -1.0,
+        "rain_30d_mm": 21.4,
+        "rain_deficit_pct": 0.88,
+        "canal_dist_m": 533.9,
+        "peat_class": 1
+      },
+      "drying_score": 83.5,
+      "rank": 73,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 73 because rain is 88% below normal and a canal runs 533 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.88,
+          "canal_dist_m": 533.9
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0174",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5933,
+        "lon": 102.0458
+      },
+      "components": {
+        "s1_anom_db": -0.3,
+        "rain_30d_mm": 123.3,
+        "rain_deficit_pct": 0.86,
+        "canal_dist_m": 1985.7,
+        "peat_class": 1
+      },
+      "drying_score": 83.2,
+      "rank": 74,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 74 because rain is 86% below normal and a canal runs 1985 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.86,
+          "canal_dist_m": 1985.7
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0175",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.677,
+        "lon": 102.1637
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 109.8,
+        "rain_deficit_pct": 0.81,
+        "canal_dist_m": 2617.6,
+        "peat_class": 2
+      },
+      "drying_score": 82.9,
+      "rank": 75,
+      "rank_change": 2,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0176",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7944,
+        "lon": 102.1633
+      },
+      "components": {
+        "s1_anom_db": -2.1,
+        "rain_30d_mm": 113.8,
+        "rain_deficit_pct": 0.83,
+        "canal_dist_m": 1388.9,
+        "peat_class": 1
+      },
+      "drying_score": 82.2,
+      "rank": 76,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0177",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3415,
+        "lon": 101.8803
+      },
+      "components": {
+        "s1_anom_db": 0.3,
+        "rain_30d_mm": 112.3,
+        "rain_deficit_pct": 0.71,
+        "canal_dist_m": 2290.1,
+        "peat_class": 1
+      },
+      "drying_score": 82.1,
+      "rank": 77,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0178",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4098,
+        "lon": 102.3752
+      },
+      "components": {
+        "s1_anom_db": -2.7,
+        "rain_30d_mm": 147.9,
+        "rain_deficit_pct": 0.84,
+        "canal_dist_m": 2193.7,
+        "peat_class": 2
+      },
+      "drying_score": 81.8,
+      "rank": 78,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 78 because rain is 84% below normal and a canal runs 2193 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.84,
+          "canal_dist_m": 2193.7
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0179",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7194,
+        "lon": 101.9138
+      },
+      "components": {
+        "s1_anom_db": -0.8,
+        "rain_30d_mm": 126.0,
+        "rain_deficit_pct": 0.81,
+        "canal_dist_m": 369.5,
+        "peat_class": 1
+      },
+      "drying_score": 81.6,
+      "rank": 79,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 79 because rain is 81% below normal and a canal runs 369 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.81,
+          "canal_dist_m": 369.5
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0180",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5764,
+        "lon": 101.8456
+      },
+      "components": {
+        "s1_anom_db": -1.8,
+        "rain_30d_mm": 115.0,
+        "rain_deficit_pct": 0.8,
+        "canal_dist_m": 2502.4,
+        "peat_class": 2
+      },
+      "drying_score": 81.5,
+      "rank": 80,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 80 because rain is 80% below normal and a canal runs 2502 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.8,
+          "canal_dist_m": 2502.4
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0181",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7873,
+        "lon": 101.855
+      },
+      "components": {
+        "s1_anom_db": -1.3,
+        "rain_30d_mm": 96.1,
+        "rain_deficit_pct": 0.74,
+        "canal_dist_m": 1567.6,
+        "peat_class": 2
+      },
+      "drying_score": 81.4,
+      "rank": 81,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0182",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2144,
+        "lon": 102.0052
+      },
+      "components": {
+        "s1_anom_db": -1.9,
+        "rain_30d_mm": 107.5,
+        "rain_deficit_pct": 0.81,
+        "canal_dist_m": 1523.5,
+        "peat_class": 1
+      },
+      "drying_score": 81.3,
+      "rank": 82,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0183",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.436,
+        "lon": 102.3062
+      },
+      "components": {
+        "s1_anom_db": -3.1,
+        "rain_30d_mm": 94.6,
+        "rain_deficit_pct": 0.67,
+        "canal_dist_m": 1083.7,
+        "peat_class": 1
+      },
+      "drying_score": 81.1,
+      "rank": 83,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0184",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5632,
+        "lon": 102.3061
+      },
+      "components": {
+        "s1_anom_db": -0.9,
+        "rain_30d_mm": 25.0,
+        "rain_deficit_pct": 0.75,
+        "canal_dist_m": 1747.5,
+        "peat_class": 2
+      },
+      "drying_score": 81.0,
+      "rank": 84,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0185",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4377,
+        "lon": 102.2723
+      },
+      "components": {
+        "s1_anom_db": -0.9,
+        "rain_30d_mm": 75.4,
+        "rain_deficit_pct": 0.8,
+        "canal_dist_m": 394.4,
+        "peat_class": 2
+      },
+      "drying_score": 80.8,
+      "rank": 85,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0186",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.294,
+        "lon": 102.0698
+      },
+      "components": {
+        "s1_anom_db": -0.2,
+        "rain_30d_mm": 122.2,
+        "rain_deficit_pct": 0.72,
+        "canal_dist_m": 527.3,
+        "peat_class": 2
+      },
+      "drying_score": 80.4,
+      "rank": 86,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0187",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5198,
+        "lon": 102.2591
+      },
+      "components": {
+        "s1_anom_db": -1.8,
+        "rain_30d_mm": 79.0,
+        "rain_deficit_pct": 0.7,
+        "canal_dist_m": 2602.8,
+        "peat_class": 1
+      },
+      "drying_score": 80.0,
+      "rank": 87,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0188",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6304,
+        "lon": 101.8358
+      },
+      "components": {
+        "s1_anom_db": -0.0,
+        "rain_30d_mm": 113.8,
+        "rain_deficit_pct": 0.83,
+        "canal_dist_m": 1748.1,
+        "peat_class": 2
+      },
+      "drying_score": 79.5,
+      "rank": 88,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 88 because rain is 83% below normal and a canal runs 1748 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.83,
+          "canal_dist_m": 1748.1
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0189",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5113,
+        "lon": 102.0454
+      },
+      "components": {
+        "s1_anom_db": -1.8,
+        "rain_30d_mm": 91.0,
+        "rain_deficit_pct": 0.72,
+        "canal_dist_m": 1192.7,
+        "peat_class": 2
+      },
+      "drying_score": 79.3,
+      "rank": 89,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0190",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4658,
+        "lon": 101.9737
+      },
+      "components": {
+        "s1_anom_db": -0.1,
+        "rain_30d_mm": 138.8,
+        "rain_deficit_pct": 0.73,
+        "canal_dist_m": 1055.3,
+        "peat_class": 2
+      },
+      "drying_score": 79.1,
+      "rank": 90,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 90 because rain is 73% below normal and a canal runs 1055 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.73,
+          "canal_dist_m": 1055.3
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0191",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.223,
+        "lon": 101.8783
+      },
+      "components": {
+        "s1_anom_db": 0.6,
+        "rain_30d_mm": 105.5,
+        "rain_deficit_pct": 0.8,
+        "canal_dist_m": 300.8,
+        "peat_class": 1
+      },
+      "drying_score": 79.0,
+      "rank": 91,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0192",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2955,
+        "lon": 102.1025
+      },
+      "components": {
+        "s1_anom_db": -0.4,
+        "rain_30d_mm": 153.5,
+        "rain_deficit_pct": 0.72,
+        "canal_dist_m": 1648.7,
+        "peat_class": 1
+      },
+      "drying_score": 78.8,
+      "rank": 92,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0193",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3676,
+        "lon": 102.0319
+      },
+      "components": {
+        "s1_anom_db": 0.1,
+        "rain_30d_mm": 104.3,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 905.2,
+        "peat_class": 1
+      },
+      "drying_score": 78.7,
+      "rank": 93,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0194",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2172,
+        "lon": 102.2176
+      },
+      "components": {
+        "s1_anom_db": -0.0,
+        "rain_30d_mm": 157.2,
+        "rain_deficit_pct": 0.64,
+        "canal_dist_m": 1922.9,
+        "peat_class": 2
+      },
+      "drying_score": 78.5,
+      "rank": 94,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0195",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5991,
+        "lon": 102.3995
+      },
+      "components": {
+        "s1_anom_db": -0.4,
+        "rain_30d_mm": 46.8,
+        "rain_deficit_pct": 0.68,
+        "canal_dist_m": 337.8,
+        "peat_class": 2
+      },
+      "drying_score": 78.3,
+      "rank": 95,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 95 because rain is 68% below normal and a canal runs 337 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.68,
+          "canal_dist_m": 337.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0196",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6246,
+        "lon": 102.0647
+      },
+      "components": {
+        "s1_anom_db": -2.9,
+        "rain_30d_mm": 21.6,
+        "rain_deficit_pct": 0.73,
+        "canal_dist_m": 1444.1,
+        "peat_class": 1
+      },
+      "drying_score": 78.1,
+      "rank": 96,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0197",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7692,
+        "lon": 102.111
+      },
+      "components": {
+        "s1_anom_db": 0.6,
+        "rain_30d_mm": 34.8,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 2337.1,
+        "peat_class": 1
+      },
+      "drying_score": 77.9,
+      "rank": 97,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0198",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.778,
+        "lon": 101.8812
+      },
+      "components": {
+        "s1_anom_db": -0.4,
+        "rain_30d_mm": 28.3,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 1216.8,
+        "peat_class": 1
+      },
+      "drying_score": 77.5,
+      "rank": 98,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0199",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.789,
+        "lon": 101.9649
+      },
+      "components": {
+        "s1_anom_db": -0.3,
+        "rain_30d_mm": 79.2,
+        "rain_deficit_pct": 0.7,
+        "canal_dist_m": 976.3,
+        "peat_class": 1
+      },
+      "drying_score": 77.3,
+      "rank": 99,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0200",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2566,
+        "lon": 102.4662
+      },
+      "components": {
+        "s1_anom_db": -1.1,
+        "rain_30d_mm": 95.8,
+        "rain_deficit_pct": 0.63,
+        "canal_dist_m": 929.6,
+        "peat_class": 2
+      },
+      "drying_score": 77.2,
+      "rank": 100,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0201",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3949,
+        "lon": 102.0721
+      },
+      "components": {
+        "s1_anom_db": -2.2,
+        "rain_30d_mm": 28.4,
+        "rain_deficit_pct": 0.65,
+        "canal_dist_m": 1087.4,
+        "peat_class": 2
+      },
+      "drying_score": 77.0,
+      "rank": 101,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0202",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4515,
+        "lon": 101.8124
+      },
+      "components": {
+        "s1_anom_db": -2.3,
+        "rain_30d_mm": 131.6,
+        "rain_deficit_pct": 0.76,
+        "canal_dist_m": 1785.4,
+        "peat_class": 2
+      },
+      "drying_score": 76.9,
+      "rank": 102,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0203",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4028,
+        "lon": 102.4463
+      },
+      "components": {
+        "s1_anom_db": -2.5,
+        "rain_30d_mm": 123.1,
+        "rain_deficit_pct": 0.69,
+        "canal_dist_m": 557.7,
+        "peat_class": 1
+      },
+      "drying_score": 76.7,
+      "rank": 103,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0204",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2854,
+        "lon": 102.465
+      },
+      "components": {
+        "s1_anom_db": -2.4,
+        "rain_30d_mm": 113.8,
+        "rain_deficit_pct": 0.64,
+        "canal_dist_m": 1586.1,
+        "peat_class": 1
+      },
+      "drying_score": 76.6,
+      "rank": 104,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 104 because rain is 64% below normal and a canal runs 1586 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.64,
+          "canal_dist_m": 1586.1
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0205",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5662,
+        "lon": 101.9519
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 37.5,
+        "rain_deficit_pct": 0.62,
+        "canal_dist_m": 912.0,
+        "peat_class": 1
+      },
+      "drying_score": 76.4,
+      "rank": 105,
+      "rank_change": 2,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0206",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6069,
+        "lon": 102.4566
+      },
+      "components": {
+        "s1_anom_db": -2.8,
+        "rain_30d_mm": 105.2,
+        "rain_deficit_pct": 0.73,
+        "canal_dist_m": 1325.6,
+        "peat_class": 1
+      },
+      "drying_score": 76.0,
+      "rank": 106,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0207",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6392,
+        "lon": 102.072
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 111.2,
+        "rain_deficit_pct": 0.69,
+        "canal_dist_m": 603.6,
+        "peat_class": 1
+      },
+      "drying_score": 75.8,
+      "rank": 107,
+      "rank_change": 3,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 107 because rain is 69% below normal and a canal runs 603 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.69,
+          "canal_dist_m": 603.6
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0208",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2409,
+        "lon": 101.974
+      },
+      "components": {
+        "s1_anom_db": -0.9,
+        "rain_30d_mm": 119.3,
+        "rain_deficit_pct": 0.68,
+        "canal_dist_m": 2384.7,
+        "peat_class": 2
+      },
+      "drying_score": 75.6,
+      "rank": 108,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 108 because rain is 68% below normal and a canal runs 2384 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.68,
+          "canal_dist_m": 2384.7
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0209",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5291,
+        "lon": 102.1182
+      },
+      "components": {
+        "s1_anom_db": -2.0,
+        "rain_30d_mm": 45.5,
+        "rain_deficit_pct": 0.71,
+        "canal_dist_m": 2415.6,
+        "peat_class": 2
+      },
+      "drying_score": 75.4,
+      "rank": 109,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0210",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2914,
+        "lon": 102.3116
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 83.3,
+        "rain_deficit_pct": 0.64,
+        "canal_dist_m": 546.5,
+        "peat_class": 1
+      },
+      "drying_score": 75.3,
+      "rank": 110,
+      "rank_change": 0,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 110 because rain is 64% below normal and a canal runs 546 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.64,
+          "canal_dist_m": 546.5
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0211",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.722,
+        "lon": 101.8717
+      },
+      "components": {
+        "s1_anom_db": -1.2,
+        "rain_30d_mm": 98.2,
+        "rain_deficit_pct": 0.64,
+        "canal_dist_m": 285.1,
+        "peat_class": 2
+      },
+      "drying_score": 75.2,
+      "rank": 111,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0212",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6399,
+        "lon": 101.871
+      },
+      "components": {
+        "s1_anom_db": -1.7,
+        "rain_30d_mm": 150.5,
+        "rain_deficit_pct": 0.66,
+        "canal_dist_m": 1197.7,
+        "peat_class": 1
+      },
+      "drying_score": 75.1,
+      "rank": 112,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0213",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4663,
+        "lon": 102.2877
+      },
+      "components": {
+        "s1_anom_db": 0.3,
+        "rain_30d_mm": 53.9,
+        "rain_deficit_pct": 0.79,
+        "canal_dist_m": 2364.4,
+        "peat_class": 2
+      },
+      "drying_score": 74.8,
+      "rank": 113,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0214",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3476,
+        "lon": 101.9023
+      },
+      "components": {
+        "s1_anom_db": -0.7,
+        "rain_30d_mm": 88.9,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 171.0,
+        "peat_class": 1
+      },
+      "drying_score": 74.6,
+      "rank": 114,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0215",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3007,
+        "lon": 102.4528
+      },
+      "components": {
+        "s1_anom_db": 0.2,
+        "rain_30d_mm": 91.0,
+        "rain_deficit_pct": 0.65,
+        "canal_dist_m": 627.5,
+        "peat_class": 2
+      },
+      "drying_score": 74.2,
+      "rank": 115,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0216",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4039,
+        "lon": 102.4422
+      },
+      "components": {
+        "s1_anom_db": -2.7,
+        "rain_30d_mm": 95.6,
+        "rain_deficit_pct": 0.78,
+        "canal_dist_m": 1416.5,
+        "peat_class": 1
+      },
+      "drying_score": 73.6,
+      "rank": 116,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0217",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.728,
+        "lon": 101.9639
+      },
+      "components": {
+        "s1_anom_db": -1.6,
+        "rain_30d_mm": 123.0,
+        "rain_deficit_pct": 0.7,
+        "canal_dist_m": 169.4,
+        "peat_class": 2
+      },
+      "drying_score": 73.5,
+      "rank": 117,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0218",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7124,
+        "lon": 102.1442
+      },
+      "components": {
+        "s1_anom_db": 0.4,
+        "rain_30d_mm": 152.1,
+        "rain_deficit_pct": 0.65,
+        "canal_dist_m": 1180.6,
+        "peat_class": 2
+      },
+      "drying_score": 73.3,
+      "rank": 118,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 118 because rain is 65% below normal and a canal runs 1180 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.65,
+          "canal_dist_m": 1180.6
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0219",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4356,
+        "lon": 102.393
+      },
+      "components": {
+        "s1_anom_db": -1.5,
+        "rain_30d_mm": 131.8,
+        "rain_deficit_pct": 0.72,
+        "canal_dist_m": 2222.6,
+        "peat_class": 1
+      },
+      "drying_score": 73.2,
+      "rank": 119,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0220",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4564,
+        "lon": 102.0418
+      },
+      "components": {
+        "s1_anom_db": -0.2,
+        "rain_30d_mm": 99.8,
+        "rain_deficit_pct": 0.62,
+        "canal_dist_m": 330.3,
+        "peat_class": 2
+      },
+      "drying_score": 73.1,
+      "rank": 120,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0221",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5123,
+        "lon": 102.4171
+      },
+      "components": {
+        "s1_anom_db": -1.5,
+        "rain_30d_mm": 110.8,
+        "rain_deficit_pct": 0.6,
+        "canal_dist_m": 759.8,
+        "peat_class": 1
+      },
+      "drying_score": 72.8,
+      "rank": 121,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 121 because rain is 60% below normal and a canal runs 759 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.6,
+          "canal_dist_m": 759.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0222",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7344,
+        "lon": 102.303
+      },
+      "components": {
+        "s1_anom_db": -3.3,
+        "rain_30d_mm": 46.1,
+        "rain_deficit_pct": 0.62,
+        "canal_dist_m": 2502.0,
+        "peat_class": 2
+      },
+      "drying_score": 72.7,
+      "rank": 122,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0223",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2364,
+        "lon": 102.3428
+      },
+      "components": {
+        "s1_anom_db": -0.2,
+        "rain_30d_mm": 129.8,
+        "rain_deficit_pct": 0.68,
+        "canal_dist_m": 1233.6,
+        "peat_class": 2
+      },
+      "drying_score": 72.4,
+      "rank": 123,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0224",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7527,
+        "lon": 102.2179
+      },
+      "components": {
+        "s1_anom_db": -0.5,
+        "rain_30d_mm": 35.9,
+        "rain_deficit_pct": 0.69,
+        "canal_dist_m": 897.0,
+        "peat_class": 2
+      },
+      "drying_score": 72.3,
+      "rank": 124,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 124 because rain is 69% below normal and a canal runs 897 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.69,
+          "canal_dist_m": 897.0
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0225",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.512,
+        "lon": 102.2357
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 97.3,
+        "rain_deficit_pct": 0.65,
+        "canal_dist_m": 1563.0,
+        "peat_class": 2
+      },
+      "drying_score": 72.2,
+      "rank": 125,
+      "rank_change": null,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 125 because rain is 65% below normal and a canal runs 1563 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.65,
+          "canal_dist_m": 1563.0
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0226",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.496,
+        "lon": 102.0043
+      },
+      "components": {
+        "s1_anom_db": -1.0,
+        "rain_30d_mm": 153.5,
+        "rain_deficit_pct": 0.66,
+        "canal_dist_m": 1883.6,
+        "peat_class": 2
+      },
+      "drying_score": 72.1,
+      "rank": 126,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0227",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3176,
+        "lon": 101.9327
+      },
+      "components": {
+        "s1_anom_db": -0.6,
+        "rain_30d_mm": 43.5,
+        "rain_deficit_pct": 0.61,
+        "canal_dist_m": 1522.6,
+        "peat_class": 2
+      },
+      "drying_score": 71.5,
+      "rank": 127,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0228",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7992,
+        "lon": 102.3794
+      },
+      "components": {
+        "s1_anom_db": -0.5,
+        "rain_30d_mm": 152.0,
+        "rain_deficit_pct": 0.64,
+        "canal_dist_m": 2328.0,
+        "peat_class": 1
+      },
+      "drying_score": 71.2,
+      "rank": 128,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0229",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5106,
+        "lon": 102.3827
+      },
+      "components": {
+        "s1_anom_db": -0.8,
+        "rain_30d_mm": 23.2,
+        "rain_deficit_pct": 0.69,
+        "canal_dist_m": 1169.9,
+        "peat_class": 1
+      },
+      "drying_score": 70.8,
+      "rank": 129,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0230",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6783,
+        "lon": 102.1188
+      },
+      "components": {
+        "s1_anom_db": -3.1,
+        "rain_30d_mm": 136.1,
+        "rain_deficit_pct": 0.68,
+        "canal_dist_m": 304.6,
+        "peat_class": 2
+      },
+      "drying_score": 70.2,
+      "rank": 130,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0231",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2627,
+        "lon": 102.1208
+      },
+      "components": {
+        "s1_anom_db": -2.6,
+        "rain_30d_mm": 46.2,
+        "rain_deficit_pct": 0.59,
+        "canal_dist_m": 508.3,
+        "peat_class": 2
+      },
+      "drying_score": 69.9,
+      "rank": 131,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0232",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.296,
+        "lon": 102.2122
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 124.2,
+        "rain_deficit_pct": 0.69,
+        "canal_dist_m": 2473.5,
+        "peat_class": 1
+      },
+      "drying_score": 69.7,
+      "rank": 132,
+      "rank_change": 2,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0233",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7771,
+        "lon": 102.4318
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 69.6,
+        "rain_deficit_pct": 0.57,
+        "canal_dist_m": 755.9,
+        "peat_class": 1
+      },
+      "drying_score": 69.6,
+      "rank": 133,
+      "rank_change": 1,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0234",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5407,
+        "lon": 102.0464
+      },
+      "components": {
+        "s1_anom_db": -2.1,
+        "rain_30d_mm": 146.9,
+        "rain_deficit_pct": 0.59,
+        "canal_dist_m": 2669.4,
+        "peat_class": 2
+      },
+      "drying_score": 69.5,
+      "rank": 134,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0235",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5414,
+        "lon": 101.9145
+      },
+      "components": {
+        "s1_anom_db": 0.4,
+        "rain_30d_mm": 114.1,
+        "rain_deficit_pct": 0.66,
+        "canal_dist_m": 1508.9,
+        "peat_class": 2
+      },
+      "drying_score": 69.3,
+      "rank": 135,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0236",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3889,
+        "lon": 102.1526
+      },
+      "components": {
+        "s1_anom_db": -2.6,
+        "rain_30d_mm": 66.0,
+        "rain_deficit_pct": 0.59,
+        "canal_dist_m": 2561.5,
+        "peat_class": 1
+      },
+      "drying_score": 69.0,
+      "rank": 136,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0237",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2195,
+        "lon": 102.1917
+      },
+      "components": {
+        "s1_anom_db": 0.5,
+        "rain_30d_mm": 113.1,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 658.7,
+        "peat_class": 1
+      },
+      "drying_score": 68.9,
+      "rank": 137,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0238",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7673,
+        "lon": 102.3007
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 104.2,
+        "rain_deficit_pct": 0.67,
+        "canal_dist_m": 1391.5,
+        "peat_class": 1
+      },
+      "drying_score": 68.8,
+      "rank": 138,
+      "rank_change": 0,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 138 because rain is 67% below normal and a canal runs 1391 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.67,
+          "canal_dist_m": 1391.5
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0239",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6087,
+        "lon": 102.2409
+      },
+      "components": {
+        "s1_anom_db": -3.2,
+        "rain_30d_mm": 70.0,
+        "rain_deficit_pct": 0.6,
+        "canal_dist_m": 2216.1,
+        "peat_class": 2
+      },
+      "drying_score": 68.7,
+      "rank": 139,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0240",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5531,
+        "lon": 102.4145
+      },
+      "components": {
+        "s1_anom_db": -0.9,
+        "rain_30d_mm": 121.7,
+        "rain_deficit_pct": 0.63,
+        "canal_dist_m": 2361.9,
+        "peat_class": 2
+      },
+      "drying_score": 68.6,
+      "rank": 140,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0241",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5709,
+        "lon": 102.1198
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 117.1,
+        "rain_deficit_pct": 0.62,
+        "canal_dist_m": 1957.9,
+        "peat_class": 1
+      },
+      "drying_score": 68.5,
+      "rank": 141,
+      "rank_change": -1,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0242",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6445,
+        "lon": 102.1356
+      },
+      "components": {
+        "s1_anom_db": -2.6,
+        "rain_30d_mm": 134.3,
+        "rain_deficit_pct": 0.68,
+        "canal_dist_m": 668.8,
+        "peat_class": 1
+      },
+      "drying_score": 68.4,
+      "rank": 142,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 142 because rain is 68% below normal and a canal runs 668 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.68,
+          "canal_dist_m": 668.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0243",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7719,
+        "lon": 101.9585
+      },
+      "components": {
+        "s1_anom_db": -0.8,
+        "rain_30d_mm": 55.7,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 2747.8,
+        "peat_class": 1
+      },
+      "drying_score": 68.0,
+      "rank": 143,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 143 because rain is 54% below normal and a canal runs 2747 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.54,
+          "canal_dist_m": 2747.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0244",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7215,
+        "lon": 101.8503
+      },
+      "components": {
+        "s1_anom_db": -1.7,
+        "rain_30d_mm": 44.5,
+        "rain_deficit_pct": 0.58,
+        "canal_dist_m": 2434.5,
+        "peat_class": 2
+      },
+      "drying_score": 67.6,
+      "rank": 144,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0245",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6591,
+        "lon": 101.899
+      },
+      "components": {
+        "s1_anom_db": -3.2,
+        "rain_30d_mm": 48.5,
+        "rain_deficit_pct": 0.59,
+        "canal_dist_m": 61.8,
+        "peat_class": 1
+      },
+      "drying_score": 67.5,
+      "rank": 145,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 145 because rain is 59% below normal and a canal runs 61 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.59,
+          "canal_dist_m": 61.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0246",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3874,
+        "lon": 101.8391
+      },
+      "components": {
+        "s1_anom_db": -1.8,
+        "rain_30d_mm": 83.4,
+        "rain_deficit_pct": 0.6,
+        "canal_dist_m": 2696.0,
+        "peat_class": 2
+      },
+      "drying_score": 67.4,
+      "rank": 146,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0247",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.221,
+        "lon": 102.4669
+      },
+      "components": {
+        "s1_anom_db": -0.2,
+        "rain_30d_mm": 142.4,
+        "rain_deficit_pct": 0.67,
+        "canal_dist_m": 1764.2,
+        "peat_class": 1
+      },
+      "drying_score": 67.3,
+      "rank": 147,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0248",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2563,
+        "lon": 102.2323
+      },
+      "components": {
+        "s1_anom_db": -2.2,
+        "rain_30d_mm": 47.6,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 418.0,
+        "peat_class": 2
+      },
+      "drying_score": 67.0,
+      "rank": 148,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0249",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3662,
+        "lon": 101.9714
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 70.9,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 1453.4,
+        "peat_class": 2
+      },
+      "drying_score": 66.7,
+      "rank": 149,
+      "rank_change": 1,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 149 because rain is 54% below normal and a canal runs 1453 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.54,
+          "canal_dist_m": 1453.4
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0250",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3774,
+        "lon": 102.222
+      },
+      "components": {
+        "s1_anom_db": -1.7,
+        "rain_30d_mm": 142.1,
+        "rain_deficit_pct": 0.65,
+        "canal_dist_m": 308.4,
+        "peat_class": 1
+      },
+      "drying_score": 66.6,
+      "rank": 150,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0251",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7457,
+        "lon": 102.1387
+      },
+      "components": {
+        "s1_anom_db": -1.3,
+        "rain_30d_mm": 102.6,
+        "rain_deficit_pct": 0.6,
+        "canal_dist_m": 1853.5,
+        "peat_class": 2
+      },
+      "drying_score": 66.4,
+      "rank": 151,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0252",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5713,
+        "lon": 102.1417
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 45.7,
+        "rain_deficit_pct": 0.56,
+        "canal_dist_m": 2299.9,
+        "peat_class": 2
+      },
+      "drying_score": 66.0,
+      "rank": 152,
+      "rank_change": 2,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 152 because rain is 56% below normal and a canal runs 2299 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.56,
+          "canal_dist_m": 2299.9
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0253",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2176,
+        "lon": 102.1552
+      },
+      "components": {
+        "s1_anom_db": -1.0,
+        "rain_30d_mm": 144.8,
+        "rain_deficit_pct": 0.56,
+        "canal_dist_m": 1366.8,
+        "peat_class": 2
+      },
+      "drying_score": 65.9,
+      "rank": 153,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0254",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3312,
+        "lon": 102.2701
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 97.8,
+        "rain_deficit_pct": 0.55,
+        "canal_dist_m": 2032.1,
+        "peat_class": 2
+      },
+      "drying_score": 65.7,
+      "rank": 154,
+      "rank_change": 0,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0255",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6197,
+        "lon": 102.3932
+      },
+      "components": {
+        "s1_anom_db": -2.6,
+        "rain_30d_mm": 39.6,
+        "rain_deficit_pct": 0.63,
+        "canal_dist_m": 2304.6,
+        "peat_class": 2
+      },
+      "drying_score": 65.5,
+      "rank": 155,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0256",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5392,
+        "lon": 102.191
+      },
+      "components": {
+        "s1_anom_db": -1.6,
+        "rain_30d_mm": 60.8,
+        "rain_deficit_pct": 0.59,
+        "canal_dist_m": 1359.0,
+        "peat_class": 2
+      },
+      "drying_score": 65.4,
+      "rank": 156,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0257",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3952,
+        "lon": 102.0195
+      },
+      "components": {
+        "s1_anom_db": -1.5,
+        "rain_30d_mm": 114.0,
+        "rain_deficit_pct": 0.67,
+        "canal_dist_m": 1368.0,
+        "peat_class": 2
+      },
+      "drying_score": 65.3,
+      "rank": 157,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0258",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5364,
+        "lon": 102.0616
+      },
+      "components": {
+        "s1_anom_db": -1.6,
+        "rain_30d_mm": 119.8,
+        "rain_deficit_pct": 0.52,
+        "canal_dist_m": 866.1,
+        "peat_class": 1
+      },
+      "drying_score": 65.1,
+      "rank": 158,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 158 because rain is 52% below normal and a canal runs 866 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.52,
+          "canal_dist_m": 866.1
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0259",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4986,
+        "lon": 102.0156
+      },
+      "components": {
+        "s1_anom_db": -1.3,
+        "rain_30d_mm": 41.4,
+        "rain_deficit_pct": 0.68,
+        "canal_dist_m": 1053.4,
+        "peat_class": 2
+      },
+      "drying_score": 65.0,
+      "rank": 159,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 159 because rain is 68% below normal and a canal runs 1053 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.68,
+          "canal_dist_m": 1053.4
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0260",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5726,
+        "lon": 102.0298
+      },
+      "components": {
+        "s1_anom_db": -2.1,
+        "rain_30d_mm": 119.5,
+        "rain_deficit_pct": 0.6,
+        "canal_dist_m": 1339.3,
+        "peat_class": 2
+      },
+      "drying_score": 64.9,
+      "rank": 160,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0261",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2008,
+        "lon": 102.0311
+      },
+      "components": {
+        "s1_anom_db": -0.3,
+        "rain_30d_mm": 48.6,
+        "rain_deficit_pct": 0.61,
+        "canal_dist_m": 1010.3,
+        "peat_class": 1
+      },
+      "drying_score": 64.5,
+      "rank": 161,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 161 because rain is 61% below normal and a canal runs 1010 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.61,
+          "canal_dist_m": 1010.3
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0262",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2386,
+        "lon": 101.8724
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 127.9,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 658.0,
+        "peat_class": 2
+      },
+      "drying_score": 64.3,
+      "rank": 162,
+      "rank_change": null,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0263",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5591,
+        "lon": 101.8569
+      },
+      "components": {
+        "s1_anom_db": -0.9,
+        "rain_30d_mm": 82.3,
+        "rain_deficit_pct": 0.5,
+        "canal_dist_m": 2122.4,
+        "peat_class": 2
+      },
+      "drying_score": 64.1,
+      "rank": 163,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0264",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3279,
+        "lon": 102.0387
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 20.2,
+        "rain_deficit_pct": 0.57,
+        "canal_dist_m": 2135.4,
+        "peat_class": 1
+      },
+      "drying_score": 63.9,
+      "rank": 164,
+      "rank_change": -2,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 164 because rain is 56% below normal and a canal runs 2135 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.57,
+          "canal_dist_m": 2135.4
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0265",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7302,
+        "lon": 102.4987
+      },
+      "components": {
+        "s1_anom_db": -2.2,
+        "rain_30d_mm": 105.6,
+        "rain_deficit_pct": 0.56,
+        "canal_dist_m": 1636.9,
+        "peat_class": 2
+      },
+      "drying_score": 63.8,
+      "rank": 165,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 165 because rain is 56% below normal and a canal runs 1636 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.56,
+          "canal_dist_m": 1636.9
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0266",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6831,
+        "lon": 102.2374
+      },
+      "components": {
+        "s1_anom_db": 0.1,
+        "rain_30d_mm": 47.3,
+        "rain_deficit_pct": 0.58,
+        "canal_dist_m": 433.7,
+        "peat_class": 1
+      },
+      "drying_score": 63.6,
+      "rank": 166,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0267",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2157,
+        "lon": 101.8934
+      },
+      "components": {
+        "s1_anom_db": 0.2,
+        "rain_30d_mm": 38.5,
+        "rain_deficit_pct": 0.56,
+        "canal_dist_m": 1773.3,
+        "peat_class": 2
+      },
+      "drying_score": 63.5,
+      "rank": 167,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 167 because rain is 56% below normal and a canal runs 1773 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.56,
+          "canal_dist_m": 1773.3
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0268",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4017,
+        "lon": 102.0845
+      },
+      "components": {
+        "s1_anom_db": -2.9,
+        "rain_30d_mm": 67.5,
+        "rain_deficit_pct": 0.59,
+        "canal_dist_m": 1398.2,
+        "peat_class": 1
+      },
+      "drying_score": 63.2,
+      "rank": 168,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0269",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3604,
+        "lon": 102.3881
+      },
+      "components": {
+        "s1_anom_db": -1.8,
+        "rain_30d_mm": 101.9,
+        "rain_deficit_pct": 0.49,
+        "canal_dist_m": 838.7,
+        "peat_class": 1
+      },
+      "drying_score": 63.1,
+      "rank": 169,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0270",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7181,
+        "lon": 102.3814
+      },
+      "components": {
+        "s1_anom_db": -2.1,
+        "rain_30d_mm": 141.8,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 249.8,
+        "peat_class": 1
+      },
+      "drying_score": 62.7,
+      "rank": 170,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 170 because rain is 54% below normal and a canal runs 249 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.54,
+          "canal_dist_m": 249.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0271",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2029,
+        "lon": 102.3957
+      },
+      "components": {
+        "s1_anom_db": -0.5,
+        "rain_30d_mm": 100.1,
+        "rain_deficit_pct": 0.67,
+        "canal_dist_m": 564.2,
+        "peat_class": 2
+      },
+      "drying_score": 62.6,
+      "rank": 171,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0272",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4469,
+        "lon": 102.1397
+      },
+      "components": {
+        "s1_anom_db": -1.5,
+        "rain_30d_mm": 119.8,
+        "rain_deficit_pct": 0.56,
+        "canal_dist_m": 1207.4,
+        "peat_class": 1
+      },
+      "drying_score": 62.5,
+      "rank": 172,
+      "rank_change": 1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0273",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3083,
+        "lon": 101.867
+      },
+      "components": {
+        "s1_anom_db": -1.9,
+        "rain_30d_mm": 101.6,
+        "rain_deficit_pct": 0.51,
+        "canal_dist_m": 793.8,
+        "peat_class": 2
+      },
+      "drying_score": 62.4,
+      "rank": 173,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 173 because rain is 51% below normal and a canal runs 793 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.51,
+          "canal_dist_m": 793.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0274",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4794,
+        "lon": 102.2245
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 86.2,
+        "rain_deficit_pct": 0.5,
+        "canal_dist_m": 1717.8,
+        "peat_class": 1
+      },
+      "drying_score": 62.3,
+      "rank": 174,
+      "rank_change": 2,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0275",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5425,
+        "lon": 101.9933
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 28.5,
+        "rain_deficit_pct": 0.57,
+        "canal_dist_m": 1120.0,
+        "peat_class": 1
+      },
+      "drying_score": 62.1,
+      "rank": 175,
+      "rank_change": null,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0276",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.615,
+        "lon": 101.8441
+      },
+      "components": {
+        "s1_anom_db": -2.1,
+        "rain_30d_mm": 151.1,
+        "rain_deficit_pct": 0.47,
+        "canal_dist_m": 309.1,
+        "peat_class": 1
+      },
+      "drying_score": 62.0,
+      "rank": 176,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 176 because rain is 47% below normal and a canal runs 309 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.47,
+          "canal_dist_m": 309.1
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0277",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4325,
+        "lon": 101.8472
+      },
+      "components": {
+        "s1_anom_db": -2.3,
+        "rain_30d_mm": 137.1,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 697.6,
+        "peat_class": 1
+      },
+      "drying_score": 61.9,
+      "rank": 177,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 177 because rain is 54% below normal and a canal runs 697 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.54,
+          "canal_dist_m": 697.6
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0278",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.204,
+        "lon": 101.8261
+      },
+      "components": {
+        "s1_anom_db": -0.8,
+        "rain_30d_mm": 79.8,
+        "rain_deficit_pct": 0.64,
+        "canal_dist_m": 1317.6,
+        "peat_class": 1
+      },
+      "drying_score": 61.8,
+      "rank": 178,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0279",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.661,
+        "lon": 101.9851
+      },
+      "components": {
+        "s1_anom_db": -2.8,
+        "rain_30d_mm": 92.9,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 1862.8,
+        "peat_class": 1
+      },
+      "drying_score": 61.6,
+      "rank": 179,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 179 because rain is 54% below normal and a canal runs 1862 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.54,
+          "canal_dist_m": 1862.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0280",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3921,
+        "lon": 102.4332
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 90.0,
+        "rain_deficit_pct": 0.61,
+        "canal_dist_m": 2407.6,
+        "peat_class": 2
+      },
+      "drying_score": 61.2,
+      "rank": 180,
+      "rank_change": null,
+      "stale_s1": true,
+      "explanation": {
+        "text": "Ranks 180 because rain is 61% below normal and a canal runs 2407 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.61,
+          "canal_dist_m": 2407.6
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0281",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4614,
+        "lon": 102.1802
+      },
+      "components": {
+        "s1_anom_db": -1.9,
+        "rain_30d_mm": 29.6,
+        "rain_deficit_pct": 0.64,
+        "canal_dist_m": 1715.2,
+        "peat_class": 2
+      },
+      "drying_score": 61.0,
+      "rank": 181,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0282",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7563,
+        "lon": 102.4435
+      },
+      "components": {
+        "s1_anom_db": 0.4,
+        "rain_30d_mm": 32.8,
+        "rain_deficit_pct": 0.56,
+        "canal_dist_m": 1500.0,
+        "peat_class": 2
+      },
+      "drying_score": 60.7,
+      "rank": 182,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 182 because rain is 56% below normal and a canal runs 1500 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.56,
+          "canal_dist_m": 1500.0
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0283",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2431,
+        "lon": 102.2517
+      },
+      "components": {
+        "s1_anom_db": -0.6,
+        "rain_30d_mm": 159.8,
+        "rain_deficit_pct": 0.55,
+        "canal_dist_m": 428.8,
+        "peat_class": 1
+      },
+      "drying_score": 60.6,
+      "rank": 183,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0284",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3881,
+        "lon": 102.3421
+      },
+      "components": {
+        "s1_anom_db": -0.7,
+        "rain_30d_mm": 129.5,
+        "rain_deficit_pct": 0.56,
+        "canal_dist_m": 2033.8,
+        "peat_class": 1
+      },
+      "drying_score": 60.5,
+      "rank": 184,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 184 because rain is 56% below normal and a canal runs 2033 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.56,
+          "canal_dist_m": 2033.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0285",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4169,
+        "lon": 102.1887
+      },
+      "components": {
+        "s1_anom_db": -3.4,
+        "rain_30d_mm": 41.6,
+        "rain_deficit_pct": 0.51,
+        "canal_dist_m": 2760.4,
+        "peat_class": 1
+      },
+      "drying_score": 60.4,
+      "rank": 185,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0286",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3901,
+        "lon": 102.4247
+      },
+      "components": {
+        "s1_anom_db": -2.7,
+        "rain_30d_mm": 123.3,
+        "rain_deficit_pct": 0.48,
+        "canal_dist_m": 2743.5,
+        "peat_class": 2
+      },
+      "drying_score": 60.3,
+      "rank": 186,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0287",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.5004,
+        "lon": 101.8263
+      },
+      "components": {
+        "s1_anom_db": 0.3,
+        "rain_30d_mm": 143.2,
+        "rain_deficit_pct": 0.56,
+        "canal_dist_m": 1559.1,
+        "peat_class": 2
+      },
+      "drying_score": 59.8,
+      "rank": 187,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0288",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7811,
+        "lon": 101.9179
+      },
+      "components": {
+        "s1_anom_db": -0.7,
+        "rain_30d_mm": 88.3,
+        "rain_deficit_pct": 0.45,
+        "canal_dist_m": 1478.5,
+        "peat_class": 2
+      },
+      "drying_score": 59.7,
+      "rank": 188,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0289",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2691,
+        "lon": 102.018
+      },
+      "components": {
+        "s1_anom_db": 0.5,
+        "rain_30d_mm": 159.7,
+        "rain_deficit_pct": 0.55,
+        "canal_dist_m": 2185.1,
+        "peat_class": 2
+      },
+      "drying_score": 59.5,
+      "rank": 189,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0290",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.2666,
+        "lon": 102.1403
+      },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 92.8,
+        "rain_deficit_pct": 0.55,
+        "canal_dist_m": 1296.5,
+        "peat_class": 2
+      },
+      "drying_score": 59.4,
+      "rank": 190,
+      "rank_change": 1,
+      "stale_s1": true,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0291",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.234,
+        "lon": 101.9601
+      },
+      "components": {
+        "s1_anom_db": -0.2,
+        "rain_30d_mm": 147.5,
+        "rain_deficit_pct": 0.59,
+        "canal_dist_m": 1556.8,
+        "peat_class": 2
+      },
+      "drying_score": 59.0,
+      "rank": 191,
+      "rank_change": -4,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0292",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7471,
+        "lon": 102.4098
+      },
+      "components": {
+        "s1_anom_db": -2.2,
+        "rain_30d_mm": 46.4,
+        "rain_deficit_pct": 0.45,
+        "canal_dist_m": 1564.6,
+        "peat_class": 2
+      },
+      "drying_score": 58.9,
+      "rank": 192,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0293",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.6089,
+        "lon": 102.1859
+      },
+      "components": {
+        "s1_anom_db": 0.4,
+        "rain_30d_mm": 155.4,
+        "rain_deficit_pct": 0.6,
+        "canal_dist_m": 1780.3,
+        "peat_class": 1
+      },
+      "drying_score": 58.8,
+      "rank": 193,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 193 because rain is 60% below normal and a canal runs 1780 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.6,
+          "canal_dist_m": 1780.3
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0294",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7216,
+        "lon": 101.8277
+      },
+      "components": {
+        "s1_anom_db": -0.5,
+        "rain_30d_mm": 79.8,
+        "rain_deficit_pct": 0.45,
+        "canal_dist_m": 233.2,
+        "peat_class": 2
+      },
+      "drying_score": 58.5,
+      "rank": 194,
+      "rank_change": 0,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0295",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.509,
+        "lon": 102.2245
+      },
+      "components": {
+        "s1_anom_db": -2.7,
+        "rain_30d_mm": 89.7,
+        "rain_deficit_pct": 0.52,
+        "canal_dist_m": 2337.8,
+        "peat_class": 1
+      },
+      "drying_score": 58.3,
+      "rank": 195,
+      "rank_change": -2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 195 because rain is 52% below normal and a canal runs 2337 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.52,
+          "canal_dist_m": 2337.8
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0296",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4495,
+        "lon": 102.4801
+      },
+      "components": {
+        "s1_anom_db": -2.2,
+        "rain_30d_mm": 82.3,
+        "rain_deficit_pct": 0.45,
+        "canal_dist_m": 1560.7,
+        "peat_class": 2
+      },
+      "drying_score": 57.9,
+      "rank": 196,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0297",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.4988,
+        "lon": 102.2772
+      },
+      "components": {
+        "s1_anom_db": 0.3,
+        "rain_30d_mm": 140.2,
+        "rain_deficit_pct": 0.57,
+        "canal_dist_m": 272.9,
+        "peat_class": 2
+      },
+      "drying_score": 57.8,
+      "rank": 197,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0298",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.777,
+        "lon": 101.9533
+      },
+      "components": {
+        "s1_anom_db": -0.2,
+        "rain_30d_mm": 36.7,
+        "rain_deficit_pct": 0.54,
+        "canal_dist_m": 2636.5,
+        "peat_class": 1
+      },
+      "drying_score": 57.6,
+      "rank": 198,
+      "rank_change": null,
+      "stale_s1": false,
+      "explanation": null
+    },
+    {
+      "cell_id": "riau-0299",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.3941,
+        "lon": 102.0904
+      },
+      "components": {
+        "s1_anom_db": -2.3,
+        "rain_30d_mm": 118.3,
+        "rain_deficit_pct": 0.57,
+        "canal_dist_m": 1317.3,
+        "peat_class": 1
+      },
+      "drying_score": 57.5,
+      "rank": 199,
+      "rank_change": -1,
+      "stale_s1": false,
+      "explanation": {
+        "text": "Ranks 199 because rain is 56% below normal and a canal runs 1317 m away.",
+        "cited": {
+          "rain_deficit_pct": 0.57,
+          "canal_dist_m": 1317.3
+        }
+      }
+    },
+    {
+      "cell_id": "riau-0300",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": {
+        "lat": 0.7124,
+        "lon": 102.2035
+      },
+      "components": {
+        "s1_anom_db": 0.4,
+        "rain_30d_mm": 66.3,
+        "rain_deficit_pct": 0.61,
+        "canal_dist_m": 1670.1,
+        "peat_class": 1
+      },
+      "drying_score": 57.4,
+      "rank": 200,
+      "rank_change": 3,
+      "stale_s1": false,
+      "explanation": null
+    }
+  ],
+  "dams": [
+    {
+      "dam_id": "dam-riau-049",
+      "region": "riau",
+      "cell_id": "riau-0103",
+      "point": {
+        "lat": 0.5932,
+        "lon": 102.4239
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 96.8,
+      "rank": 3,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-043",
+      "region": "riau",
+      "cell_id": "riau-0106",
+      "point": {
+        "lat": 0.2839,
+        "lon": 102.016
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 96.3,
+      "rank": 6,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-002",
+      "region": "riau",
+      "cell_id": "riau-0108",
+      "point": {
+        "lat": 0.4566,
+        "lon": 102.1738
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 96.1,
+      "rank": 8,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-028",
+      "region": "riau",
+      "cell_id": "riau-0110",
+      "point": {
+        "lat": 0.7806,
+        "lon": 101.8712
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 95.6,
+      "rank": 10,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-034",
+      "region": "riau",
+      "cell_id": "riau-0116",
+      "point": {
+        "lat": 0.7825,
+        "lon": 102.4314
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 94.8,
+      "rank": 16,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-042",
+      "region": "riau",
+      "cell_id": "riau-0117",
+      "point": {
+        "lat": 0.5799,
+        "lon": 102.3274
+      },
+      "last_state": "damaged",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 94.5,
+      "rank": 17,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-001",
+      "region": "riau",
+      "cell_id": "riau-0127",
+      "point": {
+        "lat": 0.3158,
+        "lon": 102.2816
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 93.3,
+      "rank": 27,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-024",
+      "region": "riau",
+      "cell_id": "riau-0128",
+      "point": {
+        "lat": 0.7488,
+        "lon": 101.919
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 92.9,
+      "rank": 28,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-019",
+      "region": "riau",
+      "cell_id": "riau-0138",
+      "point": {
+        "lat": 0.3031,
+        "lon": 102.3617
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 90.9,
+      "rank": 38,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-015",
+      "region": "riau",
+      "cell_id": "riau-0139",
+      "point": {
+        "lat": 0.2422,
+        "lon": 102.0042
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 90.7,
+      "rank": 39,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-035",
+      "region": "riau",
+      "cell_id": "riau-0142",
+      "point": {
+        "lat": 0.773,
+        "lon": 102.0939
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 90.1,
+      "rank": 42,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-023",
+      "region": "riau",
+      "cell_id": "riau-0150",
+      "point": {
+        "lat": 0.76,
+        "lon": 102.4375
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 89.3,
+      "rank": 50,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-003",
+      "region": "riau",
+      "cell_id": "riau-0159",
+      "point": {
+        "lat": 0.3433,
+        "lon": 102.3594
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 87.5,
+      "rank": 59,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-046",
+      "region": "riau",
+      "cell_id": "riau-0162",
+      "point": {
+        "lat": 0.4211,
+        "lon": 102.4113
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 87.0,
+      "rank": 62,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-038",
+      "region": "riau",
+      "cell_id": "riau-0165",
+      "point": {
+        "lat": 0.6567,
+        "lon": 102.3805
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 86.1,
+      "rank": 65,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-008",
+      "region": "riau",
+      "cell_id": "riau-0166",
+      "point": {
+        "lat": 0.6743,
+        "lon": 102.2986
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 85.9,
+      "rank": 66,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-007",
+      "region": "riau",
+      "cell_id": "riau-0167",
+      "point": {
+        "lat": 0.3488,
+        "lon": 101.9411
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 85.8,
+      "rank": 67,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-010",
+      "region": "riau",
+      "cell_id": "riau-0169",
+      "point": {
+        "lat": 0.7229,
+        "lon": 102.0725
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 85.1,
+      "rank": 69,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-011",
+      "region": "riau",
+      "cell_id": "riau-0171",
+      "point": {
+        "lat": 0.2221,
+        "lon": 102.353
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 84.3,
+      "rank": 71,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-040",
+      "region": "riau",
+      "cell_id": "riau-0173",
+      "point": {
+        "lat": 0.5261,
+        "lon": 102.4907
+      },
+      "last_state": "damaged",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 83.5,
+      "rank": 73,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-031",
+      "region": "riau",
+      "cell_id": "riau-0178",
+      "point": {
+        "lat": 0.4108,
+        "lon": 102.3762
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 81.8,
+      "rank": 78,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-045",
+      "region": "riau",
+      "cell_id": "riau-0183",
+      "point": {
+        "lat": 0.437,
+        "lon": 102.3072
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 81.1,
+      "rank": 83,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-041",
+      "region": "riau",
+      "cell_id": "riau-0188",
+      "point": {
+        "lat": 0.6314,
+        "lon": 101.8368
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 79.5,
+      "rank": 88,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-005",
+      "region": "riau",
+      "cell_id": "riau-0194",
+      "point": {
+        "lat": 0.2182,
+        "lon": 102.2186
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 78.5,
+      "rank": 94,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-022",
+      "region": "riau",
+      "cell_id": "riau-0199",
+      "point": {
+        "lat": 0.79,
+        "lon": 101.9659
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 77.3,
+      "rank": 99,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-027",
+      "region": "riau",
+      "cell_id": "riau-0200",
+      "point": {
+        "lat": 0.2576,
+        "lon": 102.4672
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 77.2,
+      "rank": 100,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-039",
+      "region": "riau",
+      "cell_id": "riau-0204",
+      "point": {
+        "lat": 0.2864,
+        "lon": 102.466
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 76.6,
+      "rank": 104,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-013",
+      "region": "riau",
+      "cell_id": "riau-0207",
+      "point": {
+        "lat": 0.6402,
+        "lon": 102.073
+      },
+      "last_state": "damaged",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 75.8,
+      "rank": 107,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-004",
+      "region": "riau",
+      "cell_id": "riau-0208",
+      "point": {
+        "lat": 0.2419,
+        "lon": 101.975
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 75.6,
+      "rank": 108,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-014",
+      "region": "riau",
+      "cell_id": "riau-0212",
+      "point": {
+        "lat": 0.6409,
+        "lon": 101.872
+      },
+      "last_state": "damaged",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 75.1,
+      "rank": 112,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-017",
+      "region": "riau",
+      "cell_id": "riau-0219",
+      "point": {
+        "lat": 0.4366,
+        "lon": 102.394
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 73.2,
+      "rank": 119,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-030",
+      "region": "riau",
+      "cell_id": "riau-0220",
+      "point": {
+        "lat": 0.4574,
+        "lon": 102.0428
+      },
+      "last_state": "damaged",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 73.1,
+      "rank": 120,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-020",
+      "region": "riau",
+      "cell_id": "riau-0234",
+      "point": {
+        "lat": 0.5417,
+        "lon": 102.0474
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 69.5,
+      "rank": 134,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-006",
+      "region": "riau",
+      "cell_id": "riau-0236",
+      "point": {
+        "lat": 0.3899,
+        "lon": 102.1536
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 69.0,
+      "rank": 136,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-048",
+      "region": "riau",
+      "cell_id": "riau-0239",
+      "point": {
+        "lat": 0.6097,
+        "lon": 102.2419
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 68.7,
+      "rank": 139,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-050",
+      "region": "riau",
+      "cell_id": "riau-0241",
+      "point": {
+        "lat": 0.5719,
+        "lon": 102.1208
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 68.5,
+      "rank": 141,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-032",
+      "region": "riau",
+      "cell_id": "riau-0251",
+      "point": {
+        "lat": 0.7467,
+        "lon": 102.1397
+      },
+      "last_state": "damaged",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 66.4,
+      "rank": 151,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-018",
+      "region": "riau",
+      "cell_id": "riau-0261",
+      "point": {
+        "lat": 0.2018,
+        "lon": 102.0321
+      },
+      "last_state": "overtopped",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 64.5,
+      "rank": 161,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-016",
+      "region": "riau",
+      "cell_id": "riau-0272",
+      "point": {
+        "lat": 0.4479,
+        "lon": 102.1407
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 62.5,
+      "rank": 172,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-033",
+      "region": "riau",
+      "cell_id": "riau-0275",
+      "point": {
+        "lat": 0.5435,
+        "lon": 101.9943
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 62.1,
+      "rank": 175,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-044",
+      "region": "riau",
+      "cell_id": "riau-0282",
+      "point": {
+        "lat": 0.7573,
+        "lon": 102.4445
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 60.7,
+      "rank": 182,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-009",
+      "region": "riau",
+      "cell_id": "riau-0283",
+      "point": {
+        "lat": 0.2441,
+        "lon": 102.2527
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 60.6,
+      "rank": 183,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-029",
+      "region": "riau",
+      "cell_id": "riau-0286",
+      "point": {
+        "lat": 0.3911,
+        "lon": 102.4257
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 60.3,
+      "rank": 186,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-036",
+      "region": "riau",
+      "cell_id": "riau-0287",
+      "point": {
+        "lat": 0.5014,
+        "lon": 101.8273
+      },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 59.8,
+      "rank": 187,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-037",
+      "region": "riau",
+      "cell_id": "riau-0290",
+      "point": {
+        "lat": 0.2676,
+        "lon": 102.1413
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 59.4,
+      "rank": 190,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-012",
+      "region": "riau",
+      "cell_id": "riau-0293",
+      "point": {
+        "lat": 0.6099,
+        "lon": 102.1869
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 58.8,
+      "rank": 193,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-025",
+      "region": "riau",
+      "cell_id": "riau-0294",
+      "point": {
+        "lat": 0.7226,
+        "lon": 101.8287
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 58.5,
+      "rank": 194,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-021",
+      "region": "riau",
+      "cell_id": "riau-0296",
+      "point": {
+        "lat": 0.4505,
+        "lon": 102.4811
+      },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 57.9,
+      "rank": 196,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-026",
+      "region": "riau",
+      "cell_id": "riau-0297",
+      "point": {
+        "lat": 0.4998,
+        "lon": 102.2782
+      },
+      "last_state": "damaged",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 57.8,
+      "rank": 197,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-047",
+      "region": "riau",
+      "cell_id": "riau-0299",
+      "point": {
+        "lat": 0.3951,
+        "lon": 102.0914
+      },
+      "last_state": "intact",
+      "last_checked_at": "2026-07-19T10:42:00+07:00",
+      "drying_score": 57.5,
+      "rank": 199,
+      "example": true
+    }
+  ]
+}
