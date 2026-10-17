@@ -50,6 +50,7 @@ class AssignmentRequest:
     task_type: TaskType
     instructions_hint: str
     deadline_hours: int | None
+    target_cell_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -106,7 +107,7 @@ class TaskAssigner:
         next_status = self._status_after_assign(case)
         volunteer = self._assignee(request.assignee_id)
         hours = self._hours(request)
-        target = self._target(case)
+        target = self._target(case, request)
         reading = self._clock.reading()
         deadline_at = reading.now + timedelta(hours=hours)
         composed = await self._messenger.compose(
@@ -205,15 +206,20 @@ class TaskAssigner:
         except InvalidDeadline as error:
             raise AssignmentRejected(str(error)) from error
 
-    def _target(self, case: Case) -> GeoPoint:
+    def _target(self, case: Case, request: AssignmentRequest) -> GeoPoint:
+        if request.target_cell_id is not None:
+            return self._centroid(request.target_cell_id)
         if case.dam_id is not None:
             dam = self._dams.get(case.dam_id)
             if dam is None:
                 raise AssignmentRejected(f"unknown dam {case.dam_id!r}")
             return dam.point
-        centroid = self._cells.centroid(case.cell_id)
+        return self._centroid(case.cell_id)
+
+    def _centroid(self, cell_id: str) -> GeoPoint:
+        centroid = self._cells.centroid(cell_id)
         if centroid is None:
-            raise AssignmentRejected(f"unknown cell {case.cell_id!r}")
+            raise AssignmentRejected(f"unknown cell {cell_id!r}")
         return centroid
 
     def _brief(

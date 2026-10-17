@@ -6,6 +6,7 @@ INVOKER = f"bara-tasks-invoker@{PROJECT}.iam.gserviceaccount.com"
 SUBSCRIPTION = "drying.ranked.push"
 EVIDENCE_SUBSCRIPTION = "evidence.received.push"
 OVERDUE_SUBSCRIPTION = "task.overdue.push"
+FIRE_SUBSCRIPTION = "fire.quiet.push"
 
 EXPECTED_PUSH_ITEMS = [
     ("api-timeout", "600"),
@@ -13,6 +14,7 @@ EXPECTED_PUSH_ITEMS = [
     ("subscription", SUBSCRIPTION),
     ("subscription", EVIDENCE_SUBSCRIPTION),
     ("subscription", OVERDUE_SUBSCRIPTION),
+    ("subscription", FIRE_SUBSCRIPTION),
 ]
 
 
@@ -51,6 +53,7 @@ def test_dry_run_grants_the_pubsub_agent_its_roles_and_one_per_subscription(
         "roles/pubsub.subscriber",
         "roles/pubsub.subscriber",
         "roles/pubsub.subscriber",
+        "roles/pubsub.subscriber",
     ]
 
 
@@ -84,7 +87,7 @@ def test_a_real_run_creates_the_push_subscription_with_oidc_ack_deadline_and_dlq
     result = run_script(SCRIPT, "--project", PROJECT, ok_pattern=SERVICE_EXISTS)
 
     created = [c for c in result.calls if "pubsub subscriptions create" in c]
-    assert len(created) == 3
+    assert len(created) == 4
     call = created[0]
     assert call.startswith(f"pubsub subscriptions create {SUBSCRIPTION} ")
     assert "--topic drying.ranked" in call
@@ -126,3 +129,17 @@ def test_a_real_run_pushes_task_overdue_to_its_own_endpoint(run_script):
     assert "/api/events/task.overdue" in call
     assert f"--push-auth-service-account {INVOKER}" in call
     assert "--max-delivery-attempts 5" in call
+
+
+def test_a_real_run_pushes_fire_quiet_to_its_own_endpoint(run_script):
+    result = run_script(SCRIPT, "--project", PROJECT, ok_pattern=SERVICE_EXISTS)
+
+    [call] = [
+        c
+        for c in result.calls
+        if c.startswith(f"pubsub subscriptions create {FIRE_SUBSCRIPTION} ")
+    ]
+    assert "--topic fire.quiet" in call
+    assert "/api/events/fire.quiet" in call
+    assert "--ack-deadline 600" in call
+    assert f"--dead-letter-topic projects/{PROJECT}/topics/bara.dlq" in call

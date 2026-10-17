@@ -8,6 +8,7 @@ from config import (
     JudgeMode,
     ModelRoute,
     ModelsConfig,
+    ReignitionConfig,
     Settings,
     TasksConfig,
 )
@@ -20,6 +21,7 @@ def settings() -> Settings:
         git_sha="abc1234",
         judge_mode=JudgeMode(enabled=False, max_resets_per_hour=20),
         agent=AgentConfig(max_llm_calls=12, max_cases_per_trigger=3),
+        reignition=ReignitionConfig(recheck_spots_per_fire=3, recheck_after_hours=48),
         tasks=TasksConfig(
             default_deadline_hours={
                 "dam_check": 72,

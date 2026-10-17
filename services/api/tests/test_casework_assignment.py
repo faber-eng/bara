@@ -111,6 +111,7 @@ class World:
         self.volunteers = collection_with(
             Volunteer, volunteers or [make_volunteer(id="v1", language="id")], "id"
         )
+        self.warehouse = FakeWarehouse({CENTROID_SQL: list(centroids)})
         self.messenger = messenger or FakeMessenger()
         self.scheduler = FakeScheduler() if scheduler == "default" else scheduler
         clock = Clock(
@@ -129,7 +130,7 @@ class World:
                     "id",
                 )
             ),
-            cells=CellRepository(FakeWarehouse({CENTROID_SQL: list(centroids)})),
+            cells=CellRepository(self.warehouse),
             tasks=TaskRepository(self.tasks),
             casework=CaseworkStore(self.transactor),
             channel=WebChannel(clock, new_id),
@@ -214,6 +215,24 @@ def test_a_case_without_a_dam_targets_the_cell_centroid():
 
     assert assignment.task.target == GeoPoint(**CENTROID)
     assert world.messenger.briefs[0].place is None
+
+
+def test_a_target_cell_overrides_the_case_dam_and_cell():
+    world = World()
+
+    assignment = world.assign(target_cell_id="riau-9-9")
+
+    assert assignment.task.target == GeoPoint(**CENTROID)
+    assert world.warehouse.queries[-1][1] == {"cell_id": "riau-9-9"}
+
+
+def test_an_unknown_target_cell_is_rejected_and_writes_nothing():
+    world = World(centroids=())
+
+    with pytest.raises(AssignmentRejected, match="unknown cell 'riau-9-9'"):
+        world.assign(target_cell_id="riau-9-9")
+
+    assert world.nothing_written()
 
 
 def test_an_assigned_case_stays_assigned_and_gets_a_second_task():

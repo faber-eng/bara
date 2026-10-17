@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +9,7 @@ from adapters.firestore_repos import RankedDamRepository, RankingRepository
 from adapters.gemini import ModelGateway
 from config import JudgeMode
 from contracts import DryingRankedEvent, RankedCell, RankedDam
+from domain.scenario import load_scenario
 from tests.fakes import (
     FakeModels,
     FakeVerifier,
@@ -18,6 +20,7 @@ from tests.fakes import (
 from trigger import JudgeTrigger
 
 NOW = datetime(2026, 10, 17, 13, 0, tzinfo=UTC)
+DATA = Path(__file__).resolve().parents[3] / "data"
 
 
 class FixedClock:
@@ -55,6 +58,7 @@ def make_client(settings, publisher=None, with_rankings=True, judge=True):
         clock=FixedClock(),
         new_id=lambda: "evt-fixed",
         region="riau",
+        scenario=load_scenario(DATA),
     )
     gateway = ModelGateway(
         configured.models, {"reasoning": FakeModels([]), "fast": FakeModels([])}
@@ -149,8 +153,51 @@ def test_an_event_other_than_drying_ranked_is_422(settings):
 
     response = client.post(
         "/api/judge/trigger",
-        json={"event": "fire.quiet"},
+        json={"event": "hotspot.detected"},
         headers={"Authorization": "Bearer ops-claim"},
     )
 
     assert response.status_code == 422
+
+
+def test_fire_quiet_publishes_the_scenario_fire_event_and_returns_202(settings):
+    client, publisher = make_client(settings, judge=False)
+
+    response = client.post(
+        "/api/judge/trigger",
+        json={"event": "fire.quiet"},
+        headers={"Authorization": "Bearer ops-claim"},
+    )
+
+    assert response.status_code == 202
+    assert response.json() == {"event": "fire.quiet", "message_id": "msg-1"}
+    topic, event = publisher.published[0]
+    assert topic == "fire.quiet"
+    assert event.example is True
+    assert event.payload.event_id == "fire-riau-2026-demo-01"
+    assert len(event.payload.cells) == 3
+
+
+def test_fire_quiet_needs_no_rankings(settings):
+    client, _ = make_client(settings, with_rankings=False)
+
+    response = client.post(
+        "/api/judge/trigger",
+        json={"event": "fire.quiet"},
+        headers={"Authorization": "Bearer ops-claim"},
+    )
+
+    assert response.status_code == 202
+
+
+def test_fire_quiet_is_for_ops_and_judge_only(settings):
+    client, publisher = make_client(settings, judge=False)
+
+    response = client.post(
+        "/api/judge/trigger",
+        json={"event": "fire.quiet"},
+        headers={"Authorization": "Bearer volunteer"},
+    )
+
+    assert response.status_code == 403
+    assert publisher.published == []

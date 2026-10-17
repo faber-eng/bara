@@ -87,13 +87,15 @@ def test_build_dispatcher_handles_every_pushed_topic_and_trigger_wires_offline(
     escalator = main.build_escalator(adapters, gateway)
     agent = main.build_agent_service(settings, adapters, gateway, checker, escalator)
 
-    dispatcher = main.build_dispatcher(settings, adapters, agent, checker)
+    assigner = main.build_assigner(settings, adapters, gateway)
+    dispatcher = main.build_dispatcher(settings, adapters, agent, checker, assigner)
     trigger = main.build_trigger(settings, adapters)
 
     assert set(dispatcher._handlers) == {
         "drying.ranked",
         "evidence.received",
         "task.overdue",
+        "fire.quiet",
     }
     assert trigger is not None
 
