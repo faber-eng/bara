@@ -124,6 +124,8 @@ def test_verify_checks_the_deployed_git_sha_through_hosting(steps):
     assert "https://$PROJECT_ID.web.app/api/health" in text
     assert "git_sha" in text
     assert "$SHORT_SHA" in text
+    assert "--max-time" in text
+    assert text.rstrip().endswith("exit 1")
 
 
 def test_logging_is_cloud_logging_only_and_machine_is_default(config):
