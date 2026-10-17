@@ -12,3 +12,5 @@
 | photo/burned-2.jpg | Burnt tree on cleared land, Central Kalimantan | Josh Estey/AusAID | CC BY 2.0 | <https://commons.wikimedia.org/wiki/File:Kalimantan_deforestation_and_degradation_4_(10706228444).jpg> |
 | area/riau-area-1.geojson | Riau area 1 | Faber Fathers | CC BY 4.0 | team-made |
 | area/riau-area-2.geojson | Riau area 2 | Faber Fathers | CC BY 4.0 | team-made |
+| voice/damaged-dam-leak.ogg | Damaged dam, leaking (voice note, Indonesian) | Faber Fathers | CC BY 4.0 | team recording |
+| voice/broken-dam-left-side.ogg | Broken dam on the left side (voice note, Indonesian) | Faber Fathers | CC BY 4.0 | team recording |
