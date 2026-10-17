@@ -15,9 +15,13 @@ describe("parseTileLayer", () => {
     expect(parseTileLayer(layer)).toEqual(layer);
   });
 
+  it.each(["peat", "burn_scars", "reignition"])("accepts the %s layer", (kind) => {
+    expect(parseTileLayer({ ...layer, layer: kind }).layer).toBe(kind);
+  });
+
   it.each([
     ["a non-object", 3],
-    ["another layer kind", { ...layer, layer: "peat" }],
+    ["an unknown layer kind", { ...layer, layer: "clouds" }],
     ["a template without {x}", { ...layer, url_template: "https://t/{z}/{y}" }],
     ["a missing week", { ...layer, week: undefined }],
   ])("rejects %s", (_label, body) => {
