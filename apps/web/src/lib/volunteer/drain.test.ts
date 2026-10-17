@@ -13,6 +13,7 @@ function item(volunteerId: string, taskId: string): NewOutboxItem {
     blob: new Blob(["voice"]),
     sample: false,
     point: null,
+    capturedAt: "2026-10-18T01:00:00.000Z",
     ticket: null,
   };
 }
@@ -68,6 +69,28 @@ describe("drainOutbox", () => {
     const result = await drainOutbox("drain-c", upload);
 
     expect(result).toEqual({ sent: 1, dropped: 1, waiting: 0 });
+  });
+
+  it("sends the time the evidence was captured, not the time of the retry", async () => {
+    await addOutboxItem(item("drain-e", "task-1"));
+    const upload = vi.fn().mockResolvedValue(done);
+
+    await drainOutbox("drain-e", upload);
+
+    expect(upload.mock.calls[0]?.[0].capturedAt).toBe("2026-10-18T01:00:00.000Z");
+  });
+
+  it("runs one drain at a time for a volunteer", async () => {
+    await addOutboxItem(item("drain-f", "task-1"));
+    const upload = vi.fn().mockResolvedValue(done);
+
+    const [first, second] = await Promise.all([
+      drainOutbox("drain-f", upload),
+      drainOutbox("drain-f", upload),
+    ]);
+
+    expect(upload).toHaveBeenCalledTimes(1);
+    expect(second).toBe(first);
   });
 
   it("does nothing for a volunteer with no items", async () => {

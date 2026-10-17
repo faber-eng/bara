@@ -28,6 +28,7 @@ async function uploadOne(item: OutboxItem, upload: Uploader) {
       contentType: item.contentType,
       sample: item.sample,
       point: item.point,
+      capturedAt: item.capturedAt,
       ticket: item.ticket,
       onTicket: (issued) => {
         saving = saving.then(() => saveOutboxTicket(item.id, issued)).catch(() => undefined);
@@ -57,11 +58,21 @@ async function drainNow(volunteerId: string, upload: Uploader): Promise<DrainRes
   return { sent, dropped, waiting: items.length - sent - dropped };
 }
 
-export async function drainOutbox(
-  volunteerId: string,
-  upload: Uploader = uploadEvidence,
-): Promise<DrainResult> {
+const running = new Map<string, Promise<DrainResult>>();
+
+function drainExclusively(volunteerId: string, upload: Uploader): Promise<DrainResult> {
   const locks: LockManager | null = navigator.locks ?? null;
   if (locks === null) return drainNow(volunteerId, upload);
   return locks.request(LOCK_NAME, () => drainNow(volunteerId, upload));
+}
+
+export function drainOutbox(
+  volunteerId: string,
+  upload: Uploader = uploadEvidence,
+): Promise<DrainResult> {
+  const active = running.get(volunteerId);
+  if (active !== undefined) return active;
+  const started = drainExclusively(volunteerId, upload).finally(() => running.delete(volunteerId));
+  running.set(volunteerId, started);
+  return started;
 }

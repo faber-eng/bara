@@ -11,6 +11,7 @@ from casework.media import (
     parse_duration,
     prepare_audio,
     prepare_video,
+    run_tool,
 )
 from tests.media_files import short_video, silent_audio
 
@@ -78,3 +79,8 @@ def test_the_length_limit_has_a_half_second_grace():
 def test_a_length_that_is_not_a_number_is_unreadable():
     with pytest.raises(UnreadableMedia):
         parse_duration(b"N/A\n")
+
+
+def test_a_missing_program_is_unreadable_media_not_a_crash():
+    with pytest.raises(UnreadableMedia, match="not installed"):
+        asyncio.run(run_tool("no-such-ffmpeg-binary"))

@@ -14,6 +14,7 @@ export type OutboxItem = {
   blob: Blob;
   sample: boolean;
   point: GeoPoint | null;
+  capturedAt: string;
   ticket: IssuedTicket | null;
   queuedAt: number;
 };

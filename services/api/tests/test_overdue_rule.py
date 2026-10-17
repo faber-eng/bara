@@ -17,7 +17,7 @@ from contracts import (
     TaskOverdue,
     TaskOverdueEvent,
 )
-from domain.escalation import overdue_escalation_reason, smoke_ever_seen
+from domain.escalation import field_signs, overdue_escalation_reason, smoke_ever_seen
 from overdue_events import TaskOverdueHandler
 from tests.fakes import (
     InMemoryCollection,
@@ -195,6 +195,19 @@ def test_smoke_ever_seen_reads_the_flag_and_the_verdicts():
     assert smoke_ever_seen(flagged, []) is True
     assert smoke_ever_seen(plain, [make_evidence(verdict=None)]) is False
     assert smoke_ever_seen(plain, [smoke_photo("plume")]) is True
+
+
+def test_a_voice_note_that_mentions_smoke_is_not_proof():
+    plain = make_case()
+    spoken = make_evidence(
+        id="e8",
+        case_id="c1",
+        kind="audio",
+        verdict=make_verdict(smoke="plume", dam_state="unknown"),
+    )
+
+    assert smoke_ever_seen(plain, [spoken]) is False
+    assert field_signs([spoken]) is None
 
 
 def test_an_unexpected_escalation_error_goes_up_and_the_agent_does_not_run():

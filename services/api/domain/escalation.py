@@ -90,11 +90,17 @@ def smoke_in(signs: FieldSigns | None) -> bool:
     return signs is not None and signs.smoke != "none"
 
 
+def counts_as_proof(item: Evidence) -> bool:
+    return item.verdict is not None and item.kind != "audio"
+
+
 def field_signs(evidence: Sequence[Evidence]) -> FieldSigns | None:
     fire = [
         item.verdict
         for item in evidence
-        if item.verdict is not None and shows_fire(item.verdict)
+        if item.verdict is not None
+        and counts_as_proof(item)
+        and shows_fire(item.verdict)
     ]
     if not fire:
         return None
@@ -121,7 +127,8 @@ def smoke_ever_seen(case: Case, evidence: Sequence[Evidence]) -> bool:
     if case.history_flags.smoke_seen:
         return True
     return any(
-        item.verdict is not None and shows_smoke(item.verdict) for item in evidence
+        item.verdict is not None and counts_as_proof(item) and shows_smoke(item.verdict)
+        for item in evidence
     )
 
 

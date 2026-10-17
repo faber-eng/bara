@@ -20,6 +20,8 @@ class Checker(Protocol):
 
     def flag_for_person(self, case_id: str) -> None: ...
 
+    def flag_unread(self, case_id: str, evidence_id: str) -> None: ...
+
 
 class EvidenceAgent(Protocol):
     async def run_case(
@@ -44,7 +46,7 @@ class EvidenceReceivedHandler:
     async def _handle(self, message_id: str, payload: EvidenceReceived) -> None:
         checked = await self._check(message_id, payload)
         if checked is None:
-            self._checker.flag_for_person(payload.case_id)
+            self._checker.flag_unread(payload.case_id, payload.evidence_id)
             return
         if not checked.stored:
             logger.info(

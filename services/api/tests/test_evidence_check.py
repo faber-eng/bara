@@ -511,3 +511,19 @@ def test_a_video_without_a_point_needs_a_person():
 
     assert checked.verdict.needs_human is True
     assert "no location" in checked.verdict.reasons
+
+
+def test_a_failed_voice_check_does_not_send_the_case_to_a_person():
+    world = voice_world()
+
+    world.checker.flag_unread("c1", "e1")
+
+    assert world.cases.get("c1").status == "reviewing"
+
+
+def test_a_failed_photo_check_sends_the_case_to_a_person():
+    world = World()
+
+    world.checker.flag_unread("c1", "e1")
+
+    assert world.cases.get("c1").status == "human_review"
