@@ -19,8 +19,15 @@ fast:
 """
 
 
+VALID_APP_YAML = """
+languages: { default: id }
+judge_mode: { enabled: false, max_resets_per_hour: 5 }
+"""
+
+
 def write_models_yaml(directory: Path, text: str) -> Path:
     (directory / "models.yaml").write_text(text)
+    (directory / "app.yaml").write_text(VALID_APP_YAML)
     return directory
 
 
@@ -119,3 +126,72 @@ def test_models_yaml_that_is_not_a_mapping_is_an_error(tmp_path):
 
     with pytest.raises(ConfigError, match="models.yaml"):
         load_settings(BASE_ENV, tmp_path)
+
+
+def test_judge_mode_comes_from_the_repo_app_yaml():
+    settings = load_settings(BASE_ENV, REPO_CONFIG_DIR)
+
+    assert settings.judge_mode.enabled is True
+    assert settings.judge_mode.max_resets_per_hour == 20
+
+
+@pytest.mark.parametrize(("value", "enabled"), [("0", False), ("1", True)])
+def test_bara_judge_mode_overrides_the_yaml(tmp_path, value, enabled):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+
+    settings = load_settings(
+        {**BASE_ENV, "BARA_JUDGE_MODE": value}, config_dir=tmp_path
+    )
+
+    assert settings.judge_mode.enabled is enabled
+
+
+@pytest.mark.parametrize("value", ["", "true", "2", "yes"])
+def test_bara_judge_mode_must_be_0_or_1(tmp_path, value):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+
+    with pytest.raises(ConfigError, match="BARA_JUDGE_MODE"):
+        load_settings({**BASE_ENV, "BARA_JUDGE_MODE": value}, config_dir=tmp_path)
+
+
+def test_missing_app_yaml_is_an_error(tmp_path):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+    (tmp_path / "app.yaml").unlink()
+
+    with pytest.raises(ConfigError, match="app.yaml"):
+        load_settings(BASE_ENV, config_dir=tmp_path)
+
+
+def test_app_yaml_without_judge_mode_is_an_error(tmp_path):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+    (tmp_path / "app.yaml").write_text("languages: { default: id }\n")
+
+    with pytest.raises(ConfigError, match="app.yaml"):
+        load_settings(BASE_ENV, config_dir=tmp_path)
+
+
+def test_region_defaults_and_api_url_is_optional():
+    settings = load_settings(BASE_ENV, REPO_CONFIG_DIR)
+
+    assert settings.region == "asia-southeast1"
+    assert settings.api_url is None
+
+
+def test_region_and_api_url_come_from_the_environment():
+    settings = load_settings(
+        {**BASE_ENV, "REGION": "asia-southeast2", "BARA_API_URL": "https://api.test"},
+        REPO_CONFIG_DIR,
+    )
+
+    assert settings.region == "asia-southeast2"
+    assert settings.api_url == "https://api.test"
+
+
+def test_resource_names_derive_from_the_project():
+    settings = load_settings(BASE_ENV, REPO_CONFIG_DIR)
+
+    assert settings.evidence_bucket == "example-project-bara-evidence"
+    assert (
+        settings.tasks_invoker_email
+        == "bara-tasks-invoker@example-project.iam.gserviceaccount.com"
+    )

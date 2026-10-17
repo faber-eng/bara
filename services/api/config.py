@@ -14,6 +14,10 @@ MODEL_OVERRIDES: dict[Role, str] = {
 }
 
 
+DEFAULT_REGION = "asia-southeast1"
+JUDGE_MODE_VARIABLE = "BARA_JUDGE_MODE"
+
+
 class ConfigError(Exception):
     pass
 
@@ -38,10 +42,32 @@ class ModelsConfig(Config):
         return self.fast
 
 
+class JudgeMode(Config):
+    enabled: bool
+    max_resets_per_hour: int
+
+
+class AppConfig(Config):
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    judge_mode: JudgeMode
+
+
 class Settings(Config):
     project: str
     git_sha: str
     models: ModelsConfig
+    judge_mode: JudgeMode
+    region: str
+    api_url: str | None
+
+    @property
+    def evidence_bucket(self) -> str:
+        return f"{self.project}-bara-evidence"
+
+    @property
+    def tasks_invoker_email(self) -> str:
+        return f"bara-tasks-invoker@{self.project}.iam.gserviceaccount.com"
 
 
 def load_settings(
@@ -49,8 +75,14 @@ def load_settings(
 ) -> Settings:
     directory = resolve_config_dir(environ, config_dir)
     models = apply_model_overrides(read_models(directory / "models.yaml"), environ)
+    app = read_app(directory / "app.yaml")
     return Settings(
-        project=require_project(environ), git_sha=read_git_sha(environ), models=models
+        project=require_project(environ),
+        git_sha=read_git_sha(environ),
+        models=models,
+        judge_mode=apply_judge_override(app.judge_mode, environ),
+        region=read_optional(environ, "REGION") or DEFAULT_REGION,
+        api_url=read_optional(environ, "BARA_API_URL"),
     )
 
 
@@ -68,19 +100,49 @@ def resolve_config_dir(environ: Mapping[str, str], config_dir: Path | None) -> P
     return parents[2] / "config"
 
 
-def read_models(path: Path) -> ModelsConfig:
+def read_yaml(path: Path) -> object:
     try:
-        document = yaml.safe_load(path.read_text())
+        return yaml.safe_load(path.read_text())
     except OSError as error:
         raise ConfigError(f"cannot read {path}: {error}") from error
     except yaml.YAMLError as error:
         raise ConfigError(f"{path} is not valid YAML: {error}") from error
+
+
+def read_models(path: Path) -> ModelsConfig:
+    document = read_yaml(path)
     try:
         return ModelsConfig.model_validate(document)
     except ValidationError as error:
         raise ConfigError(
             f"{path} does not match the models config: {error}"
         ) from error
+
+
+def read_app(path: Path) -> AppConfig:
+    document = read_yaml(path)
+    try:
+        return AppConfig.model_validate(document)
+    except ValidationError as error:
+        raise ConfigError(f"{path} does not match the app config: {error}") from error
+
+
+def apply_judge_override(
+    judge_mode: JudgeMode, environ: Mapping[str, str]
+) -> JudgeMode:
+    if JUDGE_MODE_VARIABLE not in environ:
+        return judge_mode
+    value = environ[JUDGE_MODE_VARIABLE].strip()
+    if value not in ("0", "1"):
+        raise ConfigError(f"{JUDGE_MODE_VARIABLE} must be 0 or 1, got {value!r}")
+    return judge_mode.model_copy(update={"enabled": value == "1"})
+
+
+def read_optional(environ: Mapping[str, str], name: str) -> str | None:
+    value = environ.get(name, "").strip()
+    if value == "":
+        return None
+    return value
 
 
 def apply_model_overrides(

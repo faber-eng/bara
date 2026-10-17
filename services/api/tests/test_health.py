@@ -5,14 +5,19 @@ from google.genai import types
 
 import main
 from adapters.gemini import ModelGateway
-from tests.fakes import FakeModels, api_error
+from tests.fakes import FakeModels, FakeVerifier, api_error
 
 
 def make_client(settings, reasoning_outcomes=()):
     reasoning = FakeModels(list(reasoning_outcomes))
     fast = FakeModels([])
     gateway = ModelGateway(settings.models, {"reasoning": reasoning, "fast": fast})
-    return TestClient(main.build_app(settings, gateway)), gateway, reasoning, fast
+    return (
+        TestClient(main.build_app(settings, gateway, FakeVerifier({}))),
+        gateway,
+        reasoning,
+        fast,
+    )
 
 
 def test_health_returns_models_fallback_flag_and_git_sha(settings):
@@ -54,6 +59,8 @@ def test_create_app_wires_the_repo_config(monkeypatch):
     monkeypatch.delenv("FAST_MODEL", raising=False)
     monkeypatch.delenv("BARA_CONFIG_DIR", raising=False)
     monkeypatch.setattr(main, "configure_logging", lambda: None)
+    monkeypatch.setattr(main, "build_token_verifier", lambda settings: FakeVerifier({}))
+    monkeypatch.setattr(main, "build_adapters", lambda settings: "adapters")
     monkeypatch.setattr(
         main,
         "build_vertex_clients",
@@ -67,3 +74,27 @@ def test_create_app_wires_the_repo_config(monkeypatch):
         "fast": "gemini-3.5-flash",
     }
     assert body["git_sha"] == "fe23bb1"
+
+
+def test_create_app_puts_the_verifier_and_adapters_on_app_state(monkeypatch):
+    verifier = FakeVerifier({})
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "example-project")
+    monkeypatch.setattr(main, "configure_logging", lambda: None)
+    monkeypatch.setattr(main, "build_token_verifier", lambda settings: verifier)
+    monkeypatch.setattr(main, "build_adapters", lambda settings: "adapters")
+    monkeypatch.setattr(
+        main,
+        "build_vertex_clients",
+        lambda settings: {"reasoning": FakeModels([]), "fast": FakeModels([])},
+    )
+
+    app = main.create_app()
+
+    assert app.state.verifier is verifier
+    assert app.state.adapters == "adapters"
+
+
+def test_importing_main_initialises_no_firebase_app():
+    import firebase_admin
+
+    assert firebase_admin._apps == {}
