@@ -11,6 +11,7 @@ from domain.clock import Clock
 from tests.fakes import FakeModels, FakeVerifier, InMemoryClockStore
 
 REAL_NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
+JOBS: list[str] = []
 
 
 class FakeResetter:
@@ -41,6 +42,7 @@ def make_client(settings, judge=True, max_resets=20):
     store = InMemoryClockStore(ClockSettings(offset_seconds=172800, updated_by="judge"))
     app.state.adapters = SimpleNamespace(clock=Clock(store, lambda: REAL_NOW))
     app.state.resetter = FakeResetter(store)
+    app.state.bulletin_job = lambda: JOBS.append("bulletin")
     return TestClient(app), app.state.resetter
 
 
@@ -63,6 +65,22 @@ def test_a_judge_claim_resets_and_gets_the_clock_state_back(settings):
         "judge_mode": False,
     }
     assert resetter.calls == ["j1"]
+
+
+def test_a_reset_writes_the_bulletin_after_the_response(settings):
+    JOBS.clear()
+    client, _ = make_client(settings)
+
+    assert reset(client).status_code == 200
+    assert JOBS == ["bulletin"]
+
+
+def test_a_refused_reset_writes_no_bulletin(settings):
+    JOBS.clear()
+    client, _ = make_client(settings)
+
+    assert reset(client, "ops-claim").status_code == 403
+    assert JOBS == []
 
 
 def test_the_judge_header_works_while_judge_mode_is_on(settings):

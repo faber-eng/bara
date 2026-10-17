@@ -577,6 +577,9 @@ class BulletinRepository:
     def get(self, bulletin_id: str) -> Bulletin | None:
         return self._bulletins.get(bulletin_id)
 
+    def put(self, bulletin: Bulletin) -> None:
+        self._bulletins.put(bulletin.id, bulletin)
+
 
 class DamRepository:
     def __init__(self, dams: Collection[Dam]):

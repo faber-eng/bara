@@ -529,6 +529,17 @@ class FakeExplanationFiller:
             raise RuntimeError("model down")
 
 
+class FakeBulletinFiller:
+    def __init__(self, fail: bool = False):
+        self.regions: list[str] = []
+        self._fail = fail
+
+    async def write(self, region: str, week: str | None = None) -> None:
+        self.regions.append(region)
+        if self._fail:
+            raise RuntimeError("model down")
+
+
 def make_ranked_cell(**overrides):
     from datetime import date
 
@@ -710,6 +721,7 @@ APP_BUILDER_STUBS = {
     "build_rank_explainer": "explainer",
     "build_explanation_precomputer": "precomputer",
     "build_public_queries": "public",
+    "build_bulletin_writer": "bulletin_writer",
     "build_run_streamer": "streamer",
     "build_tiles": "tiles",
     "build_checker": "checker",
@@ -752,3 +764,26 @@ class InMemoryTriggerGateStore:
         if state is not None:
             self.state = state
         return result
+
+
+def make_public_summary(**overrides):
+    from datetime import UTC, date, datetime
+
+    from contracts import DataAsOf, PublicSummary
+
+    fields = {
+        "region": "riau",
+        "week": "2026-W42",
+        "high_risk_cells": 12,
+        "dams_broken": 3,
+        "cases_open": 4,
+        "cases_escalated": 1,
+        "cases_closed": 2,
+        "median_days_to_repair": 2.5,
+        "tasks_on_time_pct": 80.0,
+        "data_as_of": DataAsOf(
+            s1_pass_date=date(2026, 10, 12),
+            ranking_run_at=datetime(2026, 10, 12, tzinfo=UTC),
+        ),
+    }
+    return PublicSummary(**{**fields, **overrides})

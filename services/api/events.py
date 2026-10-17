@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 MAX_CONCURRENT_RUNS = 3
 FILL_HARD_LIMIT_SECONDS = 480
+BULLETIN_HARD_LIMIT_SECONDS = 90
 EXECUTOR_THREADS = 16
 
 DispatchOutcome = Literal["processed", "duplicate"]
@@ -138,6 +139,10 @@ class ExplanationFiller(Protocol):
     async def run(self, region: str) -> object: ...
 
 
+class BulletinFiller(Protocol):
+    async def write(self, region: str, week: str | None = None) -> object: ...
+
+
 class DryingRankedHandler:
     def __init__(
         self,
@@ -146,6 +151,7 @@ class DryingRankedHandler:
         ranked_dams: RankedDamRepository,
         agent: AgentRunner,
         explanations: ExplanationFiller,
+        bulletin: BulletinFiller,
         clock: Clock,
         max_cases: int,
         region: str,
@@ -155,6 +161,7 @@ class DryingRankedHandler:
         self._ranked_dams = ranked_dams
         self._agent = agent
         self._explanations = explanations
+        self._bulletin = bulletin
         self._clock = clock
         self._max_cases = max_cases
 
@@ -181,6 +188,7 @@ class DryingRankedHandler:
             self._run_all(message_id, event, cases),
             self._fill_explanations(event.region),
         )
+        await self._write_bulletin(event.region)
 
     async def _fill_explanations(self, region: str) -> None:
         try:
@@ -196,6 +204,17 @@ class DryingRankedHandler:
                         "region": region,
                     }
                 },
+            )
+
+    async def _write_bulletin(self, region: str) -> None:
+        try:
+            await asyncio.wait_for(
+                self._bulletin.write(region), BULLETIN_HARD_LIMIT_SECONDS
+            )
+        except Exception:
+            logger.exception(
+                "bulletin write failed",
+                extra={"fields": {"event": "bulletin_write_failed", "region": region}},
             )
 
     def _open_cases(self, message_id: str, event: DryingRankedEvent) -> list[Case]:

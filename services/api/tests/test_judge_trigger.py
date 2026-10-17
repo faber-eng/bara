@@ -23,6 +23,7 @@ from tests.fakes import (
 from trigger import JudgeTrigger
 
 NOW = datetime(2026, 10, 17, 13, 0, tzinfo=UTC)
+JOBS: list[str] = []
 DATA = Path(__file__).resolve().parents[3] / "data"
 
 
@@ -86,6 +87,7 @@ def make_client(
     )
     app = main.build_app(configured, gateway, verifier)
     app.state.trigger = trigger
+    app.state.bulletin_job = lambda: JOBS.append("bulletin")
     app.state.trigger_gate = gate or TriggerGate(InMemoryTriggerGateStore(), clock)
     return TestClient(app), publisher
 
@@ -122,6 +124,22 @@ def test_an_ops_user_with_a_claim_gets_202_and_the_event_is_published(settings):
     assert event.payload.week == "2026-W42"
     assert [ref.cell_id for ref in event.payload.top_cells] == ["c1", "c2", "c3"]
     assert [ref.dam_id for ref in event.payload.top_dams] == ["d1"]
+
+
+def test_an_accepted_trigger_writes_the_bulletin_in_the_background(settings):
+    JOBS.clear()
+    client, _ = make_client(settings, judge=False)
+
+    assert trigger(client).status_code == 202
+    assert JOBS == ["bulletin"]
+
+
+def test_a_refused_trigger_writes_no_bulletin(settings):
+    JOBS.clear()
+    client, _ = make_client(settings, judge=False)
+
+    assert trigger(client, "volunteer").status_code == 403
+    assert JOBS == []
 
 
 def test_the_judge_header_works_while_judge_mode_is_on(settings):

@@ -13,6 +13,7 @@ from events import (
     decode_push,
 )
 from tests.fakes import (
+    FakeBulletinFiller,
     FakeExplanationFiller,
     InMemoryCollection,
     make_case,
@@ -48,6 +49,7 @@ class World:
         fail_for=None,
         limit=3,
         explanations=None,
+        bulletin=None,
     ):
         self.case_store = InMemoryCollection(Case)
         for case in open_cases:
@@ -57,6 +59,7 @@ class World:
             dam_store.put(dam.dam_id, dam)
         self.agent = FakeAgent(fail_for)
         self.explanations = explanations or FakeExplanationFiller()
+        self.bulletin = bulletin or FakeBulletinFiller()
         self.cases = CaseRepository(self.case_store)
         self.event_store = InMemoryCollection(ProcessedEvent)
         self.handler = DryingRankedHandler(
@@ -64,6 +67,7 @@ class World:
             ranked_dams=RankedDamRepository(lambda region: dam_store),
             agent=self.agent,
             explanations=self.explanations,
+            bulletin=self.bulletin,
             clock=FixedClock(),
             max_cases=limit,
             region="riau",
@@ -397,6 +401,26 @@ def test_the_explanations_of_the_region_are_filled_once_per_ranking():
     world.deliver()
 
     assert world.explanations.regions == ["riau"]
+
+
+def test_the_bulletin_of_the_region_is_written_once_per_ranking():
+    world = World(five_dams())
+
+    world.deliver()
+
+    assert world.bulletin.regions == ["riau"]
+
+
+def test_a_failed_bulletin_does_not_fail_the_event_or_the_cases(caplog):
+    world = World(five_dams(), bulletin=FakeBulletinFiller(fail=True))
+
+    outcome = world.deliver()
+
+    assert outcome == "processed"
+    assert len(world.agent.runs) == 3
+    assert "bulletin_write_failed" in [
+        record.fields["event"] for record in caplog.records if hasattr(record, "fields")
+    ]
 
 
 def test_a_failed_explanation_fill_does_not_fail_the_event_or_the_cases(caplog):
