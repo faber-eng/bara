@@ -1,3 +1,4 @@
+import asyncio
 from datetime import UTC, datetime
 
 import pytest
@@ -395,3 +396,19 @@ def test_a_failed_explanation_fill_does_not_fail_the_event_or_the_cases(caplog):
     assert "explanations_precompute_failed" in [
         record.fields["event"] for record in caplog.records if hasattr(record, "fields")
     ]
+
+
+def test_a_fill_that_runs_past_the_hard_limit_is_cut_and_logged(monkeypatch, caplog):
+    import events
+
+    class Slow:
+        async def run(self, region):
+            await asyncio.sleep(5)
+
+    monkeypatch.setattr(events, "FILL_HARD_LIMIT_SECONDS", 0.05)
+    world = World(five_dams(), explanations=Slow())
+
+    outcome = world.deliver()
+
+    assert outcome == "processed"
+    assert len(world.agent.runs) == 3

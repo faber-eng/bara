@@ -16,7 +16,6 @@ from contracts import RankedCell, RankExplanation
 from domain.rank_explanation import (
     ExplanationRejected,
     check_explanation,
-    shown_numbers,
     shown_values,
 )
 from tests.fakes import InMemoryCollection, make_ranked_cell
@@ -46,7 +45,7 @@ def check(text=GOOD_TEXT, cited=None):
     check_explanation(
         text,
         GOOD_CITED if cited is None else cited,
-        shown_numbers(FACTS),
+        shown_values(FACTS),
         "riau-1-1",
     )
 
@@ -269,7 +268,6 @@ def test_the_prompt_version_is_named():
     "text",
     [
         "Cell riau-1-1 ranks 1 with a drying score of 90.5 and a canal 140 m away.",
-        "Cell riau-1-1 ranks 1 with a drying score of 90.5 and a canal 140.0 m away.",
     ],
 )
 def test_an_integer_written_for_a_whole_value_passes(text):
@@ -284,17 +282,19 @@ def test_an_integer_written_for_a_whole_value_passes(text):
     ],
 )
 def test_a_rounded_or_stray_number_is_rejected(text, bad):
-    facts = shown_numbers({**FACTS, "peat_class": 2})
+    facts = shown_values({**FACTS, "peat_class": 2})
     with pytest.raises(ExplanationRejected, match="not cited"):
         check_explanation(text, {"drying_score": 90.5, "rank": 1}, facts, "riau-1-1")
 
 
 def test_digits_inside_field_names_are_not_numbers():
-    text = "Rank 1 with s1_anom_db of -4.2 and rain_30d_mm of 180.0 near Sentinel-1."
+    text = (
+        "Rank 1 with s1_anom_db of -4.2 dB and rain_30d_mm of 180 mm near Sentinel-1."
+    )
     check_explanation(
         text,
         {"rank": 1, "s1_anom_db": -4.2, "rain_30d_mm": 180},
-        shown_numbers(FACTS),
+        shown_values(FACTS),
         "riau-1-1",
     )
 
@@ -419,7 +419,7 @@ ROUNDED_CITED = {
 
 
 def test_a_correctly_rounded_text_passes_the_number_check():
-    check_explanation(ROUNDED_TEXT, ROUNDED_CITED, shown_numbers(LIVE), "riau-1-1")
+    check_explanation(ROUNDED_TEXT, ROUNDED_CITED, shown_values(LIVE), "riau-1-1")
 
 
 @pytest.mark.parametrize(
@@ -430,17 +430,41 @@ def test_an_invented_or_unrounded_number_in_the_text_fails_the_number_check(old,
     text = ROUNDED_TEXT.replace(old, new)
 
     with pytest.raises(ExplanationRejected):
-        check_explanation(text, ROUNDED_CITED, shown_numbers(LIVE), "riau-1-1")
+        check_explanation(text, ROUNDED_CITED, shown_values(LIVE), "riau-1-1")
 
 
 def test_a_cited_value_that_is_the_unrounded_figure_fails_the_number_check():
     cited = {**ROUNDED_CITED, "drying_score": 96.84027719188221}
 
     with pytest.raises(ExplanationRejected, match="drying_score"):
-        check_explanation(ROUNDED_TEXT, cited, shown_numbers(LIVE), "riau-1-1")
+        check_explanation(ROUNDED_TEXT, cited, shown_values(LIVE), "riau-1-1")
 
 
 def test_the_stored_explanation_names_the_prompt_version():
     world = World([reply()])
 
     assert world.explain().prompt_version == EXPLAIN_PROMPT_VERSION
+
+
+def test_a_distance_written_in_the_wrong_unit_is_rejected():
+    text = ROUNDED_TEXT.replace("2.5 km", "2.5 m")
+
+    with pytest.raises(ExplanationRejected, match="canal_dist_m"):
+        check_explanation(text, ROUNDED_CITED, shown_values(LIVE), "riau-1-1")
+
+
+def test_a_deficit_written_as_millimetres_is_rejected():
+    values = {**LIVE}
+    text = "Cell riau-1-1 ranks 1 and the rain deficit is 31 mm."
+    cited = {"rank": 1, "rain_deficit_pct": 31}
+
+    with pytest.raises(ExplanationRejected, match="rain_deficit_pct"):
+        check_explanation(text, cited, shown_values(values), "riau-1-1")
+
+
+def test_a_small_negative_signal_is_not_written_as_negative_zero():
+    assert shown_values({"s1_anom_db": -0.04})["s1_anom_db"].written == "0.0 dB"
+
+
+def test_a_distance_that_rounds_to_a_kilometre_is_written_in_km():
+    assert shown_values({"canal_dist_m": 999.6})["canal_dist_m"].written == "1.0 km"

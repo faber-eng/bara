@@ -39,7 +39,14 @@ class ExplanationRejected(Exception):
 @dataclass(frozen=True)
 class Shown:
     number: float
-    written: str
+    digits: str
+    unit: str
+
+    @property
+    def written(self) -> str:
+        if self.unit in ("", "%"):
+            return f"{self.digits}{self.unit}"
+        return f"{self.digits} {self.unit}"
 
 
 def known_values(facts: Mapping[str, object]) -> dict[str, float]:
@@ -59,19 +66,20 @@ def is_current(explanation: RankExplanation | None) -> bool:
 
 
 def shown_decimal(value: float, unit: str) -> Shown:
-    number = round(value, 1)
-    return Shown(number, f"{number:.1f}{unit}")
+    number = round(value, 1) + 0.0
+    return Shown(number, f"{number:.1f}", unit)
 
 
 def shown_whole(value: float, unit: str) -> Shown:
     number = round(value)
-    return Shown(number, f"{number}{unit}")
+    return Shown(number, str(number), unit)
 
 
 def shown_distance(metres: float) -> Shown:
-    if metres < METRES_PER_KM:
-        return shown_whole(metres, " m")
-    return shown_decimal(metres / METRES_PER_KM, " km")
+    whole = round(metres)
+    if whole < METRES_PER_KM:
+        return shown_whole(whole, "m")
+    return shown_decimal(whole / METRES_PER_KM, "km")
 
 
 def shown_score(value: float) -> Shown:
@@ -83,11 +91,11 @@ def shown_count(value: float) -> Shown:
 
 
 def shown_decibels(value: float) -> Shown:
-    return shown_decimal(value, " dB")
+    return shown_decimal(value, "dB")
 
 
 def shown_millimetres(value: float) -> Shown:
-    return shown_whole(value, " mm")
+    return shown_whole(value, "mm")
 
 
 def shown_percent(fraction: float) -> Shown:
@@ -107,10 +115,6 @@ SHOWERS = {
 
 def shown_values(values: Mapping[str, float]) -> dict[str, Shown]:
     return {field: SHOWERS[field](value) for field, value in values.items()}
-
-
-def shown_numbers(values: Mapping[str, float]) -> dict[str, float]:
-    return {field: shown.number for field, shown in shown_values(values).items()}
 
 
 def matches_value(token: str, value: float) -> bool:
@@ -143,8 +147,17 @@ def check_numbers(text: str, cited: Mapping[str, float], cell_id: str) -> None:
             raise ExplanationRejected(f"cited {field} does not appear in the text")
 
 
+def check_units(text: str, cited: Mapping[str, float], shown: Mapping[str, Shown]):
+    for field in cited:
+        fact = shown[field]
+        pattern = re.escape(fact.digits) + r"\s*" + re.escape(fact.unit) + r"(?!\w)"
+        if fact.unit and not re.search(pattern, text):
+            raise ExplanationRejected(f"cited {field} is not written with {fact.unit}")
+
+
 def check_explanation(
-    text: str, cited: Mapping[str, float], facts: Mapping[str, float], cell_id: str
+    text: str, cited: Mapping[str, float], shown: Mapping[str, Shown], cell_id: str
 ) -> None:
-    check_cited(cited, facts)
+    check_cited(cited, {field: fact.number for field, fact in shown.items()})
     check_numbers(text, cited, cell_id)
+    check_units(text, cited, shown)

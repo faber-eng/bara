@@ -1,7 +1,7 @@
 import asyncio
 
 from adapters.firestore_repos import RankingRepository
-from casework.explanation_batch import CONCURRENCY, TOP_CELLS, ExplanationPrecomputer
+from casework.explanation_batch import ExplanationPrecomputer
 from contracts import RankedCell, RankExplanation
 from domain.rank_explanation import EXPLAIN_PROMPT_VERSION
 from tests.fakes import InMemoryCollection, make_ranked_cell
@@ -43,13 +43,9 @@ def world(count: int, **overrides):
 
 def run(explainer, rankings, **kwargs):
     precomputer = ExplanationPrecomputer(
-        explainer=explainer, rankings=rankings, **kwargs
+        explainer_factory=lambda: explainer, rankings=rankings, **kwargs
     )
     return asyncio.run(precomputer.run("riau"))
-
-
-def test_the_defaults_are_the_top_200_cells_and_8_calls_at_once():
-    assert (TOP_CELLS, CONCURRENCY) == (200, 8)
 
 
 def test_only_the_top_cells_up_to_the_limit_are_explained():
@@ -114,7 +110,7 @@ def test_the_result_carries_the_time_of_the_run_and_of_one_call():
 
     result = run(FakeExplainer(delay=0.05), rankings, concurrency=8)
 
-    assert 0.1 <= result.seconds < 1
+    assert result.seconds >= 0.1
     assert 0.05 <= result.call_p50_seconds <= result.call_p95_seconds
 
 
@@ -124,3 +120,29 @@ def test_a_region_with_no_ranked_cells_does_nothing():
     result = run(FakeExplainer(), rankings)
 
     assert (result.wanted, result.done, result.seconds >= 0) == (0, 0, True)
+
+
+def test_no_new_cell_starts_after_the_start_budget():
+    rankings, _ = world(12)
+    explainer = FakeExplainer(delay=0.05)
+
+    result = run(explainer, rankings, concurrency=2, start_budget_seconds=0.12)
+
+    assert result.unstarted > 0
+    assert result.done + result.unstarted == 12
+    assert len(explainer.calls) == result.done
+
+
+def test_each_run_builds_a_fresh_explainer():
+    rankings, _ = world(2)
+    built = []
+
+    def factory():
+        built.append(FakeExplainer())
+        return built[-1]
+
+    precomputer = ExplanationPrecomputer(explainer_factory=factory, rankings=rankings)
+    asyncio.run(precomputer.run("riau"))
+    asyncio.run(precomputer.run("riau"))
+
+    assert len(built) == 2

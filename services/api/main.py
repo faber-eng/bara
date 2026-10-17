@@ -392,7 +392,7 @@ def build_explanation_precomputer(
     settings: Settings, adapters: Adapters, gateway: ModelGateway
 ) -> ExplanationPrecomputer:
     return ExplanationPrecomputer(
-        explainer=build_rank_explainer(settings, adapters, gateway),
+        explainer_factory=lambda: build_rank_explainer(settings, adapters, gateway),
         rankings=adapters.rankings,
     )
 

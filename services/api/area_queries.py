@@ -75,6 +75,16 @@ def to_all_cells(region: str, points: list[CellPoint]) -> AllCells:
     return AllCells(region=region, week=week, body=body)
 
 
+def without_stale_explanation(cell: RankedCell) -> RankedCell:
+    if is_current(cell.explanation):
+        return cell
+    return cell.model_copy(update={"explanation": None})
+
+
+def without_stale_explanations(cells: list[RankedCell]) -> list[RankedCell]:
+    return [without_stale_explanation(cell) for cell in cells]
+
+
 class NoRankings(Exception):
     pass
 
@@ -120,7 +130,7 @@ class AreaQueries:
         return Rankings(
             region=region,
             week=week,
-            cells=cells,
+            cells=without_stale_explanations(cells),
             dams=self._ranked_dams.top_in_week(region, week, RANKED_DAM_LIMIT),
         )
 
@@ -163,7 +173,7 @@ class AreaQueries:
         return Rankings(
             region=region,
             week=iso_week_label(cells[0].week_start),
-            cells=cells,
+            cells=without_stale_explanations(cells),
             dams=self._ranked_dams.top(region, RANKED_DAM_LIMIT),
         )
 
