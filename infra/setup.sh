@@ -29,6 +29,11 @@ readonly CI_SECRETS=(maps-key firebase-web-config)
 readonly CI_PROJECT_ROLES=(
   roles/logging.logWriter roles/firebasehosting.admin roles/serviceusage.serviceUsageConsumer
 )
+readonly JOBS_ACCOUNT=bara-jobs
+readonly SCHEDULER_ACCOUNT=bara-scheduler
+readonly DRYING_JOB=bara-drying
+readonly SCHEDULE_ZONE=Asia/Jakarta
+readonly SCHEDULES=(bara-drying-weekly)
 
 DRY_RUN=false
 PROJECT_FLAG=""
@@ -48,8 +53,10 @@ Prints one line per resource: "ok" (exists), "made" or "would make".
 Exit codes: 0 done, 1 a gcloud call failed, 2 usage error, 3 no project, 4 tool missing.
 
 The Cloud Build service account bara-build and its grants need the deployed bara-api
-service and the secrets maps-key and firebase-web-config. Push subscriptions, Cloud
-Scheduler jobs and run.invoker grants wait for the bara-api event route and bara-jobs.
+service and the secrets maps-key and firebase-web-config. Push subscriptions and their
+run.invoker grants wait for the bara-api event route. The scheduler job bara-drying-weekly
+is created at once; its run.invoker grant on the Cloud Run job bara-drying waits for the
+first Cloud Build deploy of that job.
 EOF
 }
 
@@ -280,7 +287,7 @@ setup_apis() {
 
 setup_service_accounts() {
   local name
-  for name in bara-api bara-jobs bara-pubsub-invoker bara-tasks-invoker; do
+  for name in bara-api bara-jobs bara-pubsub-invoker bara-tasks-invoker "$SCHEDULER_ACCOUNT"; do
     ensure service-account "$name" sa_exists create_sa
   done
 }
@@ -344,6 +351,69 @@ setup_ci() {
   done
 }
 
+schedule_cron() {
+  case "$1" in
+    bara-drying-weekly) echo "0 1 * * 1" ;;
+  esac
+}
+
+schedule_job() {
+  case "$1" in
+    bara-drying-weekly) echo "$DRYING_JOB" ;;
+  esac
+}
+
+run_job_exists() {
+  gcloud run jobs describe "$1" --region "$REGION" --project "$PROJECT" >/dev/null 2>&1
+}
+
+has_job_role() {
+  split_binding "$1"
+  policy_has_binding "$BINDING_ROLE" "$BINDING_MEMBER" \
+    gcloud run jobs get-iam-policy "$BINDING_NAME" --region "$REGION" --project "$PROJECT"
+}
+
+grant_job_role() {
+  split_binding "$1"
+  with_retry gcloud run jobs add-iam-policy-binding "$BINDING_NAME" --region "$REGION" \
+    --project "$PROJECT" --member "serviceAccount:$BINDING_MEMBER" --role "$BINDING_ROLE" --quiet --format none
+}
+
+scheduler_job_exists() {
+  gcloud scheduler jobs describe "$1" --location "$REGION" --project "$PROJECT" >/dev/null 2>&1
+}
+
+create_scheduler_job() {
+  local name="$1" job
+  job="$(schedule_job "$name")"
+  gcloud scheduler jobs create http "$name" --location "$REGION" --project "$PROJECT" \
+    --schedule "$(schedule_cron "$name")" --time-zone "$SCHEDULE_ZONE" \
+    --uri "https://run.googleapis.com/v2/projects/${PROJECT}/locations/${REGION}/jobs/${job}:run" \
+    --http-method POST --message-body '{}' \
+    --oauth-service-account-email "$(sa_email "$SCHEDULER_ACCOUNT")" --quiet >/dev/null
+}
+
+setup_jobs_deploy_access() {
+  local ci jobs
+  ci="$(sa_email "$CI_ACCOUNT")"
+  jobs="$(sa_email "$JOBS_ACCOUNT")"
+  ensure project-role "$ci|roles/run.developer" has_project_role grant_project_role
+  ensure sa-user "$jobs|$ci|roles/iam.serviceAccountUser" has_sa_user grant_sa_user
+}
+
+setup_schedules() {
+  local name job
+  for name in "${SCHEDULES[@]}"; do
+    ensure scheduler-job "$name" scheduler_job_exists create_scheduler_job
+    job="$(schedule_job "$name")"
+    if run_job_exists "$job"; then
+      ensure job-role "$job|$(sa_email "$SCHEDULER_ACCOUNT")|roles/run.invoker" has_job_role grant_job_role
+    else
+      echo "Cloud Run job $job not found in $REGION: push to main so Cloud Build deploys it, then run infra/setup.sh again for its run.invoker grant" >&2
+    fi
+  done
+}
+
 main() {
   parse_args "$@"
   require_tools gcloud bq
@@ -359,6 +429,8 @@ main() {
   setup_data_stores
   setup_messaging
   setup_ci
+  setup_jobs_deploy_access
+  setup_schedules
 }
 
 main "$@"

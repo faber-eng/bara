@@ -74,6 +74,42 @@ steps:
         docker build -f services/api/Dockerfile --build-arg GIT_SHA=$SHORT_SHA -t $$IMAGE .
         docker push $$IMAGE
 
+  - id: image-jobs
+    name: gcr.io/cloud-builders/docker
+    waitFor: [pipelines-gate]
+    allowFailure: true
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMAGE=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA
+        docker build -f services/pipelines/Dockerfile -t $$IMAGE .
+        docker push $$IMAGE
+
+  - id: deploy-jobs
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [image-jobs]
+    allowFailure: true
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - deploy
+      - bara-drying
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA
+      - --region=$_REGION
+      - --project=$PROJECT_ID
+      - --service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com
+      - --cpu=1
+      - --memory=512Mi
+      - --tasks=1
+      - --max-retries=0
+      - --task-timeout=1800s
+      - --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID
+      - --args=jobs.weekly_rankings,--region,riau
+      - --quiet
+
   - id: deploy-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     waitFor: [image, web-gate]

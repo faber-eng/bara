@@ -2,6 +2,7 @@ from conftest import CI_ACCOUNT, PROJECT
 
 SCRIPT = "infra/setup.sh"
 API_ACCOUNT = f"bara-api@{PROJECT}.iam.gserviceaccount.com"
+JOBS_ACCOUNT = f"bara-jobs@{PROJECT}.iam.gserviceaccount.com"
 SERVICE_EXISTS = "run services describe bara-api"
 
 CI_PROJECT_ROLES = [
@@ -98,6 +99,11 @@ def test_real_run_grants_each_role_on_the_narrowest_resource(run_script):
         ("run services add-iam-policy-binding bara-api", "roles/run.developer"),
         (
             f"iam service-accounts add-iam-policy-binding {API_ACCOUNT}",
+            "roles/iam.serviceAccountUser",
+        ),
+        ("projects add-iam-policy-binding", "roles/run.developer"),
+        (
+            f"iam service-accounts add-iam-policy-binding {JOBS_ACCOUNT}",
             "roles/iam.serviceAccountUser",
         ),
         (
