@@ -14,6 +14,7 @@ from adapters.factory import (
 )
 from adapters.gemini import ModelGateway, build_agent_model, build_vertex_clients
 from adapters.reignition import ReignitionScores
+from adapters.trigger_gate import FirestoreTriggerGateStore
 from area_queries import AreaQueries
 from auth import FirebaseTokenVerifier, TokenVerifier
 from bara_agent.agent import build_tools
@@ -31,6 +32,7 @@ from casework.inbox import InboxReader
 from casework.messenger import Messenger
 from casework.rank_explanation import RankExplainer
 from casework.review import ReviewDesk
+from casework.trigger_gate import TriggerGate
 from config import Settings, full_flow_region, load_settings, region_timezones
 from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
@@ -328,6 +330,11 @@ def build_trigger(settings: Settings, adapters: Adapters) -> JudgeTrigger:
     )
 
 
+def build_trigger_gate(settings: Settings) -> TriggerGate:
+    db = firestore.Client(project=settings.project)
+    return TriggerGate(FirestoreTriggerGateStore(db), utcnow)
+
+
 def build_resetter(settings: Settings) -> ScenarioResetter:
     db = firestore.Client(project=settings.project)
     return build_scenario_resetter(db, load_scenario(settings.scenario_dir))
@@ -420,6 +427,7 @@ def create_app() -> FastAPI:
     app.state.acknowledger = build_acknowledger(app.state.adapters)
     app.state.brigade_inbox = build_brigade_inbox(app.state.adapters)
     app.state.trigger = build_trigger(settings, app.state.adapters)
+    app.state.trigger_gate = build_trigger_gate(settings)
     app.state.deadlines = build_deadlines(app.state.adapters)
     app.state.push_verifier = GoogleOidcVerifier()
     app.state.resetter = build_resetter(settings)

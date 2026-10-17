@@ -1,5 +1,6 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,6 +8,7 @@ from fastapi.testclient import TestClient
 import main
 from adapters.firestore_repos import RankedDamRepository, RankingRepository
 from adapters.gemini import ModelGateway
+from casework.trigger_gate import TriggerGate
 from config import JudgeMode
 from contracts import DryingRankedEvent, RankedCell, RankedDam
 from domain.scenario import load_scenario
@@ -14,6 +16,7 @@ from tests.fakes import (
     FakeModels,
     FakeVerifier,
     InMemoryCollection,
+    InMemoryTriggerGateStore,
     make_ranked_cell,
     make_ranked_dam,
 )
@@ -40,7 +43,18 @@ class RecordingPublisher:
         return "msg-1"
 
 
-def make_client(settings, publisher=None, with_rankings=True, judge=True):
+class MovingClock:
+    def __init__(self):
+        self.now = NOW
+
+    def __call__(self):
+        return self.now
+
+
+def make_client(
+    settings, publisher=None, with_rankings=True, judge=True, gate=None, clock=None
+):
+    clock = clock or MovingClock()
     configured = settings.model_copy(
         update={"judge_mode": JudgeMode(enabled=judge, max_resets_per_hour=20)}
     )
@@ -72,7 +86,18 @@ def make_client(settings, publisher=None, with_rankings=True, judge=True):
     )
     app = main.build_app(configured, gateway, verifier)
     app.state.trigger = trigger
+    app.state.trigger_gate = gate or TriggerGate(InMemoryTriggerGateStore(), clock)
     return TestClient(app), publisher
+
+
+class NoopResetter:
+    def reset(self, uid):
+        pass
+
+
+class ReadingClock:
+    def reading(self):
+        return SimpleNamespace(now=NOW, offset_seconds=0)
 
 
 def trigger(client, token="ops-claim", headers=None):
@@ -201,3 +226,54 @@ def test_fire_quiet_is_for_ops_and_judge_only(settings):
 
     assert response.status_code == 403
     assert publisher.published == []
+
+
+def test_a_second_trigger_inside_60_seconds_is_429_with_retry_after(settings):
+    clock = MovingClock()
+    client, publisher = make_client(settings, clock=clock)
+    assert trigger(client).status_code == 202
+    clock.now += timedelta(seconds=45)
+
+    response = trigger(client)
+
+    assert response.status_code == 429
+    assert response.headers["Retry-After"] == "15"
+    assert response.json() == {"detail": "Wait 15 s before the next trigger."}
+    assert len(publisher.published) == 1
+
+
+def test_the_daily_cap_is_429_until_midnight_utc(settings):
+    clock = MovingClock()
+    client, publisher = make_client(settings, clock=clock)
+    for _ in range(20):
+        assert trigger(client).status_code == 202
+        clock.now += timedelta(seconds=60)
+
+    response = trigger(client)
+
+    assert response.status_code == 429
+    assert response.headers["Retry-After"] == str(10 * 3600 + 40 * 60)
+    assert "20 triggers" in response.json()["detail"]
+    assert len(publisher.published) == 20
+
+
+def test_a_reset_does_not_clear_the_trigger_limit(settings):
+    clock = MovingClock()
+    client, _ = make_client(settings, clock=clock, judge=True)
+    client.app.state.resetter = NoopResetter()
+    client.app.state.adapters = SimpleNamespace(clock=ReadingClock())
+    judge = {"X-Bara-Role": "judge"}
+    assert trigger(client, "plain", judge).status_code == 202
+    reset = client.post(
+        "/api/judge/reset", headers={"Authorization": "Bearer plain", **judge}
+    )
+    assert reset.status_code == 200
+
+    assert trigger(client, "plain", judge).status_code == 429
+
+
+def test_a_forbidden_caller_does_not_use_the_limit(settings):
+    client, _ = make_client(settings)
+
+    assert trigger(client, "volunteer").status_code == 403
+    assert trigger(client).status_code == 202

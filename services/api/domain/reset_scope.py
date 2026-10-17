@@ -66,7 +66,11 @@ def touches_real_uid(
             item.uploaded_by
             for item in on_cases(snapshot.evidence, frozenset({case_id}))
         ]
-        + [item.to_id for item in on_cases(snapshot.messages, frozenset({case_id}))]
+        + [
+            item.to_id
+            for item in on_cases(snapshot.messages, frozenset({case_id}))
+            if item.thread != "ops"
+        ]
         + [
             item.contact_id
             for item in on_cases(snapshot.escalations, frozenset({case_id}))

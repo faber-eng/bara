@@ -119,6 +119,29 @@ def test_a_message_to_a_real_uid_keeps_the_case():
     assert plan_reset(example_world(case)).case_ids == set()
 
 
+def test_a_review_note_to_ops_does_not_keep_the_case():
+    case = scenario_case()
+    note = make_message(
+        id="m-note", case_id="c-ex", to_id="ops", thread="ops", text="Review note"
+    )
+    world = example_world(case)
+    world = snapshot(**{**world.__dict__, "messages": [case["message"], note]})
+
+    scope = plan_reset(world)
+
+    assert scope.case_ids == {"c-ex"}
+    assert scope.message_ids == {"m-c-ex", "m-note"}
+
+
+def test_a_volunteer_thread_message_to_a_real_uid_keeps_the_case():
+    case = scenario_case()
+    case["message"] = make_message(
+        id="m-vol", case_id="c-ex", to_id="v-real", thread="volunteer"
+    )
+
+    assert plan_reset(example_world(case)).case_ids == set()
+
+
 def test_a_real_case_is_never_selected():
     real = make_case(id="c-real", example=False)
     task = make_task(id="t1", case_id="c-real", assignee_id="v-ex")

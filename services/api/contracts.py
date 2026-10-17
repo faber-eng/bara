@@ -305,6 +305,12 @@ class ClockSettings(Contract):
     updated_by: str
 
 
+class TriggerGateState(Contract):
+    last_trigger_at: AwareDatetime
+    day: str
+    day_count: Count
+
+
 class VerdictCacheEntry(Contract):
     id: Sha256
     verdict: Verdict

@@ -728,3 +728,14 @@ def stub_app_builders(monkeypatch, main_module, verifier) -> None:
         "build_vertex_clients",
         returns({"reasoning": FakeModels([]), "fast": FakeModels([])}),
     )
+
+
+class InMemoryTriggerGateStore:
+    def __init__(self):
+        self.state = None
+
+    def update(self, apply):
+        state, result = apply(self.state)
+        if state is not None:
+            self.state = state
+        return result

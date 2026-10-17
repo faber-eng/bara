@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict
 from adapters.pubsub import UnpublishableTopic
 from auth import Principal, require_role
 from domain.scenario_events import NoRankings
+from domain.trigger_limit import DAILY_CAP, Refusal
 from trigger import JudgeTrigger
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,29 @@ class TriggerAccepted(BaseModel):
     message_id: str
 
 
+def reject_when_limited(request: Request, uid: str) -> None:
+    refusal = request.app.state.trigger_gate.admit()
+    if refusal is None:
+        return
+    logger.warning(
+        "trigger blocked",
+        extra={"fields": {"uid": uid, "reason": refusal.reason}},
+    )
+    raise HTTPException(
+        status_code=429,
+        detail=refusal_message(refusal),
+        headers={"Retry-After": str(refusal.retry_after)},
+    )
+
+
+def refusal_message(refusal: Refusal) -> str:
+    if refusal.reason == "daily":
+        return (
+            f"Daily limit of {DAILY_CAP} triggers reached. Try again after 00:00 UTC."
+        )
+    return f"Wait {refusal.retry_after} s before the next trigger."
+
+
 def publish(trigger: JudgeTrigger, event: str) -> str:
     if event == "fire.quiet":
         return trigger.fire_quiet()
@@ -40,6 +64,7 @@ def trigger_event(
     request: Request,
     principal: Annotated[Principal, Depends(require_role("ops", "judge"))],
 ) -> TriggerAccepted:
+    reject_when_limited(request, principal.uid)
     trigger: JudgeTrigger = request.app.state.trigger
     try:
         message_id = publish(trigger, body.event)
