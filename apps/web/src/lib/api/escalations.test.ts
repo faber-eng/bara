@@ -49,7 +49,7 @@ describe("brigade inbox", () => {
   it("drops an acknowledged escalation from the fixture inbox and moves its case to monitoring", async () => {
     await ackEscalation("esc-0001");
     expect(await fetchBrigadeInbox("contact-daops-pekanbaru")).toEqual([]);
-    const listed = (await fetchCases("riau")).find((entry) => entry.case.id === "case-0002");
+    const listed = (await fetchCases("riau")).find((entry) => entry.case.id === "case-0007");
     expect(listed?.case.status).toBe("monitoring");
   });
 
