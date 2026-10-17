@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { rankingsQuery } from "../../lib/api/queries";
 import type { RankedCell } from "../../lib/contracts";
+import { rowSelection } from "../../lib/ops/cellSelection";
 import { OPS_REGION } from "../../lib/ops/region";
 import { QueryState } from "./QueryState";
 
@@ -32,9 +34,17 @@ function RankChange({ value }: { value: number | null }) {
   return <span title={`Down ${Math.abs(value)} places`}>↓{Math.abs(value)}</span>;
 }
 
-function RankedRow({ cell }: { cell: RankedCell }) {
+type RowProps = { cell: RankedCell; selected: boolean; onSelect: (cellId: string) => void };
+
+function RankedRow({ cell, selected, onSelect }: RowProps) {
+  const rowRef = useRef<HTMLTableRowElement>(null);
+
+  useEffect(() => {
+    if (selected) rowRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [selected]);
+
   return (
-    <tr>
+    <tr ref={rowRef} className={selected ? "ops-row-selected" : undefined}>
       <td className="ops-rank">{cell.rank}</td>
       <td>
         <span className={`score-badge ${scoreClass(cell.drying_score)}`}>
@@ -42,7 +52,14 @@ function RankedRow({ cell }: { cell: RankedCell }) {
         </span>
       </td>
       <td className="ops-cell">
-        <strong>{cell.cell_id}</strong>
+        <button
+          type="button"
+          className="ops-cell-button"
+          aria-pressed={selected}
+          onClick={() => onSelect(cell.cell_id)}
+        >
+          {cell.cell_id}
+        </button>
         <span className="ops-meta">{factsText(cell)}</span>
         {cell.explanation !== null && (
           <span className="ops-meta ops-explain">
@@ -57,7 +74,14 @@ function RankedRow({ cell }: { cell: RankedCell }) {
   );
 }
 
-function RankedTable({ cells, week }: { cells: RankedCell[]; week: string }) {
+type TableProps = {
+  cells: RankedCell[];
+  week: string;
+  selectedCellId: string | undefined;
+  onSelect: (cellId: string) => void;
+};
+
+function RankedTable({ cells, week, selectedCellId, onSelect }: TableProps) {
   const ordered = [...cells].sort((a, b) => a.rank - b.rank);
   return (
     <>
@@ -73,7 +97,12 @@ function RankedTable({ cells, week }: { cells: RankedCell[]; week: string }) {
         </thead>
         <tbody>
           {ordered.map((cell) => (
-            <RankedRow key={cell.cell_id} cell={cell} />
+            <RankedRow
+              key={cell.cell_id}
+              cell={cell}
+              selected={rowSelection(cell.cell_id, selectedCellId)}
+              onSelect={onSelect}
+            />
           ))}
         </tbody>
       </table>
@@ -85,7 +114,12 @@ function RankedTable({ cells, week }: { cells: RankedCell[]; week: string }) {
   );
 }
 
-export function RankedAreasTab() {
+type RankedAreasTabProps = {
+  selectedCellId: string | undefined;
+  onCellSelect: (cellId: string) => void;
+};
+
+export function RankedAreasTab({ selectedCellId, onCellSelect }: RankedAreasTabProps) {
   const rankings = useQuery(rankingsQuery(OPS_REGION));
   return (
     <QueryState
@@ -94,7 +128,14 @@ export function RankedAreasTab() {
       emptyText="No ranked areas for this week."
       isEmpty={(data) => data.cells.length === 0}
     >
-      {(data) => <RankedTable cells={data.cells} week={data.week} />}
+      {(data) => (
+        <RankedTable
+          cells={data.cells}
+          week={data.week}
+          selectedCellId={selectedCellId}
+          onSelect={onCellSelect}
+        />
+      )}
     </QueryState>
   );
 }

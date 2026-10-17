@@ -6,11 +6,11 @@ import { RankedAreasTab } from "./RankedAreasTab";
 
 vi.mock("../../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
 
-function renderTab() {
+function renderTab(selectedCellId?: string, onCellSelect = vi.fn()) {
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <RankedAreasTab />
+      <RankedAreasTab selectedCellId={selectedCellId} onCellSelect={onCellSelect} />
     </QueryClientProvider>,
   );
 }
@@ -111,5 +111,27 @@ describe("RankedAreasTab", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "This account does not have the ops role",
     );
+  });
+
+  it("marks the selected row and reports a row click", async () => {
+    const onCellSelect = vi.fn();
+    const second = fixture.cells.find((cell) => cell.rank === 2);
+    renderTab(second?.cell_id, onCellSelect);
+    await screen.findByRole("table");
+
+    const selected = screen.getByRole("button", { pressed: true });
+    expect(selected).toHaveTextContent(second?.cell_id as string);
+    expect(selected.closest("tr")).toHaveClass("ops-row-selected");
+    const first = fixture.cells.find((cell) => cell.rank === 1);
+    fireEvent.click(screen.getByRole("button", { name: first?.cell_id as string }));
+
+    expect(onCellSelect).toHaveBeenCalledWith(first?.cell_id);
+  });
+
+  it("marks no row when nothing is selected", async () => {
+    renderTab();
+    await screen.findByRole("table");
+
+    expect(screen.queryByRole("button", { pressed: true })).not.toBeInTheDocument();
   });
 });

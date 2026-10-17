@@ -12,23 +12,38 @@ const TAB_ORDER: readonly OpsTab[] = ["ranked", "cases"];
 type OpsPanelProps = {
   tab: OpsTab;
   selectedCaseId: string | undefined;
+  selectedCellId: string | undefined;
+  onCellSelect: (cellId: string) => void;
   onTabChange: (tab: OpsTab) => void;
   onCaseSelect: (caseId: string) => void;
   onCaseClear: () => void;
 };
 
-type TabBodyProps = Pick<OpsPanelProps, "tab" | "selectedCaseId" | "onCaseSelect" | "onCaseClear">;
+type TabBodyProps = Pick<
+  OpsPanelProps,
+  "tab" | "selectedCaseId" | "selectedCellId" | "onCellSelect" | "onCaseSelect" | "onCaseClear"
+>;
 
-function TabBody({ tab, selectedCaseId, onCaseSelect, onCaseClear }: TabBodyProps) {
+function TabBody({
+  tab,
+  selectedCaseId,
+  selectedCellId,
+  onCellSelect,
+  onCaseSelect,
+  onCaseClear,
+}: TabBodyProps) {
   if (selectedCaseId !== undefined)
     return <CaseDrawer caseId={selectedCaseId} onBack={onCaseClear} />;
-  if (tab === "ranked") return <RankedAreasTab />;
+  if (tab === "ranked")
+    return <RankedAreasTab selectedCellId={selectedCellId} onCellSelect={onCellSelect} />;
   return <CasesTab selectedCaseId={selectedCaseId} onSelect={onCaseSelect} />;
 }
 
 export function OpsPanel({
   tab,
   selectedCaseId,
+  selectedCellId,
+  onCellSelect,
   onTabChange,
   onCaseSelect,
   onCaseClear,
@@ -52,6 +67,8 @@ export function OpsPanel({
         <TabBody
           tab={tab}
           selectedCaseId={selectedCaseId}
+          selectedCellId={selectedCellId}
+          onCellSelect={onCellSelect}
           onCaseSelect={onCaseSelect}
           onCaseClear={onCaseClear}
         />

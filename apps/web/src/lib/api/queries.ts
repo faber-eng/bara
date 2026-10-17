@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { brigadeContactId } from "../brigade/contact";
 import { fetchCaseDetail } from "./caseDetail";
 import { fetchCases } from "./cases";
+import { fetchCellFacts } from "./cellFacts";
 import { fetchClock } from "./clock";
 import { fetchBrigadeInbox } from "./escalations";
 import { fetchRankings } from "./rankings";
@@ -11,7 +12,7 @@ const CLOCK_REFRESH_MS = 60_000;
 const CLOCK_RETRIES = 2;
 const CLOCK_RETRY_DELAY_MS = 1_000;
 const OPS_STALE_MS = 30_000;
-const TILES_STALE_MS = 5 * 60_000;
+const TILES_STALE_MS = 30 * 60_000;
 
 export const clockQuery = queryOptions({
   queryKey: ["clock"],
@@ -45,6 +46,16 @@ export function dryingTilesQuery(region: string) {
     queryKey: ["tiles", "drying", region],
     queryFn: ({ signal }) => fetchDryingTiles(region, signal),
     staleTime: TILES_STALE_MS,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+export function cellFactsQuery(cellId: string) {
+  return queryOptions({
+    queryKey: ["cells", "detail", cellId],
+    queryFn: ({ signal }) => fetchCellFacts(cellId, signal),
+    staleTime: OPS_STALE_MS,
     retry: false,
   });
 }
