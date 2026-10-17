@@ -1,16 +1,21 @@
 import logging
+from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
 from auth import Principal, require_role
 from case_queries import CaseQueries, UnknownCase
 from contracts import Case, CaseDetail, CaseStatus, CaseSummary
 from domain.case_machine import IllegalTransition
+from run_stream import RunStreamer, StreamEvent, render
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
+
+SSE_HEADERS = {"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
 
 OpsReader = Annotated[Principal, Depends(require_role("ops", "judge"))]
 
@@ -35,6 +40,31 @@ def case_detail(case_id: str, request: Request, _: OpsReader) -> CaseDetail:
         return queries(request).detail(case_id)
     except UnknownCase as error:
         raise HTTPException(status_code=404, detail="case_not_found") from error
+
+
+def streamer(request: Request) -> RunStreamer:
+    return request.app.state.run_streamer
+
+
+async def sse_body(events: AsyncIterator[StreamEvent]) -> AsyncIterator[str]:
+    async for event in events:
+        yield render(event)
+
+
+@router.get("/cases/{case_id}/stream")
+async def stream_agent_run(
+    case_id: str, request: Request, _: OpsReader
+) -> StreamingResponse:
+    run_streamer = streamer(request)
+    try:
+        await run_streamer.require_case(case_id)
+    except UnknownCase as error:
+        raise HTTPException(status_code=404, detail="case_not_found") from error
+    return StreamingResponse(
+        sse_body(run_streamer.events(case_id)),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
 
 
 @router.post("/cases/{case_id}/close", response_model=Case)

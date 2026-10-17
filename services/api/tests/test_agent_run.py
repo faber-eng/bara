@@ -414,7 +414,11 @@ def test_a_failed_store_on_a_failed_run_keeps_the_run_error_and_logs_both(caplog
         world.run()
 
     events = [r.fields["event"] for r in caplog.records if hasattr(r, "fields")]
-    assert events == ["agent_run_failed", "agent_run_store_failed"]
+    assert events == [
+        "agent_run_store_failed",
+        "agent_run_failed",
+        "agent_run_store_failed",
+    ]
 
 
 def test_an_invalid_output_log_leaves_out_the_model_text(caplog):
@@ -426,3 +430,56 @@ def test_an_invalid_output_log_leaves_out_the_model_text(caplog):
     [record] = [r for r in caplog.records if r.levelno == logging.ERROR]
     assert "Siti" not in str(record.fields)
     assert "Siti" not in record.getMessage()
+
+
+class RecordingRuns(InMemoryCollection):
+    def __init__(self, model):
+        super().__init__(model)
+        self.snapshots = []
+
+    def put(self, doc_id, item):
+        self.snapshots.append((item.status, [call.name for call in item.tool_calls]))
+        super().put(doc_id, item)
+
+
+def test_a_run_is_saved_as_running_after_every_tool_call_then_as_done():
+    world = World(happy_script())
+    recording = RecordingRuns(AgentRun)
+    world.runs["c1"] = recording
+
+    world.run()
+
+    assert recording.snapshots == [
+        ("running", []),
+        ("running", ALL_TOOLS[:1]),
+        ("running", ALL_TOOLS[:2]),
+        ("running", ALL_TOOLS[:3]),
+        ("running", ALL_TOOLS),
+        ("done", ALL_TOOLS),
+    ]
+
+
+def test_a_failed_run_is_saved_with_status_failed():
+    world = World([api_error(500)])
+
+    with pytest.raises(errors.APIError):
+        world.run()
+
+    assert world.stored().status == "failed"
+
+
+class RunningWritesDown(InMemoryCollection):
+    def put(self, doc_id, item):
+        if item.status == "running":
+            raise RuntimeError("firestore is down")
+        super().put(doc_id, item)
+
+
+def test_a_progress_write_that_fails_does_not_stop_the_run():
+    world = World(happy_script())
+    world.runs["c1"] = RunningWritesDown(AgentRun)
+
+    run = world.run()
+
+    assert [call.name for call in run.tool_calls] == ALL_TOOLS
+    assert world.stored().status == "done"

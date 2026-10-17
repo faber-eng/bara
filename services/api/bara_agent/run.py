@@ -17,7 +17,7 @@ from bara_agent.agent import AgentTool, build_coordinator, summarizers
 from bara_agent.output import AgentOutput
 from bara_agent.prompts import PROMPT_VERSION, RunInput, render_run_input
 from bara_agent.recorder import RunRecorder, elapsed_ms
-from contracts import AgentDecision, AgentRun, Case, Dam
+from contracts import AgentDecision, AgentRun, AgentRunStatus, Case, Dam
 from domain.clock import Clock
 
 logger = logging.getLogger(__name__)
@@ -117,6 +117,8 @@ class AgentService:
             RunInput(trigger, case, self._dam_for(case), event, started_at)
         )
         context = RunContext(trigger, case_id, run_id, started_at, started, recorder)
+        recorder.on_call_finished(lambda: self._save_progress(context))
+        self._save_progress(context)
         try:
             text = await self._execute(recorder, message)
         except Exception:
@@ -178,15 +180,31 @@ class AgentService:
         )
 
     def _store_failed_run(self, context: RunContext) -> None:
+        self._try_save(context, None, "failed")
+
+    def _save_progress(self, context: RunContext) -> None:
+        self._try_save(context, None, "running")
+
+    def _try_save(
+        self,
+        context: RunContext,
+        decision: AgentDecision | None,
+        status: AgentRunStatus,
+    ) -> None:
         try:
-            self._save(context, None)
+            self._save(context, decision, status)
         except Exception:
             logger.exception(
                 "agent run store failed",
-                extra=context.log_fields("agent_run_store_failed"),
+                extra=context.log_fields("agent_run_store_failed", status=status),
             )
 
-    def _save(self, context: RunContext, decision: AgentDecision | None) -> AgentRun:
+    def _save(
+        self,
+        context: RunContext,
+        decision: AgentDecision | None,
+        status: AgentRunStatus = "done",
+    ) -> AgentRun:
         run = AgentRun(
             id=context.run_id,
             trigger=context.trigger,
@@ -196,6 +214,7 @@ class AgentService:
             prompt_version=PROMPT_VERSION,
             started_at=context.started_at,
             ms=elapsed_ms(context.started),
+            status=status,
         )
         self._runs.save(context.case_id, run)
         logger.info(

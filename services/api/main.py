@@ -2,6 +2,7 @@ import uuid
 
 import firebase_admin
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import firestore
 
 from adapters.channels import WebChannel
@@ -57,6 +58,7 @@ from routes import (
     tiles,
     volunteer,
 )
+from run_stream import RunStreamer
 from scenario_reset import ScenarioResetter
 from trigger import JudgeTrigger
 
@@ -65,6 +67,14 @@ JOIN_WINDOW_SECONDS = 15 * 60
 RESET_WINDOW_SECONDS = 60 * 60
 PUBLIC_MAX_REQUESTS = 60
 PUBLIC_WINDOW_SECONDS = 60
+
+
+def cors_origins(settings: Settings) -> list[str]:
+    return [
+        f"https://{settings.project}.web.app",
+        f"https://{settings.project}.firebaseapp.com",
+        "http://localhost:5173",
+    ]
 
 
 def build_app(
@@ -80,6 +90,12 @@ def build_app(
     )
     app.state.public_limiter = RequestLimiter(
         PUBLIC_MAX_REQUESTS, PUBLIC_WINDOW_SECONDS
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins(settings),
+        allow_methods=["GET"],
+        allow_headers=["Authorization", "X-Bara-Role"],
     )
     app.include_router(health.router)
     app.include_router(clock.router)
@@ -324,6 +340,10 @@ def build_area_queries(settings: Settings, adapters: Adapters) -> AreaQueries:
     )
 
 
+def build_run_streamer(adapters: Adapters) -> RunStreamer:
+    return RunStreamer(cases=adapters.cases, runs=adapters.agent_runs, now=utcnow)
+
+
 def build_rank_explainer(
     settings: Settings, adapters: Adapters, gateway: ModelGateway
 ) -> RankExplainer:
@@ -376,6 +396,7 @@ def create_app() -> FastAPI:
     app.state.resetter = build_resetter(settings)
     app.state.case_queries = build_case_queries(app.state.adapters)
     app.state.area_queries = build_area_queries(settings, app.state.adapters)
+    app.state.run_streamer = build_run_streamer(app.state.adapters)
     app.state.rank_explainer = build_rank_explainer(
         settings, app.state.adapters, gateway
     )

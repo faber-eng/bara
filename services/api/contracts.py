@@ -172,6 +172,9 @@ class AgentDecision(Contract):
     next_check_at: AwareDatetime | None
 
 
+AgentRunStatus = Literal["running", "done", "failed"]
+
+
 class AgentRun(Contract):
     id: str
     trigger: str
@@ -181,6 +184,7 @@ class AgentRun(Contract):
     prompt_version: str
     started_at: AwareDatetime
     ms: Count
+    status: AgentRunStatus = "done"
 
 
 class Task(Contract):

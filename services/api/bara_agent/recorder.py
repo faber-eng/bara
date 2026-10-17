@@ -29,7 +29,11 @@ class RunRecorder(BasePlugin):
         self._summarizers = summarizers
         self._pending: dict[int, tuple[int, float]] = {}
         self._calls: list[ToolCall | None] = []
+        self._on_call_finished: Callable[[], None] | None = None
         self.model_version: str | None = None
+
+    def on_call_finished(self, listener: Callable[[], None]) -> None:
+        self._on_call_finished = listener
 
     @property
     def tool_calls(self) -> list[ToolCall]:
@@ -89,3 +93,5 @@ class RunRecorder(BasePlugin):
             result_summary=summary,
             ms=elapsed_ms(started),
         )
+        if self._on_call_finished is not None:
+            self._on_call_finished()

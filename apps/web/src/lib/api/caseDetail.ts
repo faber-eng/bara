@@ -1,6 +1,7 @@
 import type {
   AgentDecision,
   AgentRun,
+  AgentRunStatus,
   CaseDetail,
   Evidence,
   GeoPoint,
@@ -99,6 +100,12 @@ function parseEvidence(value: unknown): Evidence {
   };
 }
 
+const AGENT_RUN_STATUSES = [
+  "running",
+  "done",
+  "failed",
+] as const satisfies readonly AgentRunStatus[];
+
 function parseToolCall(value: unknown): ToolCall {
   const record = readRecord(value, "tool call");
   return {
@@ -130,6 +137,7 @@ function parseAgentRun(value: unknown): AgentRun {
     prompt_version: readString(record, "prompt_version", "agent run"),
     started_at: readString(record, "started_at", "agent run"),
     ms: readNumber(record, "ms", "agent run"),
+    status: readOneOf(record, "status", "agent run", AGENT_RUN_STATUSES),
   };
 }
 
