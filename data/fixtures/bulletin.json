@@ -1,0 +1,15 @@
+{
+  "id": "riau_2026-W30",
+  "text_id": "Minggu ini 37 sel gambut di Riau berisiko tinggi mengering. 2 sekat kanal rusak atau jebol. Ada 4 kasus terbuka dan 1 kasus diteruskan ke pemadam kebakaran.",
+  "text_en": "This week 37 peat cells in Riau are at high risk of drying. 2 canal dams are damaged or broken. There are 4 open cases and 1 case was sent to the fire brigade.",
+  "cited": [
+    { "field": "high_risk_cells", "value": 37 },
+    { "field": "dams_broken", "value": 2 },
+    { "field": "cases_open", "value": 4 },
+    { "field": "cases_escalated", "value": 1 }
+  ],
+  "source": "gemini",
+  "model": "gemini-3.5-flash",
+  "prompt_version": "bulletin-v1",
+  "created_at": "2026-07-20T01:20:00+07:00"
+}

@@ -1,0 +1,6 @@
+{
+  "status": "ok",
+  "models": { "reasoning": "gemini-3.1-pro-preview", "fast": "gemini-3.5-flash" },
+  "fallback_used": false,
+  "git_sha": "fe23bb1"
+}

@@ -1,0 +1,145 @@
+{
+  "case": {
+    "id": "case-0001",
+    "type": "dam_risk",
+    "region": "riau",
+    "cell_id": "riau-0412",
+    "dam_id": "dam-riau-007",
+    "event_id": null,
+    "status": "assigned",
+    "risk": { "drying_score": 91.4, "p_reignite": null },
+    "opened_at": "2026-07-20T08:05:00+07:00",
+    "closed_by": null,
+    "closed_at": null,
+    "history_flags": { "smoke_seen": false }
+  },
+  "tasks": [
+    {
+      "id": "task-0001",
+      "case_id": "case-0001",
+      "type": "dam_check",
+      "assignee_id": "vol-ari",
+      "target": { "lat": 0.4131, "lon": 102.1548 },
+      "deadline_at": "2026-07-23T08:05:00+07:00",
+      "status": "done",
+      "cloud_task_name": "projects/example/locations/asia-southeast1/queues/task-deadlines/tasks/task-0001",
+      "attempt": 1,
+      "created_at": "2026-07-20T08:05:00+07:00",
+      "done_at": "2026-07-20T10:42:00+07:00"
+    },
+    {
+      "id": "task-0002",
+      "case_id": "case-0001",
+      "type": "dam_repair",
+      "assignee_id": "team-sari",
+      "target": { "lat": 0.4131, "lon": 102.1548 },
+      "deadline_at": "2026-07-27T10:45:00+07:00",
+      "status": "open",
+      "cloud_task_name": "projects/example/locations/asia-southeast1/queues/task-deadlines/tasks/task-0002",
+      "attempt": 1,
+      "created_at": "2026-07-20T10:45:00+07:00",
+      "done_at": null
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev-0001",
+      "task_id": "task-0001",
+      "case_id": "case-0001",
+      "kind": "photo",
+      "gcs_uri": "gs://example-bara-evidence/ev-0001.jpg",
+      "sha256": "3f2a9c1e5b7d4f608a1c2e3b4d5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f",
+      "point": { "lat": 0.4129, "lon": 102.1551 },
+      "captured_at": "2026-07-20T10:40:00+07:00",
+      "verdict": {
+        "subject": "canal_dam",
+        "dam_state": "broken",
+        "smoke": "none",
+        "hot_ground_signs": "none",
+        "open_flame": "no",
+        "transcript": null,
+        "transcript_en": null,
+        "reasons": ["gap through the dam wall", "water flows through the gap", "canal level below the crest"],
+        "confidence": 0.9,
+        "needs_human": false
+      },
+      "location_ok": true,
+      "uploaded_by": "vol-ari"
+    },
+    {
+      "id": "ev-0002",
+      "task_id": "task-0001",
+      "case_id": "case-0001",
+      "kind": "audio",
+      "gcs_uri": "gs://example-bara-evidence/ev-0002.webm",
+      "sha256": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+      "point": null,
+      "captured_at": null,
+      "verdict": {
+        "subject": "canal_dam",
+        "dam_state": "broken",
+        "smoke": "unknown",
+        "hot_ground_signs": "unknown",
+        "open_flame": "unknown",
+        "transcript": "Sekatnya jebol di sisi kiri, air kanal sudah turun",
+        "transcript_en": "The dam is broken on the left side, the canal water has dropped",
+        "reasons": ["speaker says the dam is broken", "speaker says the water level dropped"],
+        "confidence": 0.85,
+        "needs_human": false
+      },
+      "location_ok": null,
+      "uploaded_by": "vol-ari"
+    }
+  ],
+  "agent_runs": [
+    {
+      "id": "run-0001",
+      "trigger": "drying.ranked",
+      "tool_calls": [
+        {
+          "name": "rank_areas",
+          "args": { "region": "riau", "limit": 10 },
+          "result_summary": "10 cells, top riau-0412 at 91.4",
+          "ms": 120
+        },
+        {
+          "name": "get_area_facts",
+          "args": { "cell_id": "riau-0412" },
+          "result_summary": "dam-riau-007 210 m away, last state broken",
+          "ms": 840
+        },
+        {
+          "name": "find_people",
+          "args": { "cell_id": "riau-0412", "role": "volunteer", "k": 3 },
+          "result_summary": "vol-ari 2.1 km, vol-budi 4.8 km, vol-citra 6.0 km",
+          "ms": 95
+        },
+        {
+          "name": "assign_task",
+          "args": {
+            "case_id": "case-0001",
+            "assignee_id": "vol-ari",
+            "task_type": "dam_check",
+            "deadline_hours": 72
+          },
+          "result_summary": "task-0001 due 2026-07-23 08:05",
+          "ms": 2310
+        }
+      ],
+      "final_json": {
+        "decision": "assign",
+        "reason": "riau-0412 ranks first and dam-riau-007 next to it was last seen broken.",
+        "evidence": ["rank_areas", "get_area_facts", "find_people", "assign_task"],
+        "next_check_at": "2026-07-23T08:05:00+07:00"
+      },
+      "model": "gemini-3.1-pro-preview",
+      "started_at": "2026-07-20T08:04:51+07:00",
+      "ms": 6420
+    }
+  ],
+  "timeline": [
+    { "at": "2026-07-20T08:05:00+07:00", "text": "Case opened. Ari asked to check the dam by 23 Jul." },
+    { "at": "2026-07-20T10:42:00+07:00", "text": "Dam reported broken in riau-0412." },
+    { "at": "2026-07-20T10:45:00+07:00", "text": "Repair team Sari assigned. Repair due 27 Jul." }
+  ]
+}
