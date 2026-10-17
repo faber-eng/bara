@@ -1,6 +1,9 @@
 import json
 from datetime import UTC, date, datetime
 
+from fastapi.testclient import TestClient
+
+import main
 from adapters.firestore_repos import (
     BulletinRepository,
     CaseRepository,
@@ -10,6 +13,7 @@ from adapters.firestore_repos import (
     RankingRepository,
     TaskRepository,
 )
+from adapters.gemini import ModelGateway
 from contracts import (
     Bulletin,
     Case,
@@ -27,6 +31,8 @@ from contracts import (
 )
 from public_queries import PublicQueries
 from tests.fakes import (
+    FakeModels,
+    FakeVerifier,
     InMemoryCollection,
     make_case,
     make_dam,
@@ -283,6 +289,15 @@ class PublicWorld:
             bulletins=BulletinRepository(self.bulletins),
             zones={"riau": "Asia/Jakarta", "congo_cuvette": "Africa/Brazzaville"},
         )
+
+    def client(self, settings) -> TestClient:
+        gateway = ModelGateway(
+            settings.models, {"reasoning": FakeModels([]), "fast": FakeModels([])}
+        )
+        app = main.build_app(settings, gateway, FakeVerifier({}))
+        app.state.public_queries = self.queries()
+        app.state.utcnow = lambda: NOW
+        return TestClient(app)
 
     def blocklist(self) -> list[str]:
         values: list[str] = []
