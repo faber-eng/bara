@@ -1,5 +1,6 @@
 import math
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Protocol
 
@@ -38,6 +39,12 @@ def advance_seconds(hours: float) -> int:
     return round(hours * SECONDS_PER_HOUR)
 
 
+@dataclass(frozen=True)
+class ClockReading:
+    now: datetime
+    offset_seconds: int
+
+
 class Clock:
     def __init__(self, store: ClockStore, utcnow: Callable[[], datetime]):
         self._store = store
@@ -52,6 +59,11 @@ class Clock:
     def now(self) -> datetime:
         real_now = require_aware(self._utcnow())
         return real_now + timedelta(seconds=self.offset_seconds())
+
+    def reading(self) -> ClockReading:
+        real_now = require_aware(self._utcnow())
+        offset = self.offset_seconds()
+        return ClockReading(real_now + timedelta(seconds=offset), offset)
 
     def advance(self, hours: float, updated_by: str) -> None:
         added = advance_seconds(hours)
