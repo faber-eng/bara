@@ -3,7 +3,7 @@ export type Source = "fixture" | "live";
 const DEFAULT_SOURCES = {
   rankings: "fixture",
   cases: "fixture",
-  tiles: "fixture",
+  tiles: "live",
   clock: "live",
 } as const satisfies Record<string, Source>;
 
