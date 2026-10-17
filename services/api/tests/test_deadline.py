@@ -37,6 +37,18 @@ class FakePublisher:
         return "m1"
 
 
+class FakeScheduler:
+    def __init__(self, error=None):
+        self.error = error
+        self.scheduled = []
+
+    def schedule(self, task_id, at):
+        if self.error is not None:
+            raise self.error
+        self.scheduled.append((task_id, at))
+        return f"queue/tasks/{task_id}"
+
+
 def due_task(**overrides):
     return make_task(**{"id": "t1", "case_id": "c1", "deadline_at": PAST, **overrides})
 
@@ -51,8 +63,25 @@ class CaseMovesAfterRead:
         return case
 
 
+class StaleCaseReader:
+    def __init__(self, cases):
+        self._cases = cases
+
+    def get(self, case_id):
+        return make_case(id=case_id, status="assigned")
+
+
 class World:
-    def __init__(self, *, tasks=None, cases=None, publisher=None, case_reader=None):
+    def __init__(
+        self,
+        *,
+        tasks=None,
+        cases=None,
+        publisher=None,
+        case_reader=None,
+        scheduler="fake",
+        offset_seconds=0,
+    ):
         self.tasks = InMemoryCollection(Task)
         for task in tasks if tasks is not None else [due_task()]:
             self.tasks.put(task.id, task)
@@ -60,6 +89,7 @@ class World:
         for case in cases if cases is not None else [make_case(status="assigned")]:
             self.cases.put(case.id, case)
         self.publisher = publisher or FakePublisher()
+        self.scheduler = FakeScheduler() if scheduler == "fake" else scheduler
         ids = iter(f"ev-{n}" for n in range(100))
         self.handler = DeadlineHandler(
             tasks=TaskRepository(self.tasks),
@@ -68,8 +98,11 @@ class World:
                 InMemoryTransactor({TASKS: self.tasks, CASES: self.cases})
             ),
             publisher=self.publisher,
+            scheduler=self.scheduler,
             clock=Clock(
-                InMemoryClockStore(ClockSettings(offset_seconds=0, updated_by="t")),
+                InMemoryClockStore(
+                    ClockSettings(offset_seconds=offset_seconds, updated_by="t")
+                ),
                 lambda: NOW,
             ),
             new_id=lambda: next(ids),
@@ -190,12 +223,55 @@ def test_a_publish_failure_raises_and_a_retry_publishes_once():
     assert len(publisher.published) == 1
 
 
-def test_a_case_that_moved_between_read_and_commit_leaves_the_task_open():
+def test_a_case_that_moved_between_read_and_commit_is_read_again():
     world = World(case_reader=CaseMovesAfterRead)
+
+    assert world.handler.handle_deadline("t1") == "task_overdue"
+    assert world.tasks.get("t1").status == "overdue"
+    assert world.cases.get("c1").status == "reviewing"
+    assert world.publisher.published == []
+
+
+def test_a_second_lost_race_leaves_the_task_open():
+    world = World(cases=[make_case(status="reviewing")], case_reader=StaleCaseReader)
 
     assert world.handler.handle_deadline("t1") == "skipped"
     assert world.tasks.get("t1").status == "open"
     assert world.publisher.published == []
+
+
+def test_a_task_not_yet_due_gets_a_new_cloud_task_at_its_real_deadline():
+    world = World(
+        tasks=[due_task(deadline_at=NOW + timedelta(hours=2))], offset_seconds=1800
+    )
+
+    assert world.handler.handle_deadline("t1") == "not_due"
+    assert world.scheduler.scheduled == [("t1", NOW + timedelta(minutes=90))]
+
+
+def test_a_task_not_yet_due_without_a_scheduler_stays_not_due():
+    world = World(tasks=[due_task(deadline_at=FUTURE)], scheduler=None)
+
+    assert world.handler.handle_deadline("t1") == "not_due"
+    assert world.tasks.get("t1").status == "open"
+
+
+def test_a_failed_reschedule_raises_so_cloud_tasks_retries():
+    world = World(
+        tasks=[due_task(deadline_at=FUTURE)],
+        scheduler=FakeScheduler(RuntimeError("queue down")),
+    )
+
+    with pytest.raises(RuntimeError):
+        world.handler.handle_deadline("t1")
+
+
+def test_a_due_task_schedules_nothing():
+    world = World()
+
+    world.handler.handle_deadline("t1")
+
+    assert world.scheduler.scheduled == []
 
 
 def test_a_real_case_follows_the_same_path():
@@ -230,6 +306,34 @@ def test_the_sweep_handles_every_due_open_task_and_survives_a_failure():
     assert world.tasks.get("t2").status == "overdue"
     assert world.tasks.get("t3").status == "open"
     assert world.tasks.get("t4").status == "done"
+    assert world.scheduler.scheduled == [("t1", NOW)]
+
+
+def test_a_sweep_publish_failure_with_offset_retries_at_the_real_now():
+    world = World(publisher=FakePublisher(RuntimeError("down")), offset_seconds=7200)
+
+    world.handler.sweep_due()
+
+    assert world.scheduler.scheduled == [("t1", NOW)]
+
+
+def test_a_sweep_survives_a_retry_that_cannot_be_scheduled():
+    world = World(
+        tasks=[due_task(id="t1"), due_task(id="t2", case_id="c2")],
+        cases=[
+            make_case(id="c1", status="assigned"),
+            make_case(id="c2", status="assigned"),
+        ],
+        publisher=FakePublisher(RuntimeError("down")),
+        scheduler=FakeScheduler(RuntimeError("queue down")),
+    )
+
+    swept = world.handler.sweep_due()
+
+    assert sorted(swept, key=lambda item: item.task_id) == [
+        SweptTask("t1", None),
+        SweptTask("t2", None),
+    ]
 
 
 def test_a_sweep_with_nothing_due_is_empty():

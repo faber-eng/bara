@@ -66,7 +66,8 @@ patrol_recheck: role "patrol".
 3. Take the first person in the result other than the event assignee_id and \
 call assign_task once with the case id, that person's id, with the event \
 task_type and an instructions_hint that says the task is overdue. Leave \
-deadline_hours out.
+deadline_hours out. If assign_task returns an error, call escalate once with \
+the case id and a reason that says the reassignment failed.
 4. If no other person is found, call escalate once with the case id and a \
 reason that says nobody else is available.
 

@@ -124,3 +124,7 @@ def test_an_overdue_task_is_reassigned_once_to_someone_else():
 
 def test_an_overdue_task_with_nobody_else_escalates():
     assert "If no other person is found, call escalate once" in overdue_section()
+
+
+def test_a_failed_reassignment_escalates():
+    assert "If assign_task returns an error, call escalate once" in overdue_section()
