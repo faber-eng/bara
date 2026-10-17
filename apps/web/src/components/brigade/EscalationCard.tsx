@@ -24,7 +24,7 @@ function Photos({ photos }: { photos: string[] }) {
   );
 }
 
-function AckButton({ escalationId }: { escalationId: string }) {
+function AckButton({ escalationId, caseId }: { escalationId: string; caseId: string }) {
   const queryClient = useQueryClient();
   const ack = useMutation({
     mutationFn: () => ackEscalation(escalationId),
@@ -39,6 +39,7 @@ function AckButton({ escalationId }: { escalationId: string }) {
       <button
         type="button"
         className="btn btn-primary"
+        aria-label={`Acknowledge escalation for ${caseId}`}
         disabled={ack.isPending}
         onClick={() => ack.mutate()}
       >
@@ -70,7 +71,7 @@ export function EscalationCard({ escalation, example }: EscalationCardProps) {
           <span className="brief-label">English</span>
           <p lang="en">{escalation.brief_en}</p>
         </div>
-        <AckButton escalationId={escalation.id} />
+        <AckButton escalationId={escalation.id} caseId={escalation.case_id} />
       </div>
       <div className="brigade-side">
         <MiniMap mapUrl={escalation.pack.map_url} />

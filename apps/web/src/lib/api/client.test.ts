@@ -175,6 +175,28 @@ describe("apiRequest for a signed-in user", () => {
     expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("ops");
   });
 
+  it("keeps the role header off a real brigade user's own inbox and acknowledgements", async () => {
+    await authWithToken(jwt({ sub: "u-9", firebase: { sign_in_provider: "google.com" } }));
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(Response.json({})));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiRequest("/api/brigade/u-9/inbox");
+    await apiRequest("/api/brigade/escalations/esc-1/ack", { method: "POST" });
+
+    for (const call of fetchMock.mock.calls) {
+      expect(new Headers((call[1] as RequestInit).headers).has("X-Bara-Role")).toBe(false);
+    }
+  });
+
+  it("sends the brigade role on brigade routes whatever person the judge picked", async () => {
+    await authWithToken(jwt({ sub: "u-9", firebase: { sign_in_provider: "anonymous" } }));
+    const fetchMock = stubFetch(Response.json({}));
+
+    await apiRequest("/api/brigade/contact-daops-pekanbaru/inbox");
+
+    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("brigade");
+  });
+
   it("keeps the role header for an anonymous user", async () => {
     await authWithToken(jwt({ sub: "u-9", firebase: { sign_in_provider: "anonymous" } }));
     const fetchMock = stubFetch(Response.json({}));

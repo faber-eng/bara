@@ -25,8 +25,22 @@ export type RequestOptions = {
   timeoutMs?: number;
 };
 
+const BRIGADE_PATH = "/api/brigade/";
+const BRIGADE_ROLE = "brigade";
+
 function isOwnLivePath(path: string, identity: TokenIdentity): boolean {
-  return path === "/api/join" || path.startsWith(`/api/v/${identity.uid}/`);
+  return (
+    path === "/api/join" ||
+    path.startsWith(`/api/v/${identity.uid}/`) ||
+    path.startsWith(`${BRIGADE_PATH}${identity.uid}/`) ||
+    path.startsWith(`${BRIGADE_PATH}escalations/`)
+  );
+}
+
+function roleForPath(path: string): string | undefined {
+  const role = roleHeaderValue();
+  if (role === undefined) return undefined;
+  return path.startsWith(BRIGADE_PATH) ? BRIGADE_ROLE : role;
 }
 
 function shouldSendRole(path: string, identity: TokenIdentity | null): boolean {
@@ -37,7 +51,7 @@ function shouldSendRole(path: string, identity: TokenIdentity | null): boolean {
 async function buildHeaders(path: string, hasBody: boolean): Promise<Headers> {
   const token = await getIdToken();
   const headers = new Headers({ Authorization: `Bearer ${token}` });
-  const role = roleHeaderValue();
+  const role = roleForPath(path);
   if (role !== undefined && shouldSendRole(path, readTokenIdentity(token))) {
     headers.set(ROLE_HEADER, role);
   }
