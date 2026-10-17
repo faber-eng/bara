@@ -24,6 +24,7 @@ FIXTURES_DIR = Path(__file__).resolve().parents[3] / "data" / "fixtures"
 
 FIXTURE_MODELS: dict[str, type[BaseModel]] = {
     "rankings.json": Rankings,
+    "rankings_riau_200.json": Rankings,
     "cell_facts.json": CellFacts,
     "case_detail.json": CaseDetail,
     "escalation.json": Escalation,
@@ -106,3 +107,21 @@ def test_cases_fixture_deadlines_are_relative_to_the_clock_fixture():
     assert any(timedelta(0) < gap < timedelta(hours=1) for gap in gaps)
     assert timedelta(hours=-2) in gaps
     assert any(entry.next_deadline_at is None for entry in cases)
+
+
+def test_riau_rankings_fixture_has_200_strictly_ranked_cells_and_50_dams():
+    rankings = Rankings.model_validate(load_fixture("rankings_riau_200.json"))
+    scores = [cell.drying_score for cell in rankings.cells]
+
+    assert [cell.rank for cell in rankings.cells] == list(range(1, 201))
+    assert scores == sorted(set(scores), reverse=True)
+    assert len(rankings.dams) == 50
+
+
+def test_riau_rankings_fixture_mixes_missing_and_present_values():
+    cells = Rankings.model_validate(load_fixture("rankings_riau_200.json")).cells
+
+    assert any(cell.rank_change is None for cell in cells)
+    assert any(cell.explanation is None for cell in cells)
+    assert any(cell.explanation is not None for cell in cells)
+    assert any(cell.stale_s1 and cell.components.s1_anom_db is None for cell in cells)
