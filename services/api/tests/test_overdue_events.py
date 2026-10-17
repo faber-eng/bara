@@ -2,8 +2,12 @@ from datetime import UTC, datetime
 
 import pytest
 
-from adapters.firestore_repos import CaseRepository, TaskRepository
-from contracts import Case, Task, TaskOverdue, TaskOverdueEvent
+from adapters.firestore_repos import (
+    CaseRepository,
+    EvidenceRepository,
+    TaskRepository,
+)
+from contracts import Case, CaseRisk, Evidence, Task, TaskOverdue, TaskOverdueEvent
 from events import MalformedPush
 from overdue_events import TaskOverdueHandler
 from tests.fakes import (
@@ -27,6 +31,11 @@ class FakeAgent:
             raise self.error
 
 
+class UnusedEscalator:
+    async def escalate(self, case_id, reason):
+        raise AssertionError("not called")
+
+
 def overdue_event(attempt=1) -> TaskOverdueEvent:
     return TaskOverdueEvent(
         id="ev-1",
@@ -40,19 +49,28 @@ def overdue_event(attempt=1) -> TaskOverdueEvent:
 
 def make_handler(agent, case_status="overdue", task=None):
     cases = InMemoryCollection(Case)
-    cases.put("c1", make_case(status=case_status))
+    cases.put(
+        "c1",
+        make_case(
+            status=case_status, risk=CaseRisk(drying_score=40.0, p_reignite=None)
+        ),
+    )
     tasks = InMemoryCollection(Task)
     stored = task or make_task(status="overdue", assignee_id="vol-ari")
     tasks.put(stored.id, stored)
     return TaskOverdueHandler(
-        cases=CaseRepository(cases), tasks=TaskRepository(tasks), agent=agent
+        cases=CaseRepository(cases),
+        tasks=TaskRepository(tasks),
+        evidence=EvidenceRepository(InMemoryCollection(Evidence)),
+        agent=agent,
+        escalator=UnusedEscalator(),
     )
 
 
 def test_an_overdue_case_runs_the_agent_with_the_event_and_the_missed_assignee():
     agent = FakeAgent()
 
-    make_handler(agent).handle("m1", overdue_event(attempt=2))
+    make_handler(agent).handle("m1", overdue_event(attempt=1))
 
     assert agent.runs == [
         (
@@ -62,7 +80,7 @@ def test_an_overdue_case_runs_the_agent_with_the_event_and_the_missed_assignee()
             {
                 "task_id": "t1",
                 "case_id": "c1",
-                "attempt": 2,
+                "attempt": 1,
                 "task_type": "dam_check",
                 "assignee_id": "vol-ari",
             },
@@ -84,7 +102,9 @@ def test_an_unknown_case_is_skipped():
     handler = TaskOverdueHandler(
         cases=CaseRepository(InMemoryCollection(Case)),
         tasks=TaskRepository(InMemoryCollection(Task)),
+        evidence=EvidenceRepository(InMemoryCollection(Evidence)),
         agent=agent,
+        escalator=UnusedEscalator(),
     )
 
     handler.handle("m1", overdue_event())

@@ -42,6 +42,7 @@ from domain.escalation import (
     pack_photos,
     photo_count,
     pick_contact,
+    smoke_in,
 )
 
 logger = logging.getLogger(__name__)
@@ -196,14 +197,15 @@ class Escalator:
 
     @staticmethod
     def _facts(case: Case, tasks: list[Task], evidence: list[Evidence]) -> BriefFacts:
+        signs = field_signs(evidence)
         return BriefFacts(
             case_type=case.type,
             cell_id=case.cell_id,
             dam_id=case.dam_id,
             drying_score=case.risk.drying_score,
             p_reignite=case.risk.p_reignite,
-            smoke_seen_before=case.history_flags.smoke_seen,
-            field_signs=field_signs(evidence),
+            smoke_seen_before=case.history_flags.smoke_seen and not smoke_in(signs),
+            field_signs=signs,
             overdue_task=overdue_task(tasks),
             photo_count=photo_count(evidence),
         )

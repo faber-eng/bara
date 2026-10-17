@@ -79,6 +79,14 @@ def matches(document: Mapping[str, object], filters: tuple[Filter, ...]) -> bool
     return all(OPERATORS[f.op](document[f.field], f.value) for f in filters)
 
 
+def set_path(document: dict, path: str, value: object) -> None:
+    *parents, leaf = path.split(".")
+    target = document
+    for key in parents:
+        target = target[key]
+    target[leaf] = value
+
+
 class InMemoryCollection[T: Contract]:
     def __init__(self, model: type[T]):
         self._model = model
@@ -99,7 +107,9 @@ class InMemoryCollection[T: Contract]:
     def update(self, doc_id: str, fields: Mapping[str, object]) -> None:
         if doc_id not in self._documents:
             raise DocumentNotFound(doc_id)
-        merged = {**self._documents[doc_id].model_dump(), **fields}
+        merged = self._documents[doc_id].model_dump()
+        for path, value in fields.items():
+            set_path(merged, path, value)
         self._documents[doc_id] = self._model.model_validate(merged)
 
     def add(self, doc_id: str, field: str, amount: int, fields: Mapping[str, object]):

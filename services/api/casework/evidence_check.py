@@ -24,6 +24,7 @@ from contracts import (
     VerdictCacheEntry,
 )
 from domain.clock import Clock
+from domain.escalation import smoke_case_for
 from domain.evidence import (
     case_status_after_verdict,
     final_verdict,
@@ -226,6 +227,7 @@ class EvidenceChecker:
             location_ok=location,
             case_change=change,
             dam_check=dam_check_for(case, verdict, self._clock),
+            smoke_case_id=smoke_case_for(case, verdict),
         )
         if change is None:
             return case.status
