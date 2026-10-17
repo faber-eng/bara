@@ -7,7 +7,7 @@ from typing import get_args
 from bara_agent.output import ToolName
 from contracts import Case, CaseType, Dam, TaskType, VolunteerRole
 
-PROMPT_VERSION = "agent-v3"
+PROMPT_VERSION = "agent-v4"
 AGENT_NAME = "bara_coordinator"
 CASE_TYPE: CaseType = "dam_risk"
 PEOPLE_ROLE: VolunteerRole = "volunteer"
@@ -40,14 +40,16 @@ Then decide what should happen next for the case.
 1. Call check_evidence with the event task_id and evidence_id.
 2. If check_evidence returns an error, or the verdict's needs_human is true, \
 call no other tool: a person reviews the case. Say why in reason.
-3. If the verdict's dam_state is broken, damaged or overtopped, call find_people \
-with the case cell_id and role "{REPAIR_ROLE}", then call assign_task once with \
-the case id, the id of the first person in the result, task_type \
-"{REPAIR_TASK_TYPE}" and an instructions_hint from the verdict reasons. Leave \
-deadline_hours out. If find_people returns no people, do not call assign_task \
-and say so in decision.
-4. If the verdict shows smoke (wisps or plume), open flame or clear hot-ground \
-signs, say in decision that the case needs the fire brigade.
+3. If the verdict shows smoke (wisps or plume), open flame or clear hot-ground \
+signs, call escalate once with the case id and a reason from the verdict, and \
+call no other tool: the fire brigade takes the case. If escalate returns an \
+error, say so in decision.
+4. Otherwise, if the verdict's dam_state is broken, damaged or overtopped, call \
+find_people with the case cell_id and role "{REPAIR_ROLE}", then call \
+assign_task once with the case id, the id of the first person in the result, \
+task_type "{REPAIR_TASK_TYPE}" and an instructions_hint from the verdict \
+reasons. Leave deadline_hours out. If find_people returns no people, do not \
+call assign_task and say so in decision.
 5. Otherwise, say in decision that a person can close the case.
 
 ## Rules

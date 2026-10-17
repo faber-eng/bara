@@ -19,6 +19,8 @@ from bara_agent.agent import build_tools
 from bara_agent.run import AgentService
 from case_queries import CaseQueries
 from casework.assignment import TaskAssigner
+from casework.brief import BriefWriter
+from casework.escalation import Acknowledger, BrigadeInbox, Escalator
 from casework.evidence_check import EvidenceChecker
 from casework.evidence_intake import EvidenceIntake
 from casework.evidence_reader import EvidenceReader
@@ -32,6 +34,7 @@ from logs import configure_logging
 from push_auth import GoogleOidcVerifier
 from ratelimit import FailureLimiter
 from routes import (
+    brigade,
     clock,
     events,
     health,
@@ -76,6 +79,7 @@ def build_app(
     app.include_router(ops_cases.router)
     app.include_router(ops_areas.router)
     app.include_router(volunteer.router)
+    app.include_router(brigade.router)
     return app
 
 
@@ -126,6 +130,38 @@ def build_checker(
     )
 
 
+def build_escalator(adapters: Adapters, gateway: ModelGateway) -> Escalator:
+    return Escalator(
+        cases=adapters.cases,
+        tasks=adapters.tasks,
+        evidence=adapters.evidence,
+        runs=adapters.agent_runs,
+        dams=adapters.dams,
+        contacts=adapters.contacts,
+        escalations=adapters.escalations,
+        cells=adapters.cells,
+        casework=adapters.casework,
+        brief=BriefWriter(gateway),
+        channel=WebChannel(adapters.clock, new_id),
+        publisher=adapters.publisher,
+        clock=adapters.clock,
+        new_id=new_id,
+    )
+
+
+def build_acknowledger(adapters: Adapters) -> Acknowledger:
+    return Acknowledger(
+        escalations=adapters.escalations,
+        cases=adapters.cases,
+        casework=adapters.casework,
+        clock=adapters.clock,
+    )
+
+
+def build_brigade_inbox(adapters: Adapters) -> BrigadeInbox:
+    return BrigadeInbox(escalations=adapters.escalations, signer=adapters.storage)
+
+
 def build_intake(adapters: Adapters) -> EvidenceIntake:
     return EvidenceIntake(
         tasks=adapters.tasks,
@@ -152,6 +188,7 @@ def build_agent_service(
     adapters: Adapters,
     gateway: ModelGateway,
     checker: EvidenceChecker,
+    escalator: Escalator,
 ) -> AgentService:
     return AgentService(
         model=build_agent_model(settings),
@@ -162,6 +199,7 @@ def build_agent_service(
             volunteers=adapters.volunteers,
             assigner=build_assigner(settings, adapters, gateway),
             checker=checker,
+            escalator=escalator,
             radius_m=settings.grid_cell_m,
         ),
         cases=adapters.cases,
@@ -237,14 +275,17 @@ def create_app() -> FastAPI:
     app = build_app(settings, gateway, build_token_verifier(settings))
     app.state.adapters = build_adapters(settings)
     checker = build_checker(settings, app.state.adapters, gateway)
+    escalator = build_escalator(app.state.adapters, gateway)
     app.state.agent = build_agent_service(
-        settings, app.state.adapters, gateway, checker
+        settings, app.state.adapters, gateway, checker, escalator
     )
     app.state.dispatcher = build_dispatcher(
         settings, app.state.adapters, app.state.agent, checker
     )
     app.state.evidence_intake = build_intake(app.state.adapters)
     app.state.inbox_reader = build_inbox(app.state.adapters)
+    app.state.acknowledger = build_acknowledger(app.state.adapters)
+    app.state.brigade_inbox = build_brigade_inbox(app.state.adapters)
     app.state.trigger = build_trigger(settings, app.state.adapters)
     app.state.push_verifier = GoogleOidcVerifier()
     app.state.resetter = build_resetter(settings)

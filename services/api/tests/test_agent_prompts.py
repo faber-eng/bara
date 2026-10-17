@@ -23,6 +23,11 @@ class UnusedChecker:
         raise AssertionError("not called")
 
 
+class UnusedEscalator:
+    async def escalate(self, case_id, reason):
+        raise AssertionError("not called")
+
+
 def registered_names() -> set[str]:
     tools = build_tools(
         rankings=RankingRepository(lambda region: InMemoryCollection(RankedCell)),
@@ -31,6 +36,7 @@ def registered_names() -> set[str]:
         volunteers=VolunteerRepository(InMemoryCollection(Volunteer)),
         assigner=UnusedAssigner(),
         checker=UnusedChecker(),
+        escalator=UnusedEscalator(),
         radius_m=1_000,
     )
     return {tool_name(tool) for tool in tools}
@@ -54,7 +60,7 @@ def test_instruction_carries_the_never_close_rule_and_the_fraction_glossary():
 
 
 def test_prompt_version():
-    assert PROMPT_VERSION == "agent-v3"
+    assert PROMPT_VERSION == "agent-v4"
 
 
 def test_instruction_steps_end_with_one_assign_task_call():
@@ -80,3 +86,11 @@ def test_a_broken_dam_gets_a_repair_team():
 
 def test_a_verdict_for_a_person_stops_the_run():
     assert "needs_human is true" in INSTRUCTION
+
+
+def test_fire_signs_escalate_before_any_repair_task():
+    escalate = INSTRUCTION.index("call escalate once with the case id")
+    repair = INSTRUCTION.index('role "repair_team"')
+
+    assert escalate < repair
+    assert "4. Otherwise, if the verdict's dam_state is broken" in INSTRUCTION

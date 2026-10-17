@@ -77,6 +77,22 @@ def test_read_uri_refuses_another_bucket():
         storage.read_uri("gs://other-bucket/evidence/e1.jpg")
 
 
+def test_signed_get_url_for_signs_an_object_of_this_bucket():
+    storage, bucket = make_storage()
+
+    url = storage.signed_get_url_for("gs://bucket-test/evidence/e1.jpg")
+
+    assert url.startswith("https://storage.test/evidence/e1.jpg")
+    assert bucket.calls[0]["method"] == "GET"
+
+
+def test_signed_get_url_for_refuses_another_bucket():
+    storage, _ = make_storage()
+
+    with pytest.raises(InvalidObjectName):
+        storage.signed_get_url_for("gs://other-bucket/evidence/e1.jpg")
+
+
 def test_signed_put_url_signs_with_the_service_account_and_access_token():
     storage, bucket = make_storage()
 

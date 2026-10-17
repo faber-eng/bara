@@ -75,14 +75,20 @@ class EvidenceStorage:
     def gcs_uri(self, object_name: str) -> str:
         return f"gs://{self._bucket.name}/{require_safe_name(object_name)}"
 
-    def read_uri(self, uri: str) -> bytes | None:
+    def object_name_of(self, uri: str) -> str:
         prefix = f"gs://{self._bucket.name}/"
         if not uri.startswith(prefix):
             raise InvalidObjectName(f"{uri!r} is not in the evidence bucket")
-        return self.read(uri.removeprefix(prefix))
+        return uri.removeprefix(prefix)
+
+    def read_uri(self, uri: str) -> bytes | None:
+        return self.read(self.object_name_of(uri))
 
     def signed_get_url(self, object_name: str) -> str:
         return self._sign(object_name, method="GET")
+
+    def signed_get_url_for(self, uri: str) -> str:
+        return self.signed_get_url(self.object_name_of(uri))
 
     def _sign(self, object_name: str, **options) -> str:
         blob = self._bucket.blob(require_safe_name(object_name))

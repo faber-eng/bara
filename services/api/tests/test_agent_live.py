@@ -64,6 +64,16 @@ LIMIT 10
 """
 
 
+class UnusedChecker:
+    async def check(self, task_id, evidence_id):
+        raise AssertionError("not called")
+
+
+class UnusedEscalator:
+    async def escalate(self, case_id, reason):
+        raise AssertionError("not called")
+
+
 def ranked_cell(row: dict) -> RankedCell:
     return RankedCell.model_validate(
         {
@@ -168,6 +178,8 @@ def test_a_live_dam_risk_run_on_flash_with_real_bigquery():
                 timezones=region_timezones(settings.config_dir),
                 new_id=new_id,
             ),
+            checker=UnusedChecker(),
+            escalator=UnusedEscalator(),
             radius_m=settings.grid_cell_m,
         ),
         cases=cases,

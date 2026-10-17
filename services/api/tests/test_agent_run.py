@@ -86,6 +86,11 @@ class UnusedChecker:
         raise AssertionError("not called")
 
 
+class UnusedEscalator:
+    async def escalate(self, case_id, reason):
+        raise AssertionError("not called")
+
+
 class StubAssigner:
     def __init__(self):
         self.requests = []
@@ -150,6 +155,7 @@ class World:
                 volunteers=VolunteerRepository(volunteers),
                 assigner=self.assigner,
                 checker=UnusedChecker(),
+                escalator=UnusedEscalator(),
                 radius_m=1_000,
             ),
             cases=CaseRepository(self.cases),

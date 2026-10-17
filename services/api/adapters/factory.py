@@ -15,6 +15,8 @@ from adapters.bigquery import DATASET, Warehouse
 from adapters.cells import CellRepository
 from adapters.firestore_repos import (
     CASES,
+    CONTACTS,
+    ESCALATIONS,
     MESSAGES,
     TASKS,
     UPLOADS,
@@ -22,7 +24,9 @@ from adapters.firestore_repos import (
     AgentRunRepository,
     CaseRepository,
     CaseworkStore,
+    ContactRepository,
     DamRepository,
+    EscalationRepository,
     EventLog,
     EvidenceRepository,
     FirestoreClockStore,
@@ -88,6 +92,8 @@ class Adapters:
     volunteers: VolunteerRepository
     dams: DamRepository
     agent_runs: AgentRunRepository
+    escalations: EscalationRepository
+    contacts: ContactRepository
     secrets: SecretReader
     claims: ClaimsAdmin
 
@@ -121,13 +127,13 @@ def build_scenario_resetter(
     )
     repository = ResetRepository(
         volunteers=FirestoreCollection(db, "volunteers", Volunteer),
-        contacts=FirestoreCollection(db, "contacts", Contact),
+        contacts=FirestoreCollection(db, CONTACTS, Contact),
         dams=FirestoreCollection(db, "dams", Dam),
         cases=FirestoreCollection(db, CASES, Case),
         tasks=FirestoreCollection(db, TASKS, Task),
         evidence=FirestoreCollection(db, "evidence", Evidence),
         messages=FirestoreCollection(db, MESSAGES, Message),
-        escalations=FirestoreCollection(db, "escalations", Escalation),
+        escalations=FirestoreCollection(db, ESCALATIONS, Escalation),
         agent_runs_for=lambda case_id: FirestoreCollection(
             db, f"cases/{case_id}/agent_runs", AgentRun
         ),
@@ -169,6 +175,10 @@ def build_adapters(settings: Settings) -> Adapters:
         volunteers=agent_repos.volunteers,
         dams=agent_repos.dams,
         agent_runs=agent_repos.agent_runs,
+        escalations=EscalationRepository(
+            FirestoreCollection(db, ESCALATIONS, Escalation)
+        ),
+        contacts=ContactRepository(FirestoreCollection(db, CONTACTS, Contact)),
         secrets=SecretManagerReader(
             secretmanager.SecretManagerServiceClient(), settings.project
         ),

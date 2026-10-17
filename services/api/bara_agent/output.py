@@ -5,7 +5,12 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 from contracts import AgentDecision
 
 ToolName = Literal[
-    "rank_areas", "get_area_facts", "find_people", "assign_task", "check_evidence"
+    "rank_areas",
+    "get_area_facts",
+    "find_people",
+    "assign_task",
+    "check_evidence",
+    "escalate",
 ]
 
 

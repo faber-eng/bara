@@ -195,3 +195,23 @@ def require_volunteer_owner(
         logger.warning("auth rejected", extra={"fields": {"reason": "not_owner"}})
         raise forbidden()
     return principal
+
+
+def require_brigade_owner(
+    contact_id: str, principal: Annotated[Principal, Depends(get_principal)]
+) -> Principal:
+    if principal.role != "brigade":
+        logger.warning(
+            "auth rejected", extra={"fields": {"reason": "role_not_allowed"}}
+        )
+        raise forbidden()
+    if principal.role_source == "claim" and principal.uid != contact_id:
+        logger.warning("auth rejected", extra={"fields": {"reason": "not_owner"}})
+        raise forbidden()
+    return principal
+
+
+def claimed_owner(principal: Principal) -> str | None:
+    if principal.role_source == "claim":
+        return principal.uid
+    return None
