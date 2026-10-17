@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TOUR_STEPS } from "../../lib/tour/steps";
-import { finishTour, getTourSnapshot, goToStep } from "../../lib/tour/store";
+import { finishTour, getTourSnapshot, goToStep, skipTour } from "../../lib/tour/store";
 import { callsTo, initOf, renderApp, stubApi } from "../../test-utils";
 
 vi.mock("../../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
@@ -51,7 +51,19 @@ describe("landing and guided tour", () => {
     expect(getTourSnapshot()).toEqual({ open: false, step: 1 });
   });
 
-  it("sends the same judge trigger the judge bar sends", async () => {
+  it("resumes at the saved step from the landing page", async () => {
+    stubApi({});
+    const { router } = renderApp("/");
+    goToStep(1);
+    skipTour();
+
+    fireEvent.click(await screen.findByRole("button", { name: /Resume at step 2 of/ }));
+
+    expect(await screen.findByText(`Step 2 of ${TOUR_STEPS.length}`)).toBeInTheDocument();
+    expect(router.history.location.pathname).toBe("/ops");
+  });
+
+  it("posts drying.ranked when the action button is pressed", async () => {
     vi.stubEnv("VITE_SOURCE_CLOCK", "live");
     const clock = { now: "2026-07-20T08:00:00+07:00", offset_seconds: 0, judge_mode: true };
     const fetchMock = stubApi({

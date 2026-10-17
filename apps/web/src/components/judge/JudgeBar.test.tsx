@@ -43,11 +43,15 @@ describe("judge bar", () => {
     renderApp("/nope");
 
     await waitFor(() => expect(callsTo(fetchMock, "GET /api/clock")).toHaveLength(1));
-    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { level: 1, name: "This page does not exist." }),
+    ).not.toBeInTheDocument();
 
     pending.resolve(Response.json(clockOn));
 
-    expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
+    ).toBeInTheDocument();
   });
 
   it("shows the sim time in Asia/Jakarta with a Sim label", async () => {
@@ -61,7 +65,9 @@ describe("judge bar", () => {
     stubApi({ "GET /api/clock": () => Response.json({ ...clockOn, judge_mode: false }) });
     renderApp("/nope");
 
-    expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
   });
 
@@ -69,7 +75,9 @@ describe("judge bar", () => {
     stubApi({ "GET /api/clock": () => new Response("down", { status: 500 }) });
     renderApp("/nope");
 
-    expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
   });
 
@@ -78,7 +86,7 @@ describe("judge bar", () => {
       "GET /api/clock": () => Response.json({ ...clockOn, judge_mode: false }),
     });
     renderApp("/nope");
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "This page does not exist." });
 
     const clockCall = callsTo(fetchMock, "GET /api/clock")[0];
     expect(headerOf(clockCall, "Authorization")).toBe("Bearer token-1");

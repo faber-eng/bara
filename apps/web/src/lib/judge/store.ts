@@ -50,8 +50,9 @@ export function setJudgeMode(on: boolean): void {
 }
 
 export function selectPerson(key: string): void {
-  if (!snapshot.judgeMode || !personFor(key)) return;
+  if (!personFor(key)) return;
   writeStoredKey(key);
+  if (!snapshot.judgeMode) return;
   publish({ judgeMode: true, personKey: key });
 }
 

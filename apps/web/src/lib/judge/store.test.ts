@@ -14,6 +14,16 @@ describe("judge store", () => {
     localStorage.clear();
   });
 
+  it("remembers a person chosen before judge mode turns on", () => {
+    selectPerson("vol-ari");
+    expect(roleHeaderValue()).toBeUndefined();
+
+    setJudgeMode(true);
+
+    expect(getJudgeSnapshot().personKey).toBe("vol-ari");
+    expect(roleHeaderValue()).toBe("volunteer");
+  });
+
   it("lists the five example people with the agreed ids", () => {
     expect(JUDGE_PEOPLE.map((person) => person.key)).toEqual([
       "ops",
