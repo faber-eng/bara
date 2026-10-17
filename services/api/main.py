@@ -2,7 +2,6 @@ import uuid
 
 import firebase_admin
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import firestore
 
 from adapters.channels import WebChannel
@@ -62,6 +61,7 @@ from routes import (
 )
 from run_stream import RunStreamer
 from scenario_reset import ScenarioResetter
+from stream_cors import StreamOnlyCors
 from trigger import JudgeTrigger
 
 JOIN_MAX_FAILURES = 5
@@ -93,12 +93,7 @@ def build_app(
     app.state.public_limiter = RequestLimiter(
         PUBLIC_MAX_REQUESTS, PUBLIC_WINDOW_SECONDS
     )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=cors_origins(settings),
-        allow_methods=["GET"],
-        allow_headers=["Authorization", "X-Bara-Role"],
-    )
+    app.add_middleware(StreamOnlyCors, allow_origins=cors_origins(settings))
     app.include_router(health.router)
     app.include_router(clock.router)
     app.include_router(join.router)

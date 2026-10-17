@@ -152,6 +152,13 @@ def test_web_gate_writes_env_production_from_the_two_secrets(steps):
     assert "echo" not in text
 
 
+def test_web_gate_points_the_stream_client_at_the_cloud_run_url(config, steps):
+    assert config["substitutions"]["_STREAM_BASE"].startswith("https://bara-api-")
+    text = command_text(steps["web-gate"])
+    assert "VITE_STREAM_BASE=%s" in text
+    assert '"$_STREAM_BASE" >> .env.production' in text
+
+
 def test_available_secrets_map_both_secrets(config):
     secrets = config["availableSecrets"]["secretManager"]
     mapped = {item["env"]: item["versionName"] for item in secrets}
@@ -280,7 +287,7 @@ def test_logging_is_cloud_logging_only_and_machine_is_default(config):
 
 
 def test_region_substitution_and_timeout(config):
-    assert config["substitutions"] == {"_REGION": "asia-southeast1"}
+    assert config["substitutions"]["_REGION"] == "asia-southeast1"
     assert config["timeout"] == "1200s"
 
 

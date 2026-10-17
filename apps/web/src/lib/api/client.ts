@@ -55,7 +55,7 @@ function shouldSendRole(path: string, identity: TokenIdentity | null): boolean {
   return !isOwnLivePath(path, identity);
 }
 
-async function buildHeaders(path: string, hasBody: boolean): Promise<Headers> {
+export async function buildHeaders(path: string, hasBody: boolean): Promise<Headers> {
   const token = await getIdToken();
   const headers = new Headers({ Authorization: `Bearer ${token}` });
   const role = roleForPath(path);
