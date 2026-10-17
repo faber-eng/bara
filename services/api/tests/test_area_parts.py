@@ -97,10 +97,10 @@ def test_a_cell_without_a_grid_index_is_a_source_error():
         scored_cell("riau", feature)
 
 
-def test_only_regions_with_drying_settings_take_area_runs(settings):
+def test_every_region_with_drying_settings_takes_area_runs(settings):
     regions = load_area_regions(settings.config_dir)
 
-    assert [candidate.region.id for candidate in regions] == ["riau"]
+    assert [candidate.region.id for candidate in regions] == ["riau", "congo_cuvette"]
     assert regions[0].box.west == 101.95
 
 
