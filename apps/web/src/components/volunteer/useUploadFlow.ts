@@ -2,13 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useReducer, useRef } from "react";
 import { fetchSampleFile } from "../../lib/api/samples";
 import { fetchInbox } from "../../lib/api/volunteer";
-import type {
-  Evidence,
-  EvidenceKind,
-  GeoPoint,
-  SampleItem,
-  UploadTicket,
-} from "../../lib/contracts";
+import type { Evidence, EvidenceKind, GeoPoint, SampleItem } from "../../lib/contracts";
 import { readDeviceLocation } from "../../lib/geo";
 import { type FailureReason, type FlowState, flowReducer, IDLE } from "../../lib/volunteer/flow";
 import { resizePhoto } from "../../lib/volunteer/image";
@@ -17,7 +11,7 @@ import {
   startVoiceRecording,
   type VoiceRecorder,
 } from "../../lib/volunteer/recorder";
-import { uploadEvidence } from "../../lib/volunteer/upload";
+import { type IssuedTicket, type UploadResult, uploadEvidence } from "../../lib/volunteer/upload";
 import { waitForVerdict } from "../../lib/volunteer/verdictWait";
 import { inboxKey } from "./inboxQuery";
 
@@ -25,7 +19,7 @@ type Pending = {
   blob: Blob;
   kind: EvidenceKind;
   sample: boolean;
-  ticket: UploadTicket | null;
+  ticket: IssuedTicket | null;
 };
 
 export type UploadFlow = {
@@ -94,6 +88,16 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
     }
   }
 
+  async function settle(pending: Pending, result: UploadResult) {
+    if (pending.kind === "audio") {
+      dispatch({ type: "stored" });
+      void queryClient.invalidateQueries({ queryKey: inboxKey(volunteerId) });
+      return;
+    }
+    dispatch({ type: "uploaded" });
+    await judge(result.evidenceId, result.evidence);
+  }
+
   async function send(pending: Pending) {
     lastSend.current = pending;
     dispatch({ type: "upload_started", kind: pending.kind, sample: pending.sample });
@@ -107,13 +111,12 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
         sample: pending.sample,
         point: await readPoint(pending),
         ticket: pending.ticket,
-        onTicket: (ticket) => {
-          pending.ticket = ticket;
+        onTicket: (issued) => {
+          pending.ticket = issued;
         },
         onProgress: (progress) => dispatch({ type: "progress", progress }),
       });
-      dispatch({ type: "uploaded" });
-      await judge(result.evidenceId, result.evidence);
+      await settle(pending, result);
     } catch {
       fail("upload");
     }

@@ -1,5 +1,11 @@
 export class UploadTransferError extends Error {
   override name = "UploadTransferError";
+  readonly status: number | null;
+
+  constructor(message: string, status: number | null = null) {
+    super(message);
+    this.status = status;
+  }
 }
 
 export type PutFileInput = {
@@ -32,7 +38,7 @@ export function putFile(input: PutFileInput): Promise<void> {
     };
     request.onload = () => {
       if (isSuccess(request.status)) resolve();
-      else reject(new UploadTransferError(`Upload returned ${request.status}`));
+      else reject(new UploadTransferError(`Upload returned ${request.status}`, request.status));
     };
     request.onerror = () => reject(new UploadTransferError("Upload could not reach the server"));
     request.onabort = () => reject(new UploadTransferError("Upload was cancelled"));

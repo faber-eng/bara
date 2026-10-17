@@ -51,6 +51,8 @@ export type VolunteerCopy = {
   readingTitle: string;
   readingNote: string;
   readingSlow: string;
+  storedTitle: string;
+  storedNote: string;
   uploadFailed: string;
   readFailed: string;
   prepareFailed: string;
@@ -130,6 +132,8 @@ const ID: VolunteerCopy = {
   keepOpen: "Jangan tutup halaman ini.",
   readingTitle: "Gemini sedang membaca kiriman Anda",
   readingNote: "Biasanya kurang dari 10 detik.",
+  storedTitle: "Terkirim",
+  storedNote: "Pesan suara Anda sudah tersimpan. Petugas akan mendengarkannya.",
   readingSlow: "Hasil belum keluar. Kiriman Anda sudah diterima, cek lagi sebentar lagi.",
   uploadFailed: "Kiriman gagal terkirim. Periksa sinyal Anda, lalu coba lagi.",
   readFailed: "Kiriman diterima, tetapi hasilnya belum bisa dimuat.",
@@ -237,6 +241,8 @@ const EN: VolunteerCopy = {
   keepOpen: "Keep this page open.",
   readingTitle: "Gemini is reading what you sent",
   readingNote: "Usually under 10 seconds.",
+  storedTitle: "Sent",
+  storedNote: "Your voice note is saved. A person will listen to it.",
   readingSlow: "The result is not ready. Your upload arrived, check again in a moment.",
   uploadFailed: "The upload did not go through. Check your signal and try again.",
   readFailed: "Your upload arrived, but the result could not be loaded.",
