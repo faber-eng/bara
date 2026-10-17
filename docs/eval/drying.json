@@ -1,0 +1,36 @@
+{
+  "run_at": "2026-10-17T21:16:10.342308+00:00",
+  "region": "riau",
+  "top_share": 0.1,
+  "follow_weeks": [
+    1,
+    4
+  ],
+  "detections_through": "2026-10-15",
+  "years": [
+    {
+      "year": 2019,
+      "weeks": 25,
+      "hotspots": 3573,
+      "captured": 959,
+      "capture_rate": 0.2684019031626085,
+      "lift": 2.6840190316260846
+    },
+    {
+      "year": 2023,
+      "weeks": 25,
+      "hotspots": 3273,
+      "captured": 772,
+      "capture_rate": 0.23586923311946226,
+      "lift": 2.3586923311946224
+    },
+    {
+      "year": 2026,
+      "weeks": 18,
+      "hotspots": 362,
+      "captured": 6,
+      "capture_rate": 0.016574585635359115,
+      "lift": 0.16574585635359115
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "run_at": "2026-10-17T21:17:28.416023+00:00",
+  "url": "https://ai-builder-cup-511906.web.app",
+  "paths": [
+    {
+      "path": "GET /api/health",
+      "p50_ms": 237.4,
+      "p95_ms": 393.7,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "GET /api/public/riau/summary",
+      "p50_ms": 421.8,
+      "p95_ms": 1105.8,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "GET /api/public/riau/cells?limit=200",
+      "p50_ms": 490.7,
+      "p95_ms": 624.6,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "GET /api/public/riau/bulletin",
+      "p50_ms": 353.3,
+      "p95_ms": 480.3,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "GET /api/tiles/drying?region=riau",
+      "p50_ms": 240.1,
+      "p95_ms": 267.3,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    }
+  ]
+}

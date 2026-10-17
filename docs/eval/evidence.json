@@ -1,0 +1,228 @@
+{
+  "run_at": "2026-10-17T21:12:15.090569+00:00",
+  "model": "gemini-3.5-flash",
+  "sets": [
+    {
+      "kind": "photo",
+      "prompt_version": "evidence-v1",
+      "n": 40,
+      "failed": 0,
+      "fields": [
+        {
+          "field": "subject",
+          "correct": 30,
+          "n": 40,
+          "accuracy": 0.75
+        },
+        {
+          "field": "dam_state",
+          "correct": 33,
+          "n": 40,
+          "accuracy": 0.825
+        },
+        {
+          "field": "smoke",
+          "correct": 32,
+          "n": 40,
+          "accuracy": 0.8
+        },
+        {
+          "field": "hot_ground_signs",
+          "correct": 21,
+          "n": 32,
+          "accuracy": 0.65625
+        },
+        {
+          "field": "open_flame",
+          "correct": 40,
+          "n": 40,
+          "accuracy": 1.0
+        }
+      ],
+      "confusion": [
+        {
+          "field": "dam_state",
+          "labels": [
+            "broken",
+            "intact",
+            "not_applicable"
+          ],
+          "matrix": [
+            [
+              5,
+              1,
+              2
+            ],
+            [
+              0,
+              4,
+              4
+            ],
+            [
+              0,
+              0,
+              24
+            ]
+          ]
+        },
+        {
+          "field": "smoke",
+          "labels": [
+            "none",
+            "plume",
+            "wisps"
+          ],
+          "matrix": [
+            [
+              25,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              1,
+              4,
+              7
+            ]
+          ]
+        }
+      ],
+      "latency_ms": {
+        "n": 40,
+        "p50": 7140.147493017139,
+        "p95": 9694.586808007443
+      }
+    },
+    {
+      "kind": "audio",
+      "prompt_version": "evidence-audio-v1",
+      "n": 10,
+      "failed": 0,
+      "fields": [
+        {
+          "field": "subject",
+          "correct": 10,
+          "n": 10,
+          "accuracy": 1.0
+        },
+        {
+          "field": "dam_state",
+          "correct": 10,
+          "n": 10,
+          "accuracy": 1.0
+        },
+        {
+          "field": "smoke",
+          "correct": 7,
+          "n": 10,
+          "accuracy": 0.7
+        },
+        {
+          "field": "hot_ground_signs",
+          "correct": 3,
+          "n": 8,
+          "accuracy": 0.375
+        },
+        {
+          "field": "open_flame",
+          "correct": 6,
+          "n": 10,
+          "accuracy": 0.6
+        }
+      ],
+      "confusion": [
+        {
+          "field": "dam_state",
+          "labels": [
+            "broken",
+            "damaged",
+            "intact",
+            "not_applicable",
+            "overtopped"
+          ],
+          "matrix": [
+            [
+              2,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              5,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              1
+            ]
+          ]
+        },
+        {
+          "field": "smoke",
+          "labels": [
+            "none",
+            "plume",
+            "unknown",
+            "wisps"
+          ],
+          "matrix": [
+            [
+              4,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              2
+            ]
+          ]
+        }
+      ],
+      "latency_ms": {
+        "n": 10,
+        "p50": 7049.7148350114,
+        "p95": 9360.909276991151
+      }
+    }
+  ]
+}

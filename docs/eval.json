@@ -1,0 +1,445 @@
+{
+  "generated_at": "2026-10-17T21:18:07Z",
+  "drying": {
+    "run_at": "2026-10-17T21:16:10.342308+00:00",
+    "region": "riau",
+    "top_share": 0.1,
+    "follow_weeks": [
+      1,
+      4
+    ],
+    "detections_through": "2026-10-15",
+    "years": [
+      {
+        "year": 2019,
+        "weeks": 25,
+        "hotspots": 3573,
+        "captured": 959,
+        "capture_rate": 0.2684019031626085,
+        "lift": 2.6840190316260846
+      },
+      {
+        "year": 2023,
+        "weeks": 25,
+        "hotspots": 3273,
+        "captured": 772,
+        "capture_rate": 0.23586923311946226,
+        "lift": 2.3586923311946224
+      },
+      {
+        "year": 2026,
+        "weeks": 18,
+        "hotspots": 362,
+        "captured": 6,
+        "capture_rate": 0.016574585635359115,
+        "lift": 0.16574585635359115
+      }
+    ]
+  },
+  "reignition": {
+    "run_at": "2026-10-17T17:21:49.270439+00:00",
+    "region": "riau",
+    "split": "test",
+    "events": 118,
+    "positives": 13,
+    "model": {
+      "name": "reignition_v1",
+      "auc": 0.6622710622710622,
+      "precision_top10": 0.25,
+      "recall_top10": 0.23076923076923078
+    },
+    "served": {
+      "name": "reignition_v1_no_rain_after",
+      "auc": 0.6373626373626373,
+      "precision_top10": 0.0,
+      "recall_top10": 0.0
+    },
+    "baseline": {
+      "name": "detection_days_baseline",
+      "auc": 0.7076923076923077,
+      "precision_top10": 0.27586206896551724,
+      "recall_top10": 0.2546419098143236
+    }
+  },
+  "evidence": {
+    "run_at": "2026-10-17T21:12:15.090569+00:00",
+    "model": "gemini-3.5-flash",
+    "sets": [
+      {
+        "kind": "photo",
+        "prompt_version": "evidence-v1",
+        "n": 40,
+        "failed": 0,
+        "fields": [
+          {
+            "field": "subject",
+            "correct": 30,
+            "n": 40,
+            "accuracy": 0.75
+          },
+          {
+            "field": "dam_state",
+            "correct": 33,
+            "n": 40,
+            "accuracy": 0.825
+          },
+          {
+            "field": "smoke",
+            "correct": 32,
+            "n": 40,
+            "accuracy": 0.8
+          },
+          {
+            "field": "hot_ground_signs",
+            "correct": 21,
+            "n": 32,
+            "accuracy": 0.65625
+          },
+          {
+            "field": "open_flame",
+            "correct": 40,
+            "n": 40,
+            "accuracy": 1.0
+          }
+        ],
+        "confusion": [
+          {
+            "field": "dam_state",
+            "labels": [
+              "broken",
+              "intact",
+              "not_applicable"
+            ],
+            "matrix": [
+              [
+                5,
+                1,
+                2
+              ],
+              [
+                0,
+                4,
+                4
+              ],
+              [
+                0,
+                0,
+                24
+              ]
+            ]
+          },
+          {
+            "field": "smoke",
+            "labels": [
+              "none",
+              "plume",
+              "wisps"
+            ],
+            "matrix": [
+              [
+                25,
+                3,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                1,
+                4,
+                7
+              ]
+            ]
+          }
+        ],
+        "latency_ms": {
+          "n": 40,
+          "p50": 7140.147493017139,
+          "p95": 9694.586808007443
+        }
+      },
+      {
+        "kind": "audio",
+        "prompt_version": "evidence-audio-v1",
+        "n": 10,
+        "failed": 0,
+        "fields": [
+          {
+            "field": "subject",
+            "correct": 10,
+            "n": 10,
+            "accuracy": 1.0
+          },
+          {
+            "field": "dam_state",
+            "correct": 10,
+            "n": 10,
+            "accuracy": 1.0
+          },
+          {
+            "field": "smoke",
+            "correct": 7,
+            "n": 10,
+            "accuracy": 0.7
+          },
+          {
+            "field": "hot_ground_signs",
+            "correct": 3,
+            "n": 8,
+            "accuracy": 0.375
+          },
+          {
+            "field": "open_flame",
+            "correct": 6,
+            "n": 10,
+            "accuracy": 0.6
+          }
+        ],
+        "confusion": [
+          {
+            "field": "dam_state",
+            "labels": [
+              "broken",
+              "damaged",
+              "intact",
+              "not_applicable",
+              "overtopped"
+            ],
+            "matrix": [
+              [
+                2,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                5,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          {
+            "field": "smoke",
+            "labels": [
+              "none",
+              "plume",
+              "unknown",
+              "wisps"
+            ],
+            "matrix": [
+              [
+                4,
+                0,
+                3,
+                0
+              ],
+              [
+                0,
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                2
+              ]
+            ]
+          }
+        ],
+        "latency_ms": {
+          "n": 10,
+          "p50": 7049.7148350114,
+          "p95": 9360.909276991151
+        }
+      }
+    ]
+  },
+  "agent": {
+    "run_at": "2026-10-17T21:18:07Z",
+    "model": "gemini-3.1-pro-preview",
+    "cases": 8,
+    "passed": 8,
+    "pass_rate": 1.0,
+    "results": [
+      {
+        "case": "dam_broken_assigns_repair",
+        "passed": true
+      },
+      {
+        "case": "dam_intact_left_for_a_person",
+        "passed": true
+      },
+      {
+        "case": "low_confidence_goes_to_review",
+        "passed": true
+      },
+      {
+        "case": "overdue_high_risk_escalates",
+        "passed": true
+      },
+      {
+        "case": "overdue_low_risk_reassigns",
+        "passed": true
+      },
+      {
+        "case": "second_overdue_escalates",
+        "passed": true
+      },
+      {
+        "case": "recheck_smoke_escalates",
+        "passed": true
+      },
+      {
+        "case": "location_mismatch_goes_to_review",
+        "passed": true
+      }
+    ]
+  },
+  "latency": [
+    {
+      "path": "GET /api/health",
+      "p50_ms": 237.4,
+      "p95_ms": 393.7,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "GET /api/public/riau/summary",
+      "p50_ms": 421.8,
+      "p95_ms": 1105.8,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "GET /api/public/riau/cells?limit=200",
+      "p50_ms": 490.7,
+      "p95_ms": 624.6,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "GET /api/public/riau/bulletin",
+      "p50_ms": 353.3,
+      "p95_ms": 480.3,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "GET /api/tiles/drying?region=riau",
+      "p50_ms": 240.1,
+      "p95_ms": 267.3,
+      "n": 20,
+      "where": "live URL, sequential, cache-busting query so the Hosting CDN is skipped",
+      "source": "scripts/measure_latency.py"
+    },
+    {
+      "path": "Photos: file to verdict (eval set)",
+      "p50_ms": 7140.1,
+      "p95_ms": 9694.6,
+      "n": 40,
+      "where": "local, real Vertex (gemini-3.5-flash), 4 reads at a time",
+      "source": "services/api/evidence_eval_job.py"
+    },
+    {
+      "path": "Voice notes: file to verdict (eval set)",
+      "p50_ms": 7049.7,
+      "p95_ms": 9360.9,
+      "n": 10,
+      "where": "local, real Vertex (gemini-3.5-flash), 4 reads at a time",
+      "source": "services/api/evidence_eval_job.py"
+    },
+    {
+      "path": "Voice note: file to verdict (ffmpeg, then Gemini)",
+      "p50_ms": 6500,
+      "p95_ms": null,
+      "max_ms": 7900,
+      "n": 5,
+      "where": "local, real Vertex (gemini-3.5-flash)",
+      "source": "docs/DECISIONS.md, 2026-10-18, check_evidence reads voice notes and video"
+    },
+    {
+      "path": "Video: file to verdict (ffmpeg, then Gemini)",
+      "p50_ms": 6500,
+      "p95_ms": null,
+      "max_ms": 18100,
+      "n": null,
+      "where": "local, real Vertex (gemini-3.5-flash)",
+      "source": "docs/DECISIONS.md, 2026-10-18, check_evidence reads voice notes and video"
+    },
+    {
+      "path": "GET /api/tiles/{layer}, map id cached",
+      "p50_ms": 15,
+      "p95_ms": null,
+      "max_ms": null,
+      "n": 20,
+      "where": "local, Earth Engine fake at 500 ms (before the cache: p50 504 ms, p95 561 ms)",
+      "source": "docs/DECISIONS.md, 2026-10-18, tile map ids are cached"
+    },
+    {
+      "path": "GET /api/cells?region=, cold cache",
+      "p50_ms": 40,
+      "p95_ms": 118,
+      "max_ms": null,
+      "n": null,
+      "where": "local, fake warehouse with 3,769 rows (BigQuery time not included)",
+      "source": "docs/DECISIONS.md, 2026-10-17, GET /api/cells"
+    },
+    {
+      "path": "GET /api/cells?region=, cached",
+      "p50_ms": 7.8,
+      "p95_ms": 9.1,
+      "max_ms": null,
+      "n": null,
+      "where": "local, fake warehouse with 3,769 rows",
+      "source": "docs/DECISIONS.md, 2026-10-17, GET /api/cells"
+    },
+    {
+      "path": "POST /api/judge/trigger",
+      "p50_ms": 2.3,
+      "p95_ms": 3.1,
+      "max_ms": null,
+      "n": 500,
+      "where": "local test client, in-memory store (the live Firestore transaction is not in it)",
+      "source": "docs/DECISIONS.md, 2026-10-17, judge trigger limit"
+    }
+  ]
+}
