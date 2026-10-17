@@ -78,6 +78,8 @@ def publish_rankings(
     now: datetime,
     new_id: Callable[[], str],
     dry_run: bool,
+    latest: bool = True,
+    announce: bool = True,
 ) -> dict[str, object]:
     rows = ranking_tables.read_top_cells(warehouse, region, week_start, TOP_CELLS)
     if not rows:
@@ -96,23 +98,28 @@ def publish_rankings(
         "dams_in_file": len(in_file),
         "dry_run": dry_run,
     }
-    event = ranking_event(region, week_start, cells, dams, new_id(), now)
     if dry_run:
         return summary
-    replaced_cells = store.replace(
-        region, "cells", {cell.cell_id: cell_document(cell) for cell in cells}
-    )
-    replaced_dams = store.replace(
-        region, "dams", {dam.dam_id: dam_document(dam) for dam in dams}
-    )
-    message_id = publisher.publish(event)
-    logger.info("published %s as message %s", event.type, message_id)
-    return {
-        **summary,
-        "deleted": {"cells": replaced_cells.deleted, "dams": replaced_dams.deleted},
-        "message_id": message_id,
-        "event_id": event.id,
-    }
+    label = week_label(week_start)
+    cell_docs = {cell.cell_id: cell_document(cell) for cell in cells}
+    dam_docs = {dam.dam_id: dam_document(dam) for dam in dams}
+    store.replace(region, "cells", cell_docs, week=label)
+    store.replace(region, "dams", dam_docs, week=label)
+    result: dict[str, object] = {**summary}
+    if latest:
+        replaced_cells = store.replace(region, "cells", cell_docs)
+        replaced_dams = store.replace(region, "dams", dam_docs)
+        result["deleted"] = {
+            "cells": replaced_cells.deleted,
+            "dams": replaced_dams.deleted,
+        }
+    if announce:
+        event = ranking_event(region, week_start, cells, dams, new_id(), now)
+        message_id = publisher.publish(event)
+        logger.info("published %s as message %s", event.type, message_id)
+        result["message_id"] = message_id
+        result["event_id"] = event.id
+    return result
 
 
 def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:

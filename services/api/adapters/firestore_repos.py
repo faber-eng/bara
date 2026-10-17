@@ -490,11 +490,22 @@ def children[T](collection: Collection[T], case_ids: list[str]) -> list[T]:
 
 
 class RankingRepository:
-    def __init__(self, cells_for: Callable[[str], Collection[RankedCell]]):
+    def __init__(
+        self,
+        cells_for: Callable[[str], Collection[RankedCell]],
+        week_cells_for: Callable[[str, str], Collection[RankedCell]] | None = None,
+    ):
         self._cells_for = cells_for
+        self._week_cells_for = week_cells_for
 
     def top(self, region: str, limit: int) -> list[RankedCell]:
         return self._cells_for(region).where(Filter("rank", "<=", limit))
+
+    def top_in_week(self, region: str, week: str, limit: int) -> list[RankedCell]:
+        if self._week_cells_for is None:
+            return []
+        ranked = self._week_cells_for(region, week).where(Filter("rank", "<=", limit))
+        return sorted(ranked, key=lambda cell: cell.rank)
 
     def cell(self, region: str, cell_id: str) -> RankedCell | None:
         return self._cells_for(region).get(cell_id)
@@ -508,8 +519,19 @@ class RankingRepository:
 
 
 class RankedDamRepository:
-    def __init__(self, dams_for: Callable[[str], Collection[RankedDam]]):
+    def __init__(
+        self,
+        dams_for: Callable[[str], Collection[RankedDam]],
+        week_dams_for: Callable[[str, str], Collection[RankedDam]] | None = None,
+    ):
         self._dams_for = dams_for
+        self._week_dams_for = week_dams_for
+
+    def top_in_week(self, region: str, week: str, limit: int) -> list[RankedDam]:
+        if self._week_dams_for is None:
+            return []
+        ranked = self._week_dams_for(region, week).where(Filter("rank", "<=", limit))
+        return sorted(ranked, key=lambda dam: dam.rank)
 
     def top(self, region: str, limit: int) -> list[RankedDam]:
         ranked = self._dams_for(region).where(Filter("rank", "<=", limit))
@@ -562,11 +584,19 @@ def build_agent_repositories(db: firestore.Client) -> AgentRepositories:
         rankings=RankingRepository(
             lambda region: FirestoreCollection(
                 db, f"rankings/{region}/cells", RankedCell
-            )
+            ),
+            lambda region, week: FirestoreCollection(
+                db, f"rankings/{region}/weeks/{week}/cells", RankedCell
+            ),
         ),
         evidence=EvidenceRepository(FirestoreCollection(db, "evidence", Evidence)),
         ranked_dams=RankedDamRepository(
-            lambda region: FirestoreCollection(db, f"rankings/{region}/dams", RankedDam)
+            lambda region: FirestoreCollection(
+                db, f"rankings/{region}/dams", RankedDam
+            ),
+            lambda region, week: FirestoreCollection(
+                db, f"rankings/{region}/weeks/{week}/dams", RankedDam
+            ),
         ),
         volunteers=VolunteerRepository(
             FirestoreCollection(db, "volunteers", Volunteer)

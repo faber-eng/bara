@@ -62,7 +62,14 @@ DAM_CELLS = [
 
 
 def run(
-    tmp_path, *, cells=200, dams=DAMS_JSON, dry_run=False, firestore=None, log=None
+    tmp_path,
+    *,
+    cells=200,
+    dams=DAMS_JSON,
+    dry_run=False,
+    firestore=None,
+    log=None,
+    **options,
 ):
     log = log if log is not None else []
     bigquery = RecordingBigQueryClient(
@@ -85,6 +92,7 @@ def run(
         now=NOW,
         new_id=lambda: "evt-1",
         dry_run=dry_run,
+        **options,
     )
     return summary, bigquery, firestore, pubsub
 
@@ -198,3 +206,35 @@ def test_a_malformed_dams_file_stops_before_any_write(tmp_path):
         run(tmp_path, dams=bad, firestore=firestore)
 
     assert firestore.docs == {}
+
+
+def test_every_publish_also_keeps_the_week_snapshot(tmp_path):
+    _, _, firestore, _ = run(tmp_path)
+
+    prefix = "rankings/riau/weeks/2026-W42"
+    snapshot_cells = [k for k in firestore.docs if k.startswith(f"{prefix}/cells/")]
+    snapshot_dams = [k for k in firestore.docs if k.startswith(f"{prefix}/dams/")]
+    assert len(snapshot_cells) == 200
+    assert len(snapshot_dams) == 50
+    assert firestore.docs[f"{prefix}/cells/riau-1-1"]["rank"] == 1
+
+
+def test_a_backfill_week_writes_only_its_snapshot_and_sends_no_event(tmp_path):
+    firestore = FakeFirestore({"rankings/riau/cells/keep": {"v": 1}})
+
+    summary, _, firestore, pubsub = run(
+        tmp_path, firestore=firestore, latest=False, announce=False
+    )
+
+    assert firestore.docs["rankings/riau/cells/keep"] == {"v": 1}
+    assert "rankings/riau/weeks/2026-W42/cells/riau-1-1" in firestore.docs
+    assert pubsub.published == []
+    assert "message_id" not in summary
+
+
+def test_the_newest_backfill_week_refreshes_the_latest_set_without_an_event(tmp_path):
+    summary, _, firestore, pubsub = run(tmp_path, latest=True, announce=False)
+
+    assert len(by_kind(firestore, "cells")) == 200
+    assert pubsub.published == []
+    assert "message_id" not in summary

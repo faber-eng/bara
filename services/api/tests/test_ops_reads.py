@@ -88,6 +88,8 @@ class World:
         self.escalations = InMemoryCollection(Escalation)
         self.ranked_cells = InMemoryCollection(RankedCell)
         self.ranked_dams = InMemoryCollection(RankedDam)
+        self.week_cells: dict[str, InMemoryCollection] = {}
+        self.week_dams: dict[str, InMemoryCollection] = {}
         self.dams = InMemoryCollection(Dam)
         self.runs: dict[str, InMemoryCollection] = {}
         self.explainer = StubExplainer()
@@ -111,8 +113,18 @@ class World:
             clock=self.clock,
         )
         self.area_queries = AreaQueries(
-            rankings=RankingRepository(lambda region: self.ranked_cells),
-            ranked_dams=RankedDamRepository(lambda region: self.ranked_dams),
+            rankings=RankingRepository(
+                lambda region: self.ranked_cells,
+                lambda region, week: self.week_cells.setdefault(
+                    week, InMemoryCollection(RankedCell)
+                ),
+            ),
+            ranked_dams=RankedDamRepository(
+                lambda region: self.ranked_dams,
+                lambda region, week: self.week_dams.setdefault(
+                    week, InMemoryCollection(RankedDam)
+                ),
+            ),
             cells=CellRepository(warehouse),
             dams=DamRepository(self.dams),
             cases=case_repo,
@@ -320,6 +332,44 @@ def test_rankings_for_another_week_or_no_data_are_404(settings):
         World().client(settings).get("/api/rankings/riau", headers=OPS).status_code
         == 404
     )
+
+
+def test_rankings_for_a_past_week_read_that_weeks_snapshot(settings):
+    world = World()
+    world.ranked_cells.put("c1", make_ranked_cell(cell_id="c1", rank=1))
+    past = date(2026, 5, 18)
+    for rank in (2, 1):
+        world.week_cells.setdefault("2026-W21", InMemoryCollection(RankedCell)).put(
+            f"c{rank}",
+            make_ranked_cell(cell_id=f"c{rank}", rank=rank, week_start=past),
+        )
+    world.week_dams.setdefault("2026-W21", InMemoryCollection(RankedDam)).put(
+        "d9", make_ranked_dam(dam_id="d9")
+    )
+    client = world.client(settings)
+
+    body = client.get("/api/rankings/riau?week=2026-W21", headers=OPS).json()
+
+    assert body["week"] == "2026-W21"
+    assert [c["cell_id"] for c in body["cells"]] == ["c1", "c2"]
+    assert [d["dam_id"] for d in body["dams"]] == ["d9"]
+    latest = client.get("/api/rankings/riau", headers=OPS).json()
+    assert latest["week"] == "2026-W42"
+
+
+def test_the_latest_week_without_a_snapshot_falls_back_to_the_latest_set(settings):
+    world = World()
+    world.ranked_cells.put("c1", make_ranked_cell(cell_id="c1"))
+    world.ranked_dams.put("d1", make_ranked_dam(dam_id="d1"))
+
+    body = (
+        world.client(settings)
+        .get("/api/rankings/riau?week=2026-W42", headers=OPS)
+        .json()
+    )
+
+    assert [c["cell_id"] for c in body["cells"]] == ["c1"]
+    assert [d["dam_id"] for d in body["dams"]] == ["d1"]
 
 
 def test_a_malformed_week_is_422(settings):

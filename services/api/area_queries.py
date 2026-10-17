@@ -54,6 +54,19 @@ class AreaQueries:
         self._radius_m = radius_m
 
     def rankings(self, region: str, week: str | None) -> Rankings:
+        if week is None:
+            return self._latest_rankings(region, None)
+        cells = self._rankings.top_in_week(region, week, RANKED_CELL_LIMIT)
+        if not cells:
+            return self._latest_rankings(region, week)
+        return Rankings(
+            region=region,
+            week=week,
+            cells=cells,
+            dams=self._ranked_dams.top_in_week(region, week, RANKED_DAM_LIMIT),
+        )
+
+    def _latest_rankings(self, region: str, week: str | None) -> Rankings:
         cells = newest_week_by_rank(self._rankings.top(region, RANKED_CELL_LIMIT))
         if week is not None:
             cells = [c for c in cells if iso_week_label(c.week_start) == week]

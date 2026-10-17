@@ -16,14 +16,24 @@ def chunks[T](items: list[T], size: int) -> Iterable[list[T]]:
         yield items[start : start + size]
 
 
+def collection_path(region: str, kind: str, week: str | None) -> str:
+    if week is None:
+        return f"{ROOT}/{region}/{kind}"
+    return f"{ROOT}/{region}/weeks/{week}/{kind}"
+
+
 class RankingsStore:
     def __init__(self, client):
         self._client = client
 
     def replace(
-        self, region: str, kind: str, documents: Mapping[str, Mapping[str, object]]
+        self,
+        region: str,
+        kind: str,
+        documents: Mapping[str, Mapping[str, object]],
+        week: str | None = None,
     ) -> ReplaceResult:
-        collection = self._client.collection(f"{ROOT}/{region}/{kind}")
+        collection = self._client.collection(collection_path(region, kind, week))
         stale = [ref for ref in collection.list_documents() if ref.id not in documents]
         for chunk in chunks(list(documents.items()), BATCH_LIMIT):
             batch = self._client.batch()
