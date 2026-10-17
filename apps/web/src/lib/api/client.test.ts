@@ -180,7 +180,7 @@ describe("apiRequest for a signed-in user", () => {
 
     await apiRequest("/api/v/vol-ari/inbox");
 
-    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("ops");
+    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("volunteer");
   });
 
   it("keeps the role header off a real brigade user's own inbox and acknowledgements", async () => {
@@ -205,13 +205,22 @@ describe("apiRequest for a signed-in user", () => {
     expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("brigade");
   });
 
+  it("sends the volunteer role on volunteer routes whatever person the judge picked", async () => {
+    await authWithToken(jwt({ sub: "u-9", firebase: { sign_in_provider: "anonymous" } }));
+    const fetchMock = stubFetch(Response.json({}));
+
+    await apiRequest("/api/v/vol-ari/inbox");
+
+    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("volunteer");
+  });
+
   it("keeps the role header for an anonymous user", async () => {
     await authWithToken(jwt({ sub: "u-9", firebase: { sign_in_provider: "anonymous" } }));
     const fetchMock = stubFetch(Response.json({}));
 
     await apiRequest("/api/v/u-9/inbox");
 
-    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("ops");
+    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("volunteer");
   });
 });
 
