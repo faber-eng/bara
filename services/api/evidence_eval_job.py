@@ -12,7 +12,7 @@ from google.cloud import bigquery
 from adapters.bigquery import DATASET, Warehouse
 from adapters.evidence_eval_table import append_evidence_eval
 from adapters.gemini import ModelGateway, build_vertex_clients
-from casework.evidence_eval import EvidenceEvaluator
+from casework.evidence_eval import DEFAULT_CONCURRENCY, EvidenceEvaluator
 from casework.evidence_reader import PROMPT_VERSIONS, EvidenceReader
 from config import load_settings
 from domain.evidence_eval import (
@@ -60,7 +60,18 @@ def summarize(
         for kind in KINDS
         if items_of_kind(items, kind)
     ]
-    return {"run_at": run_at, "model": model, "sets": sets}
+    return {
+        "run_at": run_at,
+        "model": model,
+        "concurrency": DEFAULT_CONCURRENCY,
+        "sets": sets,
+    }
+
+
+def model_label(route, fallback_used: bool) -> str:
+    if fallback_used:
+        return f"{route.model} (fallback {route.fallback} on some reads)"
+    return route.model
 
 
 def main(argv: Sequence[str]) -> int:
@@ -76,8 +87,7 @@ def main(argv: Sequence[str]) -> int:
             rows, lambda row: (args.eval_dir / row.object_path).read_bytes()
         )
     )
-    route = settings.models.fast
-    model = route.fallback if gateway.fallback_used else route.model
+    model = model_label(settings.models.fast, gateway.fallback_used)
     warehouse = Warehouse(
         bigquery.Client(project=settings.project), settings.project, DATASET
     )

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from collections.abc import Awaitable, Callable, Sequence
 
@@ -13,6 +14,9 @@ from domain.evidence_eval import (
     kind_for,
     task_type_for,
 )
+from logs import log_extra
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_CONCURRENCY = 4
 MS_PER_S = 1000.0
@@ -51,6 +55,14 @@ class EvidenceEvaluator:
                 )
             except (ReaderFailed, UnreadableMedia) as error:
                 return self._item(row, None, started, str(error))
+            except Exception as error:
+                logger.exception(
+                    "eval read failed",
+                    extra=log_extra("eval_read_failed", file=row.file),
+                )
+                return self._item(
+                    row, None, started, f"{type(error).__name__}: {error}"
+                )
             values = verdict.model_dump(mode="json")
             scored = {field: values[field] for field in FIELDS}
             return self._item(row, scored, started, None)

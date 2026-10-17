@@ -107,3 +107,15 @@ def test_reads_run_at_most_concurrency_at_a_time():
 
     assert reader.most_active <= 2
     assert len(reader.calls) == 6
+
+
+def test_an_unexpected_error_fails_that_item_and_keeps_the_rest():
+    reader = ScriptedReader({b"dam": TimeoutError("read timed out"), b"ok": verdict()})
+    evaluator = EvidenceEvaluator(reader, prepare=prepare)
+    rows = [row("dam.jpg"), row("ok.jpg")]
+    data = {"dam.jpg": b"dam", "ok.jpg": b"ok"}
+
+    items = asyncio.run(evaluator.score_all(rows, lambda r: data[r.file]))
+
+    assert items[0].error == "TimeoutError: read timed out"
+    assert items[1].error is None
