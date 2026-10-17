@@ -15,7 +15,6 @@ from contracts import (
     ClockState,
     Escalation,
     Health,
-    Inbox,
     PublicSummary,
     Rankings,
     TileLayer,
@@ -34,7 +33,6 @@ FIXTURE_MODELS: dict[str, type[BaseModel]] = {
     "health.json": Health,
     "clock.json": ClockState,
     "tiles_drying.json": TileLayer,
-    "inbox.json": Inbox,
 }
 
 LIST_FIXTURE_MODELS: dict[str, type[BaseModel]] = {
