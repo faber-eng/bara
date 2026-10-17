@@ -207,6 +207,14 @@ class CaseworkStore:
             f"evidence {evidence.id} or its task or case changed",
         )
 
+    def commit_overdue(self, *, task_id: str, case_change: StatusChange | None) -> None:
+        case_guards, case_writes = status_writes(case_change)
+        self._commit(
+            [Guard(TASKS, task_id, "status", "open"), *case_guards],
+            [Update(TASKS, task_id, {"status": "overdue"}), *case_writes],
+            f"task {task_id} or its case changed",
+        )
+
     def move_case(self, change: StatusChange) -> None:
         guards, writes = status_writes(change)
         self._commit(

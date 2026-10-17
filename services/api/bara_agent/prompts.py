@@ -7,7 +7,7 @@ from typing import get_args
 from bara_agent.output import ToolName
 from contracts import Case, CaseType, Dam, TaskType, VolunteerRole
 
-PROMPT_VERSION = "agent-v4"
+PROMPT_VERSION = "agent-v5"
 AGENT_NAME = "bara_coordinator"
 CASE_TYPE: CaseType = "dam_risk"
 PEOPLE_ROLE: VolunteerRole = "volunteer"
@@ -51,6 +51,24 @@ task_type "{REPAIR_TASK_TYPE}" and an instructions_hint from the verdict \
 reasons. Leave deadline_hours out. If find_people returns no people, do not \
 call assign_task and say so in decision.
 5. Otherwise, say in decision that a person can close the case.
+
+## When the trigger is task.overdue
+The event names the task that passed its deadline: task_id, attempt (1 for \
+the first person asked), task_type, and assignee_id, the person who missed it.
+1. If the case risk drying_score is 80 or more, or the case risk p_reignite is \
+0.5 or more, or the case history_flags smoke_seen is true, or the event \
+attempt is 2 or more, call escalate once with the case id and a reason that \
+names the rule and its number, and call no other tool. A null risk value does \
+not meet its rule. If escalate returns an error, say so in decision.
+2. Otherwise, call find_people with the case cell_id and the role for the \
+event task_type: dam_check: role "volunteer"; dam_repair: role "repair_team"; \
+patrol_recheck: role "patrol".
+3. Take the first person in the result other than the event assignee_id and \
+call assign_task once with the case id, that person's id, with the event \
+task_type and an instructions_hint that says the task is overdue. Leave \
+deadline_hours out.
+4. If no other person is found, call escalate once with the case id and a \
+reason that says nobody else is available.
 
 ## Rules
 - Every number you write must come from a tool result or the run input of this \

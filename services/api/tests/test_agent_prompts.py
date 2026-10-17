@@ -60,7 +60,7 @@ def test_instruction_carries_the_never_close_rule_and_the_fraction_glossary():
 
 
 def test_prompt_version():
-    assert PROMPT_VERSION == "agent-v4"
+    assert PROMPT_VERSION == "agent-v5"
 
 
 def test_instruction_steps_end_with_one_assign_task_call():
@@ -94,3 +94,33 @@ def test_fire_signs_escalate_before_any_repair_task():
 
     assert escalate < repair
     assert "4. Otherwise, if the verdict's dam_state is broken" in INSTRUCTION
+
+
+def overdue_section() -> str:
+    start = INSTRUCTION.index("## When the trigger is task.overdue")
+    return INSTRUCTION[start : INSTRUCTION.index("## Rules")]
+
+
+def test_an_overdue_task_on_a_high_risk_case_escalates_first():
+    section = overdue_section()
+
+    assert "drying_score is 80 or more" in section
+    assert "p_reignite is 0.5 or more" in section
+    assert "smoke_seen is true" in section
+    assert "attempt is 2 or more" in section
+    assert section.index("call escalate once") < section.index("find_people")
+
+
+def test_an_overdue_task_is_reassigned_once_to_someone_else():
+    section = overdue_section()
+
+    assert "other than the event assignee_id" in section
+    assert "with the event task_type" in section
+    assert 'dam_check: role "volunteer"' in section
+    assert 'dam_repair: role "repair_team"' in section
+    assert 'patrol_recheck: role "patrol"' in section
+    assert "Leave deadline_hours out." in section
+
+
+def test_an_overdue_task_with_nobody_else_escalates():
+    assert "If no other person is found, call escalate once" in overdue_section()
