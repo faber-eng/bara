@@ -686,6 +686,7 @@ APP_BUILDER_STUBS = {
     "build_resetter": "resetter",
     "build_case_queries": "cases",
     "build_area_queries": "areas",
+    "build_rank_explainer": "explainer",
     "build_checker": "checker",
     "build_escalator": "escalator",
     "build_acknowledger": "acknowledger",
