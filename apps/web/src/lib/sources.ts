@@ -4,7 +4,7 @@ const DEFAULT_SOURCES = {
   rankings: "live",
   cases: "live",
   caseDetail: "live",
-  escalations: "fixture",
+  escalations: "live",
   tiles: "live",
   clock: "live",
   inbox: "live",

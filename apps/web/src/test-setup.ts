@@ -10,6 +10,7 @@ beforeEach(() => {
   vi.stubEnv("VITE_SOURCE_RANKINGS", "fixture");
   vi.stubEnv("VITE_SOURCE_CASES", "fixture");
   vi.stubEnv("VITE_SOURCE_CASEDETAIL", "fixture");
+  vi.stubEnv("VITE_SOURCE_ESCALATIONS", "fixture");
   vi.stubEnv("VITE_SOURCE_INBOX", "fixture");
 });
 
