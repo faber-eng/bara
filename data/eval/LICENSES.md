@@ -1,8 +1,8 @@
 # Eval set licences
 
-Every photo in `photos/` comes from Wikimedia Commons under CC0, public domain, CC BY or CC BY-SA. No photo is AI-generated or edited beyond the resize below.
+Every photo in `photos/` comes from Wikimedia Commons, or from the U.S. Fish and Wildlife Service Flickr account (public domain), under CC0, public domain, CC BY or CC BY-SA. No photo is AI-generated or edited beyond the resize below.
 
-Change made to every photo: resized so the long edge is at most 1600 px, re-encoded as JPEG at quality 85, EXIF removed. Nothing else was changed. CC BY and CC BY-SA allow this with attribution; the CC BY-SA photos stay under the same licence here, and so do the resized copies.
+Change made to every photo: resized so the long edge is at most 1600 px, re-encoded as JPEG at quality 85, EXIF removed. Nothing else was changed. The U.S. Fish and Wildlife Service photos were taken at Flickr's 1024 px size before this resize. CC BY and CC BY-SA allow this with attribution; the CC BY-SA photos stay under the same licence here, and so do the resized copies.
 
 | file | Commons title | author | licence | source page |
 |---|---|---|---|---|
@@ -29,12 +29,21 @@ Change made to every photo: resized so the long edge is at most 1600 px, re-enco
 | photos/burned_smoke_07.jpg | Smoldering peat fire (6058191729).jpg | U.S. Fish and Wildlife Service Northeast Region | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | <https://commons.wikimedia.org/wiki/File:Smoldering_peat_fire_(6058191729).jpg> |
 | photos/burned_smoke_08.jpg | Turba ardiendo Tablas de Daimiel.JPG | Guillermo Rein | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | <https://commons.wikimedia.org/wiki/File:Turba_ardiendo_Tablas_de_Daimiel.JPG> |
 | photos/burned_smoke_09.jpg | Burnt orange (6082449807).jpg | U.S. Fish and Wildlife Service Northeast Region | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | <https://commons.wikimedia.org/wiki/File:Burnt_orange_(6082449807).jpg> |
+| photos/burned_smoke_10.jpg | Out of Controls.jpg | DenY Krisbiyantoro | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | <https://commons.wikimedia.org/wiki/File:Out_of_Controls.jpg> |
+| photos/burned_smoke_11.jpg | Water Bombing.jpg | DenY Krisbiyantoro | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | <https://commons.wikimedia.org/wiki/File:Water_Bombing.jpg> |
+| photos/burned_smoke_12.jpg | Smoke signature (Flickr 6099227029) | U. S. Fish and Wildlife Service - Northeast Region | Public domain | <https://www.flickr.com/photos/43322816@N08/6099227029> |
 | photos/burned_clear_01.jpg | Burned Peatland in Indonesia.jpg | Gambut Pratama | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | <https://commons.wikimedia.org/wiki/File:Burned_Peatland_in_Indonesia.jpg> |
 | photos/burned_clear_02.jpg | Burnt peat bog.jpg | УмныйПёс | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | <https://commons.wikimedia.org/wiki/File:Burnt_peat_bog.jpg> |
 | photos/burned_clear_03.jpg | Burnt peat bog 1.jpg | УмныйПёс | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | <https://commons.wikimedia.org/wiki/File:Burnt_peat_bog_1.jpg> |
 | photos/burned_clear_04.jpg | Bog cotton colonising burnt ground, Dava Moor - geograph.org.uk - 8336156.jpg | Alan O'Dowd | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | <https://commons.wikimedia.org/wiki/File:Bog_cotton_colonising_burnt_ground,_Dava_Moor_-_geograph.org.uk_-_8336156.jpg> |
 | photos/burned_clear_05.jpg | Roots exposed (6098305612).jpg | U.S. Fish and Wildlife Service Northeast Region | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | <https://commons.wikimedia.org/wiki/File:Roots_exposed_(6098305612).jpg> |
 | photos/burned_clear_06.jpg | COLLECTIE TROPENMUSEUM Een man staat tussen verbande kahoibomen (Shorea Balangeran) in een verbrand bos (oetan toenoe) nabij de uitmonding van de rivier Sendowan in de Sabentoeloeng te Koetai Oost-Borneo TMnr 10010913.jpg | Unknown authorUnknown author | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | <https://commons.wikimedia.org/wiki/File:COLLECTIE_TROPENMUSEUM_Een_man_staat_tussen_verbande_kahoibomen_(Shorea_Balangeran)_in_een_verbrand_bos_(oetan_toenoe)_nabij_de_uitmonding_van_de_rivier_Sendowan_in_de_Sabentoeloeng_te_Koetai_Oost-Borneo_TMnr_10010913.jpg> |
+| photos/burned_clear_07.jpg | Fire along swamp ditch (Flickr 6058189957) | U. S. Fish and Wildlife Service - Northeast Region | Public domain | <https://www.flickr.com/photos/43322816@N08/6058189957> |
+| photos/burned_clear_08.jpg | Water show (Flickr 6067912124) | U. S. Fish and Wildlife Service - Northeast Region | Public domain | <https://www.flickr.com/photos/43322816@N08/6067912124> |
+| photos/burned_clear_09.jpg | AmeriCorps NCCC Phoenix 3 mops up (Flickr 6051899073) | U. S. Fish and Wildlife Service - Northeast Region | Public domain | <https://www.flickr.com/photos/43322816@N08/6051899073> |
+| photos/burned_clear_10.jpg | Improving fire lines (Flickr 6033309908) | U. S. Fish and Wildlife Service - Northeast Region | Public domain | <https://www.flickr.com/photos/43322816@N08/6033309908> |
+| photos/burned_clear_11.jpg | Roadway undermined by a peat fire - NARA - 285717.jpg | U.S. National Archives and Records Administration (unknown author) | Public domain | <https://commons.wikimedia.org/wiki/File:Roadway_undermined_by_a_peat_fire_-_NARA_-_285717.jpg> |
+| photos/burned_clear_12.jpg | Corapeake Road Lateral West Fire (Flickr 6082460541) | U. S. Fish and Wildlife Service - Northeast Region | Public domain | <https://www.flickr.com/photos/43322816@N08/6082460541> |
 | voice/voice01.ogg | team recording | Faber Fathers | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | team-made |
 | voice/voice02.ogg | team recording | Faber Fathers | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | team-made |
 | voice/voice03.ogg | team recording | Faber Fathers | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | team-made |
@@ -49,4 +58,4 @@ Change made to every photo: resized so the long edge is at most 1600 px, re-enco
 ## Still to record
 
 - Voice notes: 10 team recordings are in `voice/`, which meets the spec minimum. All are Faber Fathers team recordings under CC BY 4.0.
-- 11 to 31 more photos if the set must reach 40 (it has 29). Southeast Asian canal blocks, broken or intact, are the scarcest class on Commons.
+- 2 more photos to reach 40 (it has 38). Southeast Asian canal blocks, broken or intact, are still missing: no finished Southeast Asian canal block with a confirmed open licence was found on Commons, Openverse or Flickr.
