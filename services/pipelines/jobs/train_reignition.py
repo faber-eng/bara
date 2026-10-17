@@ -13,12 +13,14 @@ from domain.reignition_eval import (
     EvalRecord,
     ModelVariant,
     baseline_record,
+    empty_eval_splits,
     model_record,
 )
-from ee_lib.config import load_region
+from ee_lib.config import RegionConfig, load_region
 from jobs.cli import (
     DATASET,
     JobError,
+    UsageError,
     configure_logging,
     logger,
     query_report,
@@ -32,6 +34,28 @@ def first_row(rows: Sequence[Mapping[str, object]], step: str) -> Mapping[str, o
     if not rows:
         raise JobError(f"{step} returned no row")
     return rows[0]
+
+
+def full_flow_region(region: RegionConfig) -> str:
+    if not region.full_flow:
+        raise UsageError(
+            f"region {region.id!r} is not full_flow in config/regions.yaml; "
+            "bara.reignition_v1 is trained for the full-flow region only"
+        )
+    return region.id
+
+
+def require_labeled_eval_splits(
+    warehouse: Warehouse, region_id: str, queries: list[dict[str, object]]
+) -> None:
+    counted = reignition_model.count_labeled(warehouse, region_id)
+    queries.append(query_report("count_labeled", counted))
+    empty = empty_eval_splits(first_row(counted.rows, "labeled count"))
+    if empty:
+        raise JobError(
+            f"no labeled events in split {', '.join(empty)} for {region_id}; "
+            "run jobs.reignition_features first"
+        )
 
 
 def evaluate_variant(
@@ -62,7 +86,7 @@ def evaluate_variant(
                 evaluated_at=evaluated_at,
             )
         )
-        if variant == VARIANTS[0]:
+        if variant.with_baseline:
             records.append(
                 baseline_record(
                     region=region_id,
@@ -101,6 +125,7 @@ def train_reignition(
     summary: dict[str, object] = {"region": region_id, "dry_run": dry_run}
     if dry_run:
         return {**summary, "queries": queries}
+    require_labeled_eval_splits(warehouse, region_id, queries)
     records: list[EvalRecord] = []
     for variant in VARIANTS:
         trained = reignition_model.train(warehouse, variant, region_id)
@@ -115,7 +140,9 @@ def train_reignition(
     return {
         **summary,
         "evaluations": [record_summary(record) for record in records],
-        "bytes_billed": sum(int(query["bytes"]) for query in queries[len(VARIANTS) :]),
+        "bytes_billed": sum(
+            int(str(query["bytes"])) for query in queries if not query["estimate"]
+        ),
         "queries": queries,
     }
 
@@ -140,7 +167,7 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="estimate the training bytes; train and write nothing",
+        help="estimate the training input scan; train and write nothing",
     )
     return parser.parse_args(argv)
 
@@ -153,11 +180,12 @@ def main(
     def work() -> dict[str, object]:
         project = resolve_project(args.project, environ)
         region = load_region(resolve_config_dir(args.config_dir, environ), args.region)
+        region_id = full_flow_region(region)
         from google.cloud import bigquery
 
-        logger.info("%s: training on bara.reignition_training", region.id)
+        logger.info("%s: training on bara.reignition_training", region_id)
         return train_reignition(
-            region_id=region.id,
+            region_id=region_id,
             warehouse=Warehouse(bigquery.Client(project=project), project, DATASET),
             evaluated_at=datetime.now(UTC),
             dry_run=args.dry_run,

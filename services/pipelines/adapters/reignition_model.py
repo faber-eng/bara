@@ -4,10 +4,14 @@ from dataclasses import asdict
 from google.cloud.bigquery import SchemaField
 
 from adapters.bigquery import QueryResult, TableSpec, Warehouse
-from domain.reignition_eval import EvalRecord, ModelVariant
+from domain.reignition_eval import (
+    EVAL_SPLITS,
+    EvalRecord,
+    ModelVariant,
+    feature_exclusions,
+)
 
 MAX_ITERATIONS = 20
-KEY_COLUMNS = ("event_id", "cell_id", "region", "quiet_date", "split")
 
 EVAL_REIGNITION = TableSpec(
     name="eval_reignition",
@@ -19,9 +23,9 @@ EVAL_REIGNITION = TableSpec(
         SchemaField("events", "INT64", mode="REQUIRED"),
         SchemaField("positives", "INT64", mode="REQUIRED"),
         SchemaField("auc", "FLOAT64", mode="NULLABLE"),
-        SchemaField("auc_source", "STRING", mode="REQUIRED"),
+        SchemaField("ml_evaluate_auc", "FLOAT64", mode="NULLABLE"),
         SchemaField("precision_top10", "FLOAT64", mode="REQUIRED"),
-        SchemaField("recall_top10", "FLOAT64", mode="REQUIRED"),
+        SchemaField("recall_top10", "FLOAT64", mode="NULLABLE"),
         SchemaField("log_loss", "FLOAT64", mode="NULLABLE"),
         SchemaField(
             "global_explain",
@@ -66,6 +70,12 @@ REGISTRY_OPTIONS = """,
   model_registry = 'VERTEX_AI',
   vertex_ai_model_id = '{vertex_model_id}'"""
 
+LABELED_COUNT_SQL = """
+SELECT {counts}
+FROM reignition_training
+WHERE region = @region AND reignited IS NOT NULL
+"""
+
 LABELED_SPLIT = """
 SELECT * EXCEPT({excluded})
 FROM reignition_training
@@ -100,7 +110,14 @@ ORDER BY attribution DESC
 
 
 def excluded(variant: ModelVariant) -> str:
-    return ", ".join(KEY_COLUMNS + variant.dropped)
+    return ", ".join(feature_exclusions(variant))
+
+
+def count_labeled(warehouse: Warehouse, region: str) -> QueryResult:
+    counts = ", ".join(
+        f"COUNTIF(split = '{split}') AS {split}" for split in EVAL_SPLITS
+    )
+    return warehouse.query(LABELED_COUNT_SQL.format(counts=counts), {"region": region})
 
 
 def registry(variant: ModelVariant) -> str:
