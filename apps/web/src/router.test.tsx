@@ -33,7 +33,6 @@ describe("app routes", () => {
   it.each([
     ["/", "Landing and tour"],
     ["/public", "Public dashboard"],
-    ["/area/new", "Draw an area"],
   ])("renders %s with its title and the health footer", async (path, title) => {
     renderAt(path);
 
@@ -49,6 +48,14 @@ describe("app routes", () => {
       await screen.findByRole("heading", { level: 1, name: "Tugas Anda" }),
     ).toBeInTheDocument();
     expect(await screen.findByRole("article", { name: "Cek sekat kanal" })).toBeInTheDocument();
+  });
+
+  it("opens the draw an area screen", async () => {
+    renderAt("/area/new");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Gambar area" }),
+    ).toBeInTheDocument();
   });
 
   it("marks the active screen in the app bar", async () => {

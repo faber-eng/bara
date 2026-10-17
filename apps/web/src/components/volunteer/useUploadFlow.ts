@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useReducer, useRef } from "react";
+import { fetchSampleFile } from "../../lib/api/samples";
 import { fetchInbox } from "../../lib/api/volunteer";
 import type { UploadTicket } from "../../lib/api/volunteerTypes";
-import type { Evidence, EvidenceKind, GeoPoint } from "../../lib/contracts";
+import type { Evidence, EvidenceKind, GeoPoint, SampleItem } from "../../lib/contracts";
 import { readDeviceLocation } from "../../lib/geo";
 import { type FailureReason, type FlowState, flowReducer, IDLE } from "../../lib/volunteer/flow";
 import { resizePhoto } from "../../lib/volunteer/image";
@@ -26,7 +27,7 @@ export type UploadFlow = {
   state: FlowState;
   choosePhoto: (file: Blob, sample: boolean) => Promise<void>;
   sendPhoto: () => Promise<void>;
-  sendSampleVoice: (file: Blob) => Promise<void>;
+  chooseSample: (item: SampleItem) => Promise<void>;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
   retry: () => Promise<void>;
@@ -127,8 +128,28 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
     await send({ blob: state.photo, kind: "photo", sample: state.sample, ticket: null });
   }
 
-  async function sendSampleVoice(file: Blob) {
-    await send({ blob: file, kind: "audio", sample: true, ticket: null });
+  async function chooseSample(item: SampleItem) {
+    if (state.step !== "idle") return;
+    dispatch({ type: "preparing" });
+    try {
+      const file = await fetchSampleFile(item);
+      if (cancelled.current) return;
+      await sendSampleFile(item, file);
+    } catch {
+      fail("prepare");
+    }
+  }
+
+  async function sendSampleFile(item: SampleItem, file: Blob) {
+    if (item.kind === "photo") {
+      dispatch({ type: "photo_chosen", photo: await resizePhoto(file), sample: true });
+      return;
+    }
+    if (item.kind === "voice" && baseContentType(file.type) !== "") {
+      await send({ blob: file, kind: "audio", sample: true, ticket: null });
+      return;
+    }
+    throw new Error("The sample cannot be sent as evidence");
   }
 
   async function startRecording() {
@@ -172,7 +193,7 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
     state,
     choosePhoto,
     sendPhoto,
-    sendSampleVoice,
+    chooseSample,
     startRecording,
     stopRecording,
     retry,

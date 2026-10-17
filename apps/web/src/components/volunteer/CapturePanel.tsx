@@ -1,6 +1,7 @@
 import { type ChangeEvent, useRef } from "react";
 import type { CopyLanguage } from "../../lib/copy/language";
 import type { VolunteerCopy } from "../../lib/copy/volunteer";
+import { SamplePicker } from "../samples/SamplePicker";
 import {
   FailurePanel,
   PhotoPreview,
@@ -87,6 +88,12 @@ export function CapturePanel({ copy, language, volunteerId, taskId, locked }: Ca
         >
           {copy.takePhoto}
         </button>
+        <SamplePicker
+          kind="photo"
+          copy={copy}
+          disabled={busy}
+          onPick={(item) => void flow.chooseSample(item)}
+        />
         <input
           ref={fileInput}
           className="visually-hidden"
@@ -105,6 +112,12 @@ export function CapturePanel({ copy, language, volunteerId, taskId, locked }: Ca
         >
           {copy.recordVoice}
         </button>
+        <SamplePicker
+          kind="voice"
+          copy={copy}
+          disabled={busy}
+          onPick={(item) => void flow.chooseSample(item)}
+        />
       </div>
       <p className="proto-note">{copy.cameraHint}</p>
     </div>

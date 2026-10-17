@@ -1,8 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { EmptyScreen } from "../components/EmptyScreen";
+import { AreaScreen } from "../components/samples/AreaScreen";
 
-function DrawAreaScreen() {
-  return <EmptyScreen title="Draw an area" path="/area/new" />;
-}
-
-export const Route = createFileRoute("/area/new")({ component: DrawAreaScreen });
+export const Route = createFileRoute("/area/new")({ component: AreaScreen });
