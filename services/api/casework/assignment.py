@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -26,7 +27,7 @@ from domain.assignment import (
 )
 from domain.case_machine import IllegalTransition
 from domain.channels import Channel, OutboundMessage
-from domain.clock import Clock
+from domain.clock import Clock, ClockReading
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,18 @@ class AssignmentRequest:
     instructions_hint: str
     deadline_hours: int | None
     target_cell_id: str | None = None
+
+
+@dataclass(frozen=True)
+class AssignmentPlan:
+    case: Case
+    next_status: CaseStatus
+    volunteer: Volunteer
+    hours: int
+    target: GeoPoint
+    reading: ClockReading
+    deadline_at: datetime
+    brief: TaskBrief
 
 
 @dataclass(frozen=True)
@@ -103,6 +116,11 @@ class TaskAssigner:
         self._new_id = new_id
 
     async def assign(self, request: AssignmentRequest) -> Assignment:
+        plan = await asyncio.to_thread(self._plan, request)
+        composed = await self._messenger.compose(plan.brief)
+        return await asyncio.to_thread(self._commit_plan, request, plan, composed)
+
+    def _plan(self, request: AssignmentRequest) -> AssignmentPlan:
         case = self._case(request.case_id)
         next_status = self._status_after_assign(case)
         volunteer = self._assignee(request.assignee_id)
@@ -110,9 +128,20 @@ class TaskAssigner:
         target = self._target(case, request)
         reading = self._clock.reading()
         deadline_at = reading.now + timedelta(hours=hours)
-        composed = await self._messenger.compose(
-            self._brief(case, volunteer, request, target, deadline_at)
+        brief = self._brief(case, volunteer, request, target, deadline_at)
+        return AssignmentPlan(
+            case, next_status, volunteer, hours, target, reading, deadline_at, brief
         )
+
+    def _commit_plan(
+        self,
+        request: AssignmentRequest,
+        plan: AssignmentPlan,
+        composed: ComposedMessage,
+    ) -> Assignment:
+        case, volunteer, reading = plan.case, plan.volunteer, plan.reading
+        next_status, target, hours = plan.next_status, plan.target, plan.hours
+        deadline_at = plan.deadline_at
         prior = self._tasks.for_case(case.id)
         task = self._new_task(
             case,

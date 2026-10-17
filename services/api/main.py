@@ -72,6 +72,7 @@ from routes import (
 from run_stream import RunStreamer
 from scenario_reset import ScenarioResetter
 from stream_cors import StreamOnlyCors
+from tile_cache import TileUrlCache
 from trigger import JudgeTrigger
 
 JOIN_MAX_FAILURES = 5
@@ -97,6 +98,7 @@ def build_app(
     app = FastAPI(title="bara-api", version=settings.git_sha)
     app.state.settings = settings
     app.state.explained_region = full_flow_region(settings.config_dir)
+    app.state.tile_cache = TileUrlCache()
     app.state.gateway = gateway
     app.state.verifier = verifier
     app.state.join_limiter = FailureLimiter(JOIN_MAX_FAILURES, JOIN_WINDOW_SECONDS)
@@ -416,6 +418,7 @@ def build_public_queries(settings: Settings, adapters: Adapters) -> PublicQuerie
         evidence=adapters.evidence,
         escalations=adapters.escalations,
         bulletins=adapters.bulletins,
+        ranking_runs=adapters.ranking_runs,
         zones=region_timezones(settings.config_dir),
     )
 

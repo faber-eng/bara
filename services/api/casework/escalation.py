@@ -1,5 +1,7 @@
+import asyncio
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Protocol
 
 from adapters.firestore_repos import (
@@ -29,6 +31,7 @@ from contracts import (
     GeoPoint,
     Message,
     Task,
+    TimelineEntry,
 )
 from domain.brief import BriefFacts
 from domain.case_machine import can_transition
@@ -93,6 +96,16 @@ def brigade_message(escalation: Escalation, brief: Brief) -> OutboundMessage:
     )
 
 
+@dataclass(frozen=True)
+class EscalationInputs:
+    case: Case
+    contact: Contact
+    evidence: list[Evidence]
+    timeline: list[TimelineEntry]
+    map_url: str
+    facts: BriefFacts
+
+
 class Escalator:
     def __init__(
         self,
@@ -128,6 +141,13 @@ class Escalator:
         self._new_id = new_id
 
     async def escalate(self, case_id: str, reason: str) -> Escalation:
+        gathered = await asyncio.to_thread(self._gather, case_id)
+        if isinstance(gathered, Escalation):
+            return gathered
+        brief = await self._brief.write(gathered.facts)
+        return await asyncio.to_thread(self._finish, gathered, brief, reason)
+
+    def _gather(self, case_id: str) -> Escalation | EscalationInputs:
         case = self._case(case_id)
         existing = self._already_escalated(case)
         if existing is not None:
@@ -142,7 +162,15 @@ class Escalator:
             case, tasks, evidence, self._runs.for_case(case_id), [], []
         )
         url = map_url(point) if point is not None else ""
-        brief = await self._brief.write(self._facts(case, tasks, evidence))
+        return EscalationInputs(
+            case, contact, evidence, timeline, url, self._facts(case, tasks, evidence)
+        )
+
+    def _finish(
+        self, inputs: EscalationInputs, brief: Brief, reason: str
+    ) -> Escalation:
+        case, contact, evidence = inputs.case, inputs.contact, inputs.evidence
+        timeline, url, case_id = inputs.timeline, inputs.map_url, inputs.case.id
         escalation = Escalation(
             id=self._new_id(),
             case_id=case_id,

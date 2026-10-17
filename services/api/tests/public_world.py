@@ -11,6 +11,7 @@ from adapters.firestore_repos import (
     EscalationRepository,
     EvidenceRepository,
     RankingRepository,
+    RankingRunRepository,
     TaskRepository,
 )
 from adapters.gemini import ModelGateway
@@ -25,6 +26,7 @@ from contracts import (
     GeoPoint,
     Message,
     RankedCell,
+    RankingRun,
     Task,
     TimelineEntry,
     Volunteer,
@@ -79,6 +81,7 @@ class PublicWorld:
         self.evidence = InMemoryCollection(Evidence)
         self.escalations = InMemoryCollection(Escalation)
         self.bulletins = InMemoryCollection(Bulletin)
+        self.ranking_runs = InMemoryCollection(RankingRun)
         self.volunteers = InMemoryCollection(Volunteer)
         self.messages = InMemoryCollection(Message)
         self.seed()
@@ -287,6 +290,7 @@ class PublicWorld:
             evidence=EvidenceRepository(self.evidence),
             escalations=EscalationRepository(self.escalations),
             bulletins=BulletinRepository(self.bulletins),
+            ranking_runs=RankingRunRepository(lambda region: self.ranking_runs),
             zones={"riau": "Asia/Jakarta", "congo_cuvette": "Africa/Brazzaville"},
         )
 

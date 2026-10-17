@@ -9,6 +9,7 @@ from adapters.firestore_repos import (
     EscalationRepository,
     EvidenceRepository,
     RankingRepository,
+    RankingRunRepository,
     TaskRepository,
 )
 from contracts import (
@@ -55,6 +56,7 @@ class PublicQueries:
         evidence: EvidenceRepository,
         escalations: EscalationRepository,
         bulletins: BulletinRepository,
+        ranking_runs: RankingRunRepository,
         zones: Mapping[str, str],
     ):
         self._rankings = rankings
@@ -64,6 +66,7 @@ class PublicQueries:
         self._evidence = evidence
         self._escalations = escalations
         self._bulletins = bulletins
+        self._ranking_runs = ranking_runs
         self._zones = zones
 
     def zone(self, region: str) -> ZoneInfo:
@@ -101,6 +104,7 @@ class PublicQueries:
             cases=cases,
             tasks=self._tasks.for_cases(case_ids),
             evidence=self._evidence.for_cases(case_ids),
+            run=self._ranking_runs.get(region, iso_week_label(week_start)),
         )
 
     def dams(self, region: str) -> list[PublicDam]:

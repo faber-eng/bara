@@ -3,7 +3,7 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from auth import Principal, require_role
@@ -12,11 +12,14 @@ from casework.escalation import EscalationRejected
 from casework.review import NotInReview, ReviewRejected, UnknownReviewCase
 from contracts import Case, CaseDetail, CaseStatus, CaseSummary, ReviewRequest
 from domain.case_machine import IllegalTransition
+from domain.case_page import DEFAULT_LIMIT, MAX_LIMIT, InvalidCursor
 from run_stream import RunStreamer, StreamEvent, render
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
+
+NEXT_CURSOR_HEADER = "X-Next-Cursor"
 
 SSE_HEADERS = {"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
 
@@ -30,11 +33,20 @@ def queries(request: Request) -> CaseQueries:
 @router.get("/cases", response_model=list[CaseSummary])
 def list_cases(
     request: Request,
+    response: Response,
     _: OpsReader,
     region: str | None = None,
     status: CaseStatus | None = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = DEFAULT_LIMIT,
+    cursor: str | None = None,
 ) -> list[CaseSummary]:
-    return queries(request).summaries(region, status)
+    try:
+        page = queries(request).summaries(region, status, limit, cursor)
+    except InvalidCursor as error:
+        raise HTTPException(status_code=422, detail="invalid_cursor") from error
+    if page.next_cursor is not None:
+        response.headers[NEXT_CURSOR_HEADER] = page.next_cursor
+    return page.summaries
 
 
 @router.get("/cases/{case_id}", response_model=CaseDetail)

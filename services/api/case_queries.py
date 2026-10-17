@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Protocol
 
 from adapters.firestore_repos import (
@@ -14,6 +15,7 @@ from adapters.storage import SIGNING_ERRORS
 from adapters.store import DocumentNotFound
 from contracts import Case, CaseDetail, CaseSummary, Evidence, SignedEvidence, Task
 from domain.case_machine import transition
+from domain.case_page import DEFAULT_LIMIT, page_of
 from domain.case_view import build_timeline, summarize_case
 from domain.clock import Clock
 
@@ -22,6 +24,12 @@ logger = logging.getLogger(__name__)
 
 class UnknownCase(Exception):
     pass
+
+
+@dataclass(frozen=True)
+class CaseSummaries:
+    summaries: list[CaseSummary]
+    next_cursor: str | None
 
 
 class EvidenceSigner(Protocol):
@@ -50,13 +58,22 @@ class CaseQueries:
         self._messages = messages
         self._clock = clock
 
-    def summaries(self, region: str | None, status: str | None) -> list[CaseSummary]:
-        cases = self._cases.search(region, status)
-        tasks = self._tasks.for_cases([case.id for case in cases])
+    def summaries(
+        self,
+        region: str | None,
+        status: str | None,
+        limit: int = DEFAULT_LIMIT,
+        cursor: str | None = None,
+    ) -> CaseSummaries:
+        page = page_of(self._cases.search(region, status), limit, cursor)
+        tasks = self._tasks.for_cases([case.id for case in page.cases])
         by_case: dict[str, list[Task]] = defaultdict(list)
         for task in tasks:
             by_case[task.case_id].append(task)
-        return [summarize_case(case, by_case[case.id]) for case in cases]
+        return CaseSummaries(
+            [summarize_case(case, by_case[case.id]) for case in page.cases],
+            page.next_cursor,
+        )
 
     def detail(self, case_id: str) -> CaseDetail:
         case = self._cases.get(case_id)

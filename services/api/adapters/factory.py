@@ -34,6 +34,7 @@ from adapters.firestore_repos import (
     MessageRepository,
     RankedDamRepository,
     RankingRepository,
+    RankingRunRepository,
     ResetRepository,
     TaskRepository,
     UploadRepository,
@@ -86,6 +87,7 @@ class Adapters:
     scheduler: DeadlineScheduler | None
     cells: CellRepository
     rankings: RankingRepository
+    ranking_runs: RankingRunRepository
     ranked_dams: RankedDamRepository
     evidence: EvidenceRepository
     uploads: UploadRepository
@@ -168,6 +170,7 @@ def build_adapters(settings: Settings) -> Adapters:
         scheduler=build_scheduler(settings),
         cells=CellRepository(warehouse),
         rankings=agent_repos.rankings,
+        ranking_runs=agent_repos.ranking_runs,
         ranked_dams=agent_repos.ranked_dams,
         evidence=agent_repos.evidence,
         uploads=UploadRepository(FirestoreCollection(db, UPLOADS, PendingUpload)),

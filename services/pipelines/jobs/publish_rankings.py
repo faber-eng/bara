@@ -69,6 +69,15 @@ def build_dams(warehouse: Warehouse, region: str, week_start: date, dams: list):
 
 def announces(region: RegionConfig) -> bool:
     return region.full_flow
+def run_record(
+    week_start: date, ran_at: datetime, cells: int, dams: int
+) -> dict[str, object]:
+    return {
+        "ran_at": ran_at,
+        "s1_pass_date": week_start.isoformat(),
+        "cells": cells,
+        "dams": dams,
+    }
 
 
 def publish_rankings(
@@ -109,6 +118,7 @@ def publish_rankings(
     dam_docs = {dam.dam_id: dam_document(dam) for dam in dams}
     store.replace(region, "cells", cell_docs, week=label)
     store.replace(region, "dams", dam_docs, week=label)
+    store.write_run(region, label, run_record(week_start, now, len(cells), len(dams)))
     result: dict[str, object] = {**summary}
     if latest:
         replaced_cells = store.replace(region, "cells", cell_docs)

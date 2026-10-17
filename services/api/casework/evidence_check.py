@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Protocol
@@ -72,6 +73,13 @@ class CheckedEvidence:
 
 
 @dataclass(frozen=True)
+class LoadedPhoto:
+    evidence: Evidence
+    task: Task
+    data: bytes
+
+
+@dataclass(frozen=True)
 class ModelVerdict:
     verdict: Verdict
     cached: bool
@@ -120,6 +128,13 @@ class EvidenceChecker:
         self._tolerance_m = location_tolerance_m
 
     async def check(self, task_id: str, evidence_id: str) -> CheckedEvidence:
+        loaded = await asyncio.to_thread(self._load, task_id, evidence_id)
+        if isinstance(loaded, CheckedEvidence):
+            return loaded
+        read = await self._model_verdict(loaded.evidence, loaded.data, loaded.task.type)
+        return await asyncio.to_thread(self._finish, loaded, read)
+
+    def _load(self, task_id: str, evidence_id: str) -> CheckedEvidence | LoadedPhoto:
         evidence = self._evidence_of(task_id, evidence_id)
         if evidence.verdict is not None:
             return CheckedEvidence(
@@ -133,8 +148,10 @@ class EvidenceChecker:
         if evidence.kind != "photo":
             raise UnsupportedEvidence(f"{evidence.kind} evidence is not checked yet")
         task = self._task(task_id)
-        data = self._media(evidence)
-        read = await self._model_verdict(evidence, data, task.type)
+        return LoadedPhoto(evidence, task, self._media(evidence))
+
+    def _finish(self, loaded: LoadedPhoto, read: ModelVerdict) -> CheckedEvidence:
+        evidence, task, data = loaded.evidence, loaded.task, loaded.data
         location = location_ok(
             task.target, exif_point(data) or evidence.point, self._tolerance_m
         )
@@ -192,17 +209,19 @@ class EvidenceChecker:
         self, evidence: Evidence, data: bytes, task_type: TaskType
     ) -> ModelVerdict:
         key = verdict_cache_key(evidence.sha256, EVIDENCE_PROMPT_VERSION, task_type)
-        entry = self._cache.get(key)
+        entry = await asyncio.to_thread(self._cache.get, key)
         if entry is not None:
             return ModelVerdict(entry.verdict, cached=True)
-        verdict = await self._reader.read(prepare_photo(data), task_type)
-        self._cache.put(
+        photo = await asyncio.to_thread(prepare_photo, data)
+        verdict = await self._reader.read(photo, task_type)
+        await asyncio.to_thread(
+            self._cache.put,
             VerdictCacheEntry(
                 id=key,
                 verdict=verdict,
                 model=self._model,
                 prompt_version=EVIDENCE_PROMPT_VERSION,
-            )
+            ),
         )
         return ModelVerdict(verdict, cached=False)
 

@@ -187,6 +187,56 @@ def test_the_case_list_returns_summaries_newest_first(settings):
     assert body[1]["task_status"] is None
 
 
+def test_the_case_list_pages_with_a_limit_and_a_cursor(settings):
+    world = World()
+    for index in range(5):
+        world.add_case(f"c{index}", opened_at=REAL_NOW - timedelta(hours=index))
+    client = world.client(settings)
+
+    first = client.get("/api/cases?limit=2", headers=OPS)
+    second = client.get(
+        "/api/cases",
+        params={"limit": 2, "cursor": first.headers["x-next-cursor"]},
+        headers=OPS,
+    )
+    last = client.get(
+        "/api/cases",
+        params={"limit": 2, "cursor": second.headers["x-next-cursor"]},
+        headers=OPS,
+    )
+
+    ids = [[row["case"]["id"] for row in r.json()] for r in (first, second, last)]
+    assert ids == [["c0", "c1"], ["c2", "c3"], ["c4"]]
+    assert "x-next-cursor" not in last.headers
+
+
+def test_the_case_list_defaults_to_50_rows(settings):
+    world = World()
+    for index in range(60):
+        world.add_case(f"c{index:02d}", opened_at=REAL_NOW - timedelta(minutes=index))
+
+    response = world.client(settings).get("/api/cases", headers=OPS)
+
+    assert len(response.json()) == 50
+    assert "x-next-cursor" in response.headers
+
+
+@pytest.mark.parametrize("limit", [0, 201])
+def test_the_case_list_rejects_a_limit_outside_1_to_200(settings, limit):
+    response = World().client(settings).get(f"/api/cases?limit={limit}", headers=OPS)
+
+    assert response.status_code == 422
+
+
+def test_the_case_list_rejects_a_cursor_it_did_not_issue(settings):
+    response = (
+        World().client(settings).get("/api/cases?cursor=not-a-cursor", headers=OPS)
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "invalid_cursor"}
+
+
 def test_the_case_list_filters_by_region_and_status(settings):
     world = World()
     world.add_case("a", region="riau", status="open")

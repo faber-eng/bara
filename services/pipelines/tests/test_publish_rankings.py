@@ -245,3 +245,20 @@ def test_only_a_full_flow_region_announces_its_ranking(config_dir):
 
     assert job.announces(load_region(config_dir, "riau")) is True
     assert job.announces(load_region(config_dir, "congo_cuvette")) is False
+def test_writes_a_run_record_with_the_exact_run_time_before_it_announces(tmp_path):
+    _, _, firestore, pubsub = run(tmp_path)
+
+    record = firestore.docs["rankings/riau/weeks/2026-W42"]
+    assert record == {
+        "ran_at": NOW,
+        "s1_pass_date": "2026-10-12",
+        "cells": 200,
+        "dams": 50,
+    }
+    assert len(pubsub.published) == 1
+
+
+def test_a_dry_run_writes_no_run_record(tmp_path):
+    _, _, firestore, _ = run(tmp_path, dry_run=True)
+
+    assert "rankings/riau/weeks/2026-W42" not in firestore.docs
