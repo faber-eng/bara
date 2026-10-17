@@ -328,3 +328,28 @@ def test_a_case_that_moved_on_is_not_flagged():
     world.checker.flag_for_person("c1")
 
     assert world.cases.get("c1").status == "assigned"
+
+
+def test_a_broken_dam_on_a_reviewing_case_awaits_the_agent():
+    assert World().check().awaits_agent is True
+
+
+def test_a_resolved_verdict_does_not_await_the_agent():
+    world = World(reader=FakeReader(make_verdict(dam_state="intact")))
+
+    assert world.check().awaits_agent is False
+
+
+def test_a_broken_dam_on_a_case_already_assigned_does_not_await_the_agent():
+    world = World(case=make_case(id="c1", status="assigned", dam_id="d1"))
+
+    checked = world.check()
+
+    assert checked.stored is True
+    assert checked.awaits_agent is False
+
+
+def test_a_stored_verdict_does_not_await_the_agent():
+    done = make_evidence(gcs_uri=f"gs://bucket-test/{OBJECT}", verdict=make_verdict())
+
+    assert World(evidence=done).check().awaits_agent is False

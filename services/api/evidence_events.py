@@ -6,8 +6,7 @@ from typing import Protocol
 from casework.evidence_check import CheckedEvidence, CheckError
 from casework.evidence_reader import ReaderFailed
 from casework.photo import UnreadablePhoto
-from contracts import Event, EvidenceReceived, EvidenceReceivedEvent, Verdict
-from domain.evidence import needs_action
+from contracts import Event, EvidenceReceived, EvidenceReceivedEvent
 from events import MalformedPush
 from logs import log_extra
 
@@ -30,10 +29,6 @@ class EvidenceAgent(Protocol):
         run_id: str,
         event: Mapping[str, object] | None = None,
     ): ...
-
-
-def agent_has_work(verdict: Verdict) -> bool:
-    return needs_action(verdict) and not verdict.needs_human
 
 
 class EvidenceReceivedHandler:
@@ -61,7 +56,7 @@ class EvidenceReceivedHandler:
                 ),
             )
             return
-        if agent_has_work(checked.verdict):
+        if checked.awaits_agent:
             await self._run_agent(message_id, payload)
         self._checker.flag_for_person(payload.case_id)
 

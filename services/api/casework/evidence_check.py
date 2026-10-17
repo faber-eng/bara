@@ -14,7 +14,15 @@ from adapters.firestore_repos import (
 )
 from casework.evidence_reader import EVIDENCE_PROMPT_VERSION
 from casework.photo import PreparedPhoto, exif_point, prepare_photo
-from contracts import Case, Evidence, Task, TaskType, Verdict, VerdictCacheEntry
+from contracts import (
+    Case,
+    CaseStatus,
+    Evidence,
+    Task,
+    TaskType,
+    Verdict,
+    VerdictCacheEntry,
+)
 from domain.clock import Clock
 from domain.evidence import (
     case_status_after_verdict,
@@ -59,6 +67,7 @@ class CheckedEvidence:
     location_ok: bool | None
     stored: bool
     from_cache: bool
+    awaits_agent: bool
 
 
 @dataclass(frozen=True)
@@ -118,6 +127,7 @@ class EvidenceChecker:
                 evidence.location_ok,
                 stored=False,
                 from_cache=False,
+                awaits_agent=False,
             )
         if evidence.kind != "photo":
             raise UnsupportedEvidence(f"{evidence.kind} evidence is not checked yet")
@@ -130,9 +140,14 @@ class EvidenceChecker:
         verdict = final_verdict(
             read.verdict, self._threshold, location, evidence.sample
         )
-        stored = self._store(evidence, verdict, location)
+        status = self._store(evidence, verdict, location)
         return CheckedEvidence(
-            evidence.id, verdict, location, stored=stored, from_cache=read.cached
+            evidence.id,
+            verdict,
+            location,
+            stored=status is not None,
+            from_cache=read.cached,
+            awaits_agent=status == "reviewing",
         )
 
     def flag_for_person(self, case_id: str) -> None:
@@ -192,26 +207,29 @@ class EvidenceChecker:
 
     def _store(
         self, evidence: Evidence, verdict: Verdict, location: bool | None
-    ) -> bool:
+    ) -> CaseStatus | None:
         try:
-            self._commit(evidence, verdict, location)
+            return self._commit(evidence, verdict, location)
         except CaseChanged:
             if self._has_verdict(evidence.id):
-                return False
-            self._commit(evidence, verdict, location)
-        return True
+                return None
+            return self._commit(evidence, verdict, location)
 
     def _commit(
         self, evidence: Evidence, verdict: Verdict, location: bool | None
-    ) -> None:
+    ) -> CaseStatus:
         case = self._case(evidence.case_id)
+        change = case_change_for(case, verdict)
         self._casework.commit_verdict(
             evidence_id=evidence.id,
             verdict=verdict,
             location_ok=location,
-            case_change=case_change_for(case, verdict),
+            case_change=change,
             dam_check=dam_check_for(case, verdict, self._clock),
         )
+        if change is None:
+            return case.status
+        return change.next
 
     def _has_verdict(self, evidence_id: str) -> bool:
         stored = self._evidence.get(evidence_id)
