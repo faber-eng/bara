@@ -230,6 +230,7 @@ class CaseworkStore:
         location_ok: bool | None,
         case_change: StatusChange | None,
         dam_check: DamCheck | None,
+        smoke_case_id: str | None,
     ) -> None:
         unread = Guard(EVIDENCE, evidence_id, "verdict", None)
         writes: list[Write] = [
@@ -250,6 +251,10 @@ class CaseworkStore:
                         "last_checked_at": dam_check.checked_at,
                     },
                 )
+            )
+        if smoke_case_id is not None:
+            writes.append(
+                Update(CASES, smoke_case_id, {"history_flags.smoke_seen": True})
             )
         self._commit(
             [unread, *case_guards],

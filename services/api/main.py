@@ -225,6 +225,7 @@ def build_dispatcher(
     agent: AgentService,
     checker: EvidenceChecker,
     assigner: TaskAssigner,
+    escalator: Escalator,
 ) -> EventDispatcher:
     drying_ranked = DryingRankedHandler(
         cases=adapters.cases,
@@ -245,7 +246,11 @@ def build_dispatcher(
     )
     evidence_received = EvidenceReceivedHandler(checker=checker, agent=agent)
     task_overdue = TaskOverdueHandler(
-        cases=adapters.cases, tasks=adapters.tasks, agent=agent
+        cases=adapters.cases,
+        tasks=adapters.tasks,
+        evidence=adapters.evidence,
+        agent=agent,
+        escalator=escalator,
     )
     return EventDispatcher(
         adapters.events,
@@ -338,6 +343,7 @@ def create_app() -> FastAPI:
         app.state.agent,
         checker,
         build_assigner(settings, app.state.adapters, gateway),
+        escalator,
     )
     app.state.evidence_intake = build_intake(app.state.adapters)
     app.state.inbox_reader = build_inbox(app.state.adapters)

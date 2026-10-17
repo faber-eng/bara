@@ -353,3 +353,19 @@ def test_a_stored_verdict_does_not_await_the_agent():
     done = make_evidence(gcs_uri=f"gs://bucket-test/{OBJECT}", verdict=make_verdict())
 
     assert World(evidence=done).check().awaits_agent is False
+
+
+def test_a_smoke_verdict_marks_the_case_smoke_seen():
+    world = World(reader=FakeReader(make_verdict(smoke="wisps")))
+
+    world.check()
+
+    assert world.cases.get("c1").history_flags.smoke_seen is True
+
+
+def test_a_verdict_without_smoke_leaves_the_flag_off():
+    world = World(reader=FakeReader(make_verdict(smoke="none")))
+
+    world.check()
+
+    assert world.cases.get("c1").history_flags.smoke_seen is False
