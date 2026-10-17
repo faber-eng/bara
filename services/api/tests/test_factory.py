@@ -77,7 +77,7 @@ def test_build_agent_service_without_enterprise_mode_fails_at_boot(
         )
 
 
-def test_build_dispatcher_handles_both_topics_and_trigger_wires_offline(
+def test_build_dispatcher_handles_every_pushed_topic_and_trigger_wires_offline(
     settings, monkeypatch
 ):
     monkeypatch.setenv("GOOGLE_GENAI_USE_ENTERPRISE", "True")
@@ -90,5 +90,15 @@ def test_build_dispatcher_handles_both_topics_and_trigger_wires_offline(
     dispatcher = main.build_dispatcher(settings, adapters, agent, checker)
     trigger = main.build_trigger(settings, adapters)
 
-    assert set(dispatcher._handlers) == {"drying.ranked", "evidence.received"}
+    assert set(dispatcher._handlers) == {
+        "drying.ranked",
+        "evidence.received",
+        "task.overdue",
+    }
     assert trigger is not None
+
+
+def test_build_deadlines_wires_offline(settings):
+    adapters = build_adapters(settings)
+
+    assert main.build_deadlines(adapters) is not None

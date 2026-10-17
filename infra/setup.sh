@@ -24,7 +24,7 @@ readonly JOBS_ROLES=(
   roles/pubsub.publisher roles/serviceusage.serviceUsageConsumer roles/bigquery.readSessionUser
 )
 readonly API_SERVICE=bara-api
-readonly PUSH_TOPICS=(drying.ranked evidence.received)
+readonly PUSH_TOPICS=(drying.ranked evidence.received task.overdue)
 readonly PUSH_INVOKER=bara-tasks-invoker
 readonly PUSH_ACK_DEADLINE=600
 readonly PUSH_MAX_ATTEMPTS=5

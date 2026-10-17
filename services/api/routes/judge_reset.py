@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from auth import Principal, require_role
 from contracts import ClockState
-from domain.clock import Clock
+from routes.clock import read_clock_state
 from scenario_reset import ScenarioResetter
 
 logger = logging.getLogger(__name__)
@@ -35,10 +35,4 @@ def reset_scenario(
     reject_when_limited(request, principal.uid)
     resetter: ScenarioResetter = request.app.state.resetter
     resetter.reset(principal.uid)
-    clock: Clock = request.app.state.adapters.clock
-    reading = clock.reading()
-    return ClockState(
-        now=reading.now,
-        offset_seconds=reading.offset_seconds,
-        judge_mode=request.app.state.settings.judge_mode.enabled,
-    )
+    return read_clock_state(request.app.state)

@@ -20,6 +20,7 @@ from bara_agent.run import AgentService
 from case_queries import CaseQueries
 from casework.assignment import TaskAssigner
 from casework.brief import BriefWriter
+from casework.deadline import DeadlineHandler
 from casework.escalation import Acknowledger, BrigadeInbox, Escalator
 from casework.evidence_check import EvidenceChecker
 from casework.evidence_intake import EvidenceIntake
@@ -31,14 +32,17 @@ from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
 from evidence_events import EvidenceReceivedHandler
 from logs import configure_logging
+from overdue_events import TaskOverdueHandler
 from push_auth import GoogleOidcVerifier
 from ratelimit import FailureLimiter
 from routes import (
     brigade,
     clock,
+    deadline,
     events,
     health,
     join,
+    judge_advance,
     judge_probe,
     judge_reset,
     judge_trigger,
@@ -76,6 +80,8 @@ def build_app(
     app.include_router(events.router)
     app.include_router(judge_trigger.router)
     app.include_router(judge_reset.router)
+    app.include_router(judge_advance.router)
+    app.include_router(deadline.router)
     app.include_router(ops_cases.router)
     app.include_router(ops_areas.router)
     app.include_router(volunteer.router)
@@ -224,9 +230,27 @@ def build_dispatcher(
         max_cases=settings.agent.max_cases_per_trigger,
     )
     evidence_received = EvidenceReceivedHandler(checker=checker, agent=agent)
+    task_overdue = TaskOverdueHandler(
+        cases=adapters.cases, tasks=adapters.tasks, agent=agent
+    )
     return EventDispatcher(
         adapters.events,
-        {"drying.ranked": drying_ranked, "evidence.received": evidence_received},
+        {
+            "drying.ranked": drying_ranked,
+            "evidence.received": evidence_received,
+            "task.overdue": task_overdue,
+        },
+    )
+
+
+def build_deadlines(adapters: Adapters) -> DeadlineHandler:
+    return DeadlineHandler(
+        tasks=adapters.tasks,
+        cases=adapters.cases,
+        casework=adapters.casework,
+        publisher=adapters.publisher,
+        clock=adapters.clock,
+        new_id=new_id,
     )
 
 
@@ -287,6 +311,7 @@ def create_app() -> FastAPI:
     app.state.acknowledger = build_acknowledger(app.state.adapters)
     app.state.brigade_inbox = build_brigade_inbox(app.state.adapters)
     app.state.trigger = build_trigger(settings, app.state.adapters)
+    app.state.deadlines = build_deadlines(app.state.adapters)
     app.state.push_verifier = GoogleOidcVerifier()
     app.state.resetter = build_resetter(settings)
     app.state.case_queries = build_case_queries(app.state.adapters)
