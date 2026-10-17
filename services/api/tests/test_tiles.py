@@ -1,15 +1,17 @@
 import logging
 from datetime import UTC, date, datetime
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
 import main
-from adapters.earthengine import EarthEngineTiles, TileSourceError
+from adapters.earthengine import EarthEngineTiles, LayerNotReady, TileSourceError
 from adapters.gemini import ModelGateway
 from contracts import TileLayer
 from tests.fakes import FakeModels, FakeVerifier, stub_app_builders
 
+real_build_tiles = main.build_tiles
 URL = "https://earthengine.googleapis.com/v1/projects/p/maps/abc/tiles/{z}/{x}/{y}"
 SATURDAY_JAKARTA = datetime(2026, 10, 17, 4, 0, tzinfo=UTC)
 
@@ -20,7 +22,19 @@ class FakeTiles:
         self.calls: list[tuple[str, date, date]] = []
 
     def drying_url_template(self, region, week_start, today):
-        self.calls.append((region.id, week_start, today))
+        return self._url("drying", region, week_start, today)
+
+    def peat_url_template(self, region):
+        return self._url("peat", region, None, None)
+
+    def burn_scars_url_template(self, region, week_start, today):
+        return self._url("burn_scars", region, week_start, today)
+
+    def reignition_url_template(self, region, week_start, today):
+        return self._url("reignition", region, week_start, today)
+
+    def _url(self, layer, region, week_start, today):
+        self.calls.append((layer, region.id, week_start, today))
         if self.error is not None:
             raise self.error
         return URL
@@ -50,7 +64,7 @@ def test_returns_the_tile_layer_for_a_week_without_auth(settings):
     assert body.region == "riau"
     assert body.week == "2026-W41"
     assert all(part in body.url_template for part in ("{x}", "{y}", "{z}"))
-    assert tiles.calls == [("riau", date(2026, 10, 5), date(2026, 10, 17))]
+    assert tiles.calls == [("drying", "riau", date(2026, 10, 5), date(2026, 10, 17))]
 
 
 def test_no_week_means_the_current_week_in_the_region_timezone(settings):
@@ -63,7 +77,7 @@ def test_no_week_means_the_current_week_in_the_region_timezone(settings):
 
     assert response.status_code == 200
     assert response.json()["week"] == "2026-W43"
-    assert tiles.calls == [("riau", date(2026, 10, 19), date(2026, 10, 19))]
+    assert tiles.calls == [("drying", "riau", date(2026, 10, 19), date(2026, 10, 19))]
 
 
 @pytest.mark.parametrize("region", ["atlantis", "congo_cuvette"])
@@ -118,10 +132,81 @@ def test_an_earth_engine_error_is_502_and_logged(settings, caplog):
     }
 
 
+LAYERS = ["peat", "burn_scars", "reignition"]
+
+
+@pytest.mark.parametrize("layer", LAYERS)
+def test_each_layer_returns_its_tile_layer_without_auth(settings, layer):
+    tiles = FakeTiles()
+    client = make_client(settings, tiles)
+
+    response = client.get(
+        f"/api/tiles/{layer}", params={"region": "riau", "week": "2026-W41"}
+    )
+
+    assert response.status_code == 200
+    body = TileLayer.model_validate(response.json())
+    assert (body.layer, body.region, body.week) == (layer, "riau", "2026-W41")
+    assert all(part in body.url_template for part in ("{x}", "{y}", "{z}"))
+    assert tiles.calls[0][:2] == (layer, "riau")
+
+
+@pytest.mark.parametrize("layer", LAYERS)
+def test_each_layer_defaults_to_the_current_week(settings, layer):
+    client = make_client(settings, FakeTiles())
+
+    response = client.get(f"/api/tiles/{layer}", params={"region": "riau"})
+
+    assert response.json()["week"] == "2026-W42"
+
+
+@pytest.mark.parametrize("layer", LAYERS)
+def test_each_layer_rejects_an_unknown_region_and_a_future_week(settings, layer):
+    tiles = FakeTiles()
+    client = make_client(settings, tiles)
+
+    unknown = client.get(f"/api/tiles/{layer}", params={"region": "atlantis"})
+    future = client.get(
+        f"/api/tiles/{layer}", params={"region": "riau", "week": "2026-W43"}
+    )
+
+    assert unknown.status_code == 404
+    assert unknown.json() == {"detail": f"region 'atlantis' has no {layer} layer"}
+    assert future.status_code == 422
+    assert tiles.calls == []
+
+
+@pytest.mark.parametrize("layer", LAYERS)
+def test_an_earth_engine_error_on_any_layer_is_502(settings, layer):
+    client = make_client(settings, FakeTiles(TileSourceError("quota")))
+
+    response = client.get(f"/api/tiles/{layer}", params={"region": "riau"})
+
+    assert response.status_code == 502
+    assert "quota" not in response.text
+
+
+def test_a_layer_that_is_not_built_yet_is_404_not_ready(settings):
+    client = make_client(
+        settings, FakeTiles(LayerNotReady("reignition scores do not exist yet"))
+    )
+
+    response = client.get("/api/tiles/reignition", params={"region": "riau"})
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "not_ready: reignition scores do not exist yet"
+    }
+
+
 def test_create_app_wires_earth_engine_tiles_without_a_network_call(monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "example-project")
     monkeypatch.delenv("BARA_CONFIG_DIR", raising=False)
     stub_app_builders(monkeypatch, main, FakeVerifier({}))
+    monkeypatch.setattr(main, "build_tiles", real_build_tiles)
+    monkeypatch.setattr(
+        main, "build_adapters", lambda settings: SimpleNamespace(warehouse=object())
+    )
 
     app = main.create_app()
 

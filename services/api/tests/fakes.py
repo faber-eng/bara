@@ -699,6 +699,7 @@ APP_BUILDER_STUBS = {
     "build_rank_explainer": "explainer",
     "build_public_queries": "public",
     "build_run_streamer": "streamer",
+    "build_tiles": "tiles",
     "build_checker": "checker",
     "build_escalator": "escalator",
     "build_review_desk": "review_desk",

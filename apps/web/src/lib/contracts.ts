@@ -357,7 +357,7 @@ export type Health = {
   git_sha: string;
 };
 
-export type TileLayerKind = "drying";
+export type TileLayerKind = "drying" | "peat" | "burn_scars" | "reignition";
 
 export type TileLayer = {
   layer: TileLayerKind;
