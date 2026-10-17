@@ -62,6 +62,8 @@ def test_create_app_wires_the_repo_config(monkeypatch):
     monkeypatch.setattr(main, "build_token_verifier", lambda settings: FakeVerifier({}))
     monkeypatch.setattr(main, "build_adapters", lambda settings: "adapters")
     monkeypatch.setattr(main, "build_agent_service", lambda settings, adapters: "agent")
+    monkeypatch.setattr(main, "build_dispatcher", lambda *args: "dispatcher")
+    monkeypatch.setattr(main, "build_trigger", lambda *args: "trigger")
     monkeypatch.setattr(
         main,
         "build_vertex_clients",
@@ -84,6 +86,8 @@ def test_create_app_puts_the_verifier_and_adapters_on_app_state(monkeypatch):
     monkeypatch.setattr(main, "build_token_verifier", lambda settings: verifier)
     monkeypatch.setattr(main, "build_adapters", lambda settings: "adapters")
     monkeypatch.setattr(main, "build_agent_service", lambda settings, adapters: "agent")
+    monkeypatch.setattr(main, "build_dispatcher", lambda *args: "dispatcher")
+    monkeypatch.setattr(main, "build_trigger", lambda *args: "trigger")
     monkeypatch.setattr(
         main,
         "build_vertex_clients",

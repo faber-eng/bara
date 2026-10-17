@@ -111,6 +111,10 @@ class InMemoryCollection[T: Contract]:
             item for item in self._documents.values() if matches(dict(item), filters)
         ]
 
+    def delete_many(self, doc_ids) -> None:
+        for doc_id in list(doc_ids):
+            self._documents.pop(doc_id, None)
+
 
 class StubSnapshot:
     def __init__(self, data: dict[str, object] | None):
@@ -143,6 +147,9 @@ class StubDocumentRef:
             return (current or 0) + value.value
         return value
 
+    def remove(self) -> None:
+        self._store.pop(self._doc_id, None)
+
     def create(self, data: dict[str, object]) -> None:
         if self._doc_id in self._store:
             raise gax.AlreadyExists("document exists")
@@ -152,6 +159,21 @@ class StubDocumentRef:
         if self._doc_id not in self._store:
             raise gax.NotFound("document missing")
         self._store[self._doc_id].update(fields)
+
+
+class StubBatch:
+    def __init__(self):
+        self.deleted: list[StubDocumentRef] = []
+        self.commits = 0
+
+    def delete(self, ref: StubDocumentRef) -> None:
+        self.deleted.append(ref)
+
+    def commit(self) -> None:
+        for ref in self.deleted:
+            ref.remove()
+        self.deleted = []
+        self.commits += 1
 
 
 class StubQuery:
@@ -181,6 +203,11 @@ class StubCollectionRef(StubQuery):
 class StubFirestoreClient:
     def __init__(self):
         self.stores: dict[str, dict[str, dict[str, object]]] = {}
+        self.batches: list[StubBatch] = []
+
+    def batch(self) -> StubBatch:
+        self.batches.append(StubBatch())
+        return self.batches[-1]
 
     def collection(self, name: str) -> StubCollectionRef:
         store = self.stores.setdefault(name, {})
@@ -523,3 +550,48 @@ def make_fake_llm(model: str, script: list):
             yield outcome.model_copy(update={"model_version": self.model})
 
     return FakeLlm(model=model, outcomes=list(script))
+
+
+def make_ranked_dam(**overrides):
+    from contracts import GeoPoint, RankedDam
+
+    fields = {
+        "dam_id": "dam-1",
+        "region": "riau",
+        "cell_id": "riau-1-1",
+        "point": GeoPoint(lat=0.5, lon=101.4),
+        "last_state": "broken",
+        "last_checked_at": None,
+        "drying_score": 91.0,
+        "rank": 1,
+        "example": True,
+    }
+    return RankedDam(**{**fields, **overrides})
+
+
+def make_drying_ranked_event(**overrides):
+    from datetime import UTC, datetime
+
+    from contracts import DryingRanked, DryingRankedEvent
+
+    fields = {
+        "id": "evt-1",
+        "occurred_at": datetime(2026, 10, 17, 12, 0, tzinfo=UTC),
+        "region": "riau",
+        "example": True,
+        "type": "drying.ranked",
+        "payload": DryingRanked(
+            region="riau", week="2026-W42", top_cells=[], top_dams=[]
+        ),
+    }
+    return DryingRankedEvent(**{**fields, **overrides})
+
+
+def push_body(event, message_id: str = "m-1") -> dict:
+    import base64
+
+    data = base64.b64encode(event.model_dump_json().encode()).decode()
+    return {
+        "message": {"data": data, "messageId": message_id, "attributes": {}},
+        "subscription": "projects/p/subscriptions/s",
+    }

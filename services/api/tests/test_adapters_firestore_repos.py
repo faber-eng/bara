@@ -206,3 +206,25 @@ def test_agent_runs_are_stored_under_the_case():
     repos.agent_runs.save("c1", run)
 
     assert client.stores["cases/c1/agent_runs"]["r1"] == run.model_dump()
+
+
+def test_ranked_dams_top_returns_the_best_ranks_in_order():
+    from adapters.firestore_repos import RankedDamRepository
+    from contracts import RankedDam
+    from tests.fakes import make_ranked_dam
+
+    collection = InMemoryCollection(RankedDam)
+    for rank in (3, 1, 2, 4):
+        collection.put(f"d{rank}", make_ranked_dam(dam_id=f"d{rank}", rank=rank))
+
+    top = RankedDamRepository(lambda region: collection).top("riau", 3)
+
+    assert [dam.dam_id for dam in top] == ["d1", "d2", "d3"]
+
+
+def test_case_create_refuses_to_overwrite_an_existing_case():
+    repo = make_case_repo()
+
+    assert repo.create(make_case(id="c1", status="open")) is True
+    assert repo.create(make_case(id="c1", status="closed")) is False
+    assert repo.get("c1").status == "open"

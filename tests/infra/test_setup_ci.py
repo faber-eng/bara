@@ -163,6 +163,7 @@ def test_real_run_grants_service_account_user_on_the_invoker_to_bara_api(run_scr
         c
         for c in result.calls
         if f"iam service-accounts add-iam-policy-binding {INVOKER_ACCOUNT}" in c
+        and "--role roles/iam.serviceAccountUser" in c
     ]
     assert len(grants) == 1
     assert f"--member serviceAccount:{API_ACCOUNT}" in grants[0]

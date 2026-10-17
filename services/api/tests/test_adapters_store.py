@@ -108,3 +108,20 @@ def test_live_firestore_reads_a_missing_document():
     client = firestore.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
 
     assert FirestoreCollection(client, "bara_live_probe", Task).get("none") is None
+
+
+def test_delete_many_removes_documents_in_batches_of_400():
+    from adapters.store import BATCH_LIMIT, FirestoreCollection
+    from contracts import ClockSettings
+    from tests.fakes import StubFirestoreClient
+
+    client = StubFirestoreClient()
+    collection = FirestoreCollection(client, "settings", ClockSettings)
+    ids = [f"d{n}" for n in range(BATCH_LIMIT + 5)]
+    for doc_id in ids:
+        collection.put(doc_id, ClockSettings(offset_seconds=0, updated_by="t"))
+
+    collection.delete_many(ids)
+
+    assert client.stores["settings"] == {}
+    assert [batch.commits for batch in client.batches] == [1, 1]

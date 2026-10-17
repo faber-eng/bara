@@ -18,6 +18,14 @@ if [[ "$*" == *get-iam-policy* && -n "${STUB_POLICY:-}" ]]; then
   printf '%s\\n' "$STUB_POLICY"
   exit 0
 fi
+if [[ "$*" == *"value(status.url)"* ]]; then
+  printf '%s\\n' "https://bara-api.example.test"
+  exit 0
+fi
+if [[ "$*" == *"value(projectNumber)"* ]]; then
+  printf '%s\\n' "123456"
+  exit 0
+fi
 if [[ -n "${STUB_OK_PATTERN:-}" && "$*" =~ $STUB_OK_PATTERN ]]; then
   exit 0
 fi

@@ -46,3 +46,17 @@ def test_build_agent_service_without_enterprise_mode_fails_at_boot(
 
     with pytest.raises(ConfigError, match="GOOGLE_GENAI_USE_ENTERPRISE"):
         main.build_agent_service(settings, build_adapters(settings))
+
+
+def test_build_dispatcher_handles_drying_ranked_and_trigger_wires_offline(
+    settings, monkeypatch
+):
+    monkeypatch.setenv("GOOGLE_GENAI_USE_ENTERPRISE", "True")
+    adapters = build_adapters(settings)
+    agent = main.build_agent_service(settings, adapters)
+
+    dispatcher = main.build_dispatcher(settings, adapters, agent)
+    trigger = main.build_trigger(settings, adapters)
+
+    assert set(dispatcher._handlers) == {"drying.ranked"}
+    assert trigger is not None
