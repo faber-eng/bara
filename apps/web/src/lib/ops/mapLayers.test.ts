@@ -1,46 +1,41 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildMapLayers,
   clampOpacity,
   DEFAULT_MAP_TYPE,
-  layerOpacity,
+  defaultEnabledLayers,
+  definitionFor,
+  enabledKinds,
+  LAYER_DEFINITIONS,
   MAP_TYPES,
 } from "./mapLayers";
 
-const TILES = {
-  layer: "drying",
-  region: "riau",
-  week: "2026-W42",
-  url_template: "https://t.example/{z}/{x}/{y}",
-} as const;
+describe("layer definitions", () => {
+  it("offers drying, peat, burn scars and re-ignition, each with a legend", () => {
+    expect(LAYER_DEFINITIONS.map((layer) => layer.id)).toEqual([
+      "drying",
+      "peat",
+      "burn_scars",
+      "reignition",
+    ]);
+    expect(LAYER_DEFINITIONS.every((layer) => layer.legend !== undefined)).toBe(true);
+  });
 
-describe("buildMapLayers", () => {
-  it("lists the drying layer with its template, default opacity and legend", () => {
-    const layers = buildMapLayers(TILES);
+  it("marks peat as the one layer that does not change by week", () => {
+    expect(LAYER_DEFINITIONS.filter((layer) => !layer.weekly).map((layer) => layer.id)).toEqual([
+      "peat",
+    ]);
+  });
 
-    expect(layers).toHaveLength(1);
-    expect(layers[0]).toMatchObject({
-      id: "drying",
-      label: "Drying score",
-      urlTemplate: "https://t.example/{z}/{x}/{y}",
-      defaultOpacity: 0.7,
-      legend: { low: "0", high: "100" },
+  it("starts with the drying surface alone", () => {
+    expect(enabledKinds(defaultEnabledLayers())).toEqual(["drying"]);
+  });
+
+  it("keeps the drying legend range 0 to 100", () => {
+    expect(definitionFor("drying").legend).toEqual({
+      kind: "ramp",
+      low: "0 low",
+      high: "100 high",
     });
-  });
-
-  it("lists no layers until the tiles load", () => {
-    expect(buildMapLayers(undefined)).toEqual([]);
-  });
-});
-
-describe("layerOpacity", () => {
-  it("uses the default until the user moves the slider", () => {
-    const [layer] = buildMapLayers(TILES);
-    if (layer === undefined) throw new Error("no layer");
-
-    expect(layerOpacity(layer, {})).toBe(0.7);
-    expect(layerOpacity(layer, { drying: 0.2 })).toBe(0.2);
-    expect(layerOpacity(layer, { drying: 0 })).toBe(0);
   });
 });
 

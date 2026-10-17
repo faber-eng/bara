@@ -65,10 +65,19 @@ function parseCited(value: unknown): { [field: string]: Scalar } {
   return cited;
 }
 
+function parsePromptVersion(record: JsonRecord): string | null {
+  if (record.prompt_version === undefined) return null;
+  return readNullable(record, "prompt_version", "explanation", readString);
+}
+
 export function parseExplanation(value: unknown): RankExplanation | null {
   if (value === null) return null;
   const record = readRecord(value, "explanation");
-  return { text: readString(record, "text", "explanation"), cited: parseCited(record.cited) };
+  return {
+    text: readString(record, "text", "explanation"),
+    cited: parseCited(record.cited),
+    prompt_version: parsePromptVersion(record),
+  };
 }
 
 function parseCell(value: unknown): RankedCell {
@@ -112,9 +121,18 @@ export function parseRankings(body: unknown): Rankings {
   };
 }
 
-export async function fetchRankings(region: string, signal?: AbortSignal): Promise<Rankings> {
+export function rankingsPath(region: string, week: string | undefined): string {
+  const base = `/api/rankings/${encodeURIComponent(region)}`;
+  return week === undefined ? base : `${base}?week=${encodeURIComponent(week)}`;
+}
+
+export async function fetchRankings(
+  region: string,
+  week: string | undefined,
+  signal?: AbortSignal,
+): Promise<Rankings> {
   if (sourceFor("rankings") === "fixture") {
     return parseRankings((await import("@fixtures/rankings_riau_200.json")).default);
   }
-  return parseRankings(await apiRequest(`/api/rankings/${encodeURIComponent(region)}`, { signal }));
+  return parseRankings(await apiRequest(rankingsPath(region, week), { signal }));
 }

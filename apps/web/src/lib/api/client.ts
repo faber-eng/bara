@@ -18,6 +18,10 @@ export class ApiError extends Error {
   }
 }
 
+export function isNotFoundError(error: Error | null): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
+
 export type RequestOptions = {
   method?: "GET" | "POST";
   body?: unknown;

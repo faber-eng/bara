@@ -13,6 +13,7 @@ const fakeMap = {
     push: (layer: unknown) => layers.push(layer),
     getArray: () => layers,
     removeAt: (index: number) => layers.splice(index, 1),
+    insertAt: (index: number, layer: unknown) => layers.splice(index, 0, layer),
   },
 };
 let currentMap: typeof fakeMap | null = fakeMap;
@@ -52,7 +53,7 @@ describe("TileOverlay", () => {
     expect(layer.options.getTileUrl({ x: 3, y: 4 }, 5)).toBe("https://t.example/5/3/4");
   });
 
-  it("replaces the layer when the template changes", () => {
+  it("keeps the same layer object and reloads its tiles when the template changes", () => {
     const view = render(
       <TileOverlay
         label="Drying score"
@@ -60,6 +61,8 @@ describe("TileOverlay", () => {
         opacity={0.7}
       />,
     );
+    const original = layers[0];
+    const insertSpy = vi.spyOn(fakeMap.overlayMapTypes, "insertAt");
     view.rerender(
       <TileOverlay
         label="Drying score"
@@ -69,6 +72,8 @@ describe("TileOverlay", () => {
     );
 
     expect(layers).toHaveLength(1);
+    expect(layers[0]).toBe(original);
+    expect(insertSpy).toHaveBeenCalledTimes(1);
     const layer = layers[0] as FakeImageMapType;
     expect(layer.options.getTileUrl({ x: 1, y: 1 }, 2)).toBe("https://b.example/2/1/1");
   });

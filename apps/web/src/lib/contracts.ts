@@ -16,6 +16,9 @@ export type CaseStatus =
   | "escalated"
   | "monitoring"
   | "closed";
+export type ReviewAction = "assign" | "escalate" | "close";
+export type ReviewRequest = { action: ReviewAction; note: string };
+
 export type TaskType = "dam_check" | "dam_repair" | "patrol_recheck";
 export type TaskStatus = "open" | "done" | "overdue" | "reassigned" | "cancelled";
 export type EvidenceKind = "photo" | "video" | "audio";

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { cellFactsQuery } from "../../lib/api/queries";
 import type { CellFacts, RankingComponents } from "../../lib/contracts";
+import { ExplanationText } from "./ExplanationText";
 import { QueryState } from "./QueryState";
 
 type CellPanelProps = { cellId: string; onClose: () => void };
@@ -39,7 +40,7 @@ function CellFactsBody({ facts }: { facts: CellFacts }) {
       </dl>
       {facts.explanation !== null && (
         <p className="cell-panel-explain">
-          <span className="chip chip-gemini">Gemini</span> {facts.explanation.text}
+          <ExplanationText explanation={facts.explanation} />
         </p>
       )}
       {facts.nearby_dams.length > 0 && (

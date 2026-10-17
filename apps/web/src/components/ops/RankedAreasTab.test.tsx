@@ -10,7 +10,12 @@ function renderTab(selectedCellId?: string, onCellSelect = vi.fn()) {
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <RankedAreasTab selectedCellId={selectedCellId} onCellSelect={onCellSelect} />
+      <RankedAreasTab
+        region="riau"
+        week={undefined}
+        selectedCellId={selectedCellId}
+        onCellSelect={onCellSelect}
+      />
     </QueryClientProvider>,
   );
 }
@@ -133,5 +138,79 @@ describe("RankedAreasTab", () => {
     await screen.findByRole("table");
 
     expect(screen.queryByRole("button", { pressed: true })).not.toBeInTheDocument();
+  });
+
+  it("draws four component bars on every row", async () => {
+    renderTab();
+    await screen.findByRole("table");
+
+    const bars = within(bodyRows()[0] as HTMLElement).getByRole("list", {
+      name: "Score components",
+    });
+    expect(within(bars).getAllByRole("listitem")).toHaveLength(4);
+    expect(bars).toHaveTextContent(/Radar/);
+    expect(bars).toHaveTextContent(/Rain deficit/);
+  });
+
+  it("names the source field when a cited number is hovered", async () => {
+    vi.stubEnv("VITE_SOURCE_RANKINGS", "live");
+    const cell = {
+      ...fixture.cells[0],
+      explanation: {
+        text: "Rain is 45% under and a canal runs 340 m away.",
+        cited: { rain_deficit_pct: 45, canal_dist_m: 340 },
+        prompt_version: "explain-v2",
+      },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ ...fixture, cells: [cell], dams: [] })),
+    );
+    renderTab();
+
+    const rain = await screen.findByText("45");
+    expect(rain).toHaveAttribute("title", "Source field: rain_deficit_pct");
+    expect(screen.getByText("340")).toHaveAttribute("title", "Source field: canal_dist_m");
+    expect(screen.getByText(/explain-v2/)).toBeInTheDocument();
+  });
+
+  it("asks for the week when one is chosen", async () => {
+    vi.stubEnv("VITE_SOURCE_RANKINGS", "live");
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(fixture));
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <RankedAreasTab
+          region="congo_cuvette"
+          week="2026-W25"
+          selectedCellId={undefined}
+          onCellSelect={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("table");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/rankings/congo_cuvette?week=2026-W25");
+  });
+
+  it("shows a clean empty state for a region with no ranking yet", async () => {
+    vi.stubEnv("VITE_SOURCE_RANKINGS", "live");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ detail: "no_rankings" }, { status: 404 })),
+    );
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <RankedAreasTab
+          region="congo_cuvette"
+          week={undefined}
+          selectedCellId={undefined}
+          onCellSelect={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("No ranked areas for Congo yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

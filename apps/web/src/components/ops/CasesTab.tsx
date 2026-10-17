@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { casesQuery, clockQuery } from "../../lib/api/queries";
 import type { CaseSummary } from "../../lib/contracts";
-import { OPS_REGION } from "../../lib/ops/region";
+import { regionById } from "../../lib/ops/region";
 import { statusChip } from "../../lib/ops/statusChip";
 import { Countdown } from "./Countdown";
 import { QueryState } from "./QueryState";
@@ -40,14 +40,20 @@ function CaseRow({ summary, nowMs, simClock, selected, onSelect }: CaseRowProps)
   );
 }
 
-type CasesTabProps = { selectedCaseId: string | undefined; onSelect: (caseId: string) => void };
+type CasesTabProps = {
+  region: string;
+  selectedCaseId: string | undefined;
+  onSelect: (caseId: string) => void;
+};
 
-export function CasesTab({ selectedCaseId, onSelect }: CasesTabProps) {
-  const cases = useQuery(casesQuery(OPS_REGION));
+export function CasesTab({ region, selectedCaseId, onSelect }: CasesTabProps) {
+  const info = regionById(region);
+  const cases = useQuery({ ...casesQuery(region), enabled: info.casework });
   const clock = useQuery(clockQuery);
   const nowMs = clock.data ? Date.parse(clock.data.now) : Date.now();
   const simClock = clock.data?.judge_mode === true;
 
+  if (!info.casework) return <p className="ops-state">{info.note}</p>;
   return (
     <QueryState
       query={cases}

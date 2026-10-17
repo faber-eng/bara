@@ -1,9 +1,9 @@
 import {
   clampOpacity,
+  type LayerDefinition,
   type LayerOpacities,
-  layerOpacity,
+  type LegendSpec,
   MAP_TYPES,
-  type MapLayerSpec,
   type MapTypeId,
 } from "../../lib/ops/mapLayers";
 
@@ -31,26 +31,50 @@ export function MapTypeControl({ value, onChange }: MapTypeControlProps) {
   );
 }
 
-type LayerRowProps = {
-  layer: MapLayerSpec;
-  opacity: number;
-  onOpacityChange: (layerId: string, opacity: number) => void;
-};
-
-function LayerRow({ layer, opacity, onOpacityChange }: LayerRowProps) {
-  const inputId = `opacity-${layer.id}`;
+function LegendKey({ legend }: { legend: LegendSpec }) {
+  if (legend.kind === "swatches") {
+    return (
+      <ul className="legend-swatches">
+        {legend.items.map((item) => (
+          <li key={item.label}>
+            <span className="legend-swatch" style={{ background: item.color }} aria-hidden="true" />
+            {item.label}
+          </li>
+        ))}
+      </ul>
+    );
+  }
   return (
-    <div className="map-layer">
-      <div className="map-legend-title">{layer.label} (0 to 100)</div>
+    <>
       <div className="risk-ramp" aria-hidden="true">
         {RAMP_STEPS.map((step) => (
           <span key={step} style={{ background: `var(--risk-${step})` }} />
         ))}
       </div>
       <div className="legend-scale num map-legend-scale">
-        <span>{layer.legend.low} low</span>
-        <span>{layer.legend.high} high</span>
+        <span>{legend.low}</span>
+        <span>{legend.high}</span>
       </div>
+    </>
+  );
+}
+
+function legendTitle(definition: LayerDefinition): string {
+  return definition.legend.kind === "ramp" ? `${definition.label} (0 to 100)` : definition.label;
+}
+
+type LayerRowProps = {
+  definition: LayerDefinition;
+  opacity: number;
+  onOpacityChange: (layerId: string, opacity: number) => void;
+};
+
+function LayerRow({ definition, opacity, onOpacityChange }: LayerRowProps) {
+  const inputId = `opacity-${definition.id}`;
+  return (
+    <div className="map-layer">
+      <div className="map-legend-title">{legendTitle(definition)}</div>
+      <LegendKey legend={definition.legend} />
       <label className="map-opacity" htmlFor={inputId}>
         <span>Opacity</span>
         <input
@@ -60,7 +84,7 @@ function LayerRow({ layer, opacity, onOpacityChange }: LayerRowProps) {
           max={SLIDER_STEPS}
           value={Math.round(opacity * SLIDER_STEPS)}
           onChange={(event) =>
-            onOpacityChange(layer.id, clampOpacity(Number(event.target.value) / SLIDER_STEPS))
+            onOpacityChange(definition.id, clampOpacity(Number(event.target.value) / SLIDER_STEPS))
           }
         />
       </label>
@@ -69,26 +93,25 @@ function LayerRow({ layer, opacity, onOpacityChange }: LayerRowProps) {
 }
 
 type MapLegendProps = {
-  layers: readonly MapLayerSpec[];
+  definitions: readonly LayerDefinition[];
   opacities: LayerOpacities;
   week: string | undefined;
   onOpacityChange: (layerId: string, opacity: number) => void;
 };
 
-export function MapLegend({ layers, opacities, week, onOpacityChange }: MapLegendProps) {
+export function MapLegend({ definitions, opacities, week, onOpacityChange }: MapLegendProps) {
   return (
-    <div className="map-legend">
-      {layers.map((layer) => (
+    <section className="map-legend" aria-label="Map legend">
+      {definitions.map((definition) => (
         <LayerRow
-          key={layer.id}
-          layer={layer}
-          opacity={layerOpacity(layer, opacities)}
+          key={definition.id}
+          definition={definition}
+          opacity={opacities[definition.id] ?? definition.defaultOpacity}
           onOpacityChange={onOpacityChange}
         />
       ))}
-      {week !== undefined && (
-        <p className="map-legend-note">Week {week}. Sentinel-1, rain and canals.</p>
-      )}
-    </div>
+      {definitions.length === 0 && <p className="map-legend-note">No map layers are on.</p>}
+      {week !== undefined && <p className="map-legend-note">Week {week}.</p>}
+    </section>
   );
 }
