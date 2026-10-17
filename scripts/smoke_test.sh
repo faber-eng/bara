@@ -9,27 +9,25 @@ readonly VERDICT_WAIT_SECONDS="${BARA_SMOKE_VERDICT_WAIT:-150}"
 readonly POLL_SECONDS="${BARA_SMOKE_POLL:-4}"
 readonly OUTCOME_WAIT_SECONDS="${BARA_SMOKE_OUTCOME_WAIT:-90}"
 readonly SAMPLE_ID=broken-dam-1
-readonly ADVANCE_HOURS=48
 
 URL=""
 PROJECT_FLAG=""
 DRY_RUN=false
 CONFIRMED=false
-STRICT=false
 TOKEN=""
-SKIPPED=()
 STEP=0
 BEFORE_IDS=""
 CURL=(curl -sS --connect-timeout 10 --max-time 60)
 
 usage() {
   cat <<'EOF'
-Usage: scripts/smoke_test.sh --yes [--url <base>] [--project <id>] [--strict]
+Usage: scripts/smoke_test.sh --yes [--url <base>] [--project <id>]
        scripts/smoke_test.sh --dry-run
 
 Runs the Bara demo path against a live deployment with the judge header:
 reset, trigger drying.ranked, wait for the cases, upload the broken-dam sample
-photo, wait for the verdict, advance the clock 48 h, check the outcome.
+photo, wait for the verdict, advance the clock past the deadline of a second case,
+check that case is overdue or escalated.
 
 It resets the scenario, so it needs --yes. Reset only touches example data.
 
@@ -37,7 +35,6 @@ It resets the scenario, so it needs --yes. Reset only touches example data.
   --dry-run       print the steps, call nothing
   --url <base>    site to test (default: https://<project>.web.app)
   --project <id>  project (default: $PROJECT, then .secrets/bara.env)
-  --strict        a skipped step fails the run
   -h, --help      show this help
 
 Environment: BARA_SMOKE_TOKEN is a Firebase ID token to use instead of signing in
@@ -45,8 +42,8 @@ anonymously. FIREBASE_API_KEY is the web API key for the anonymous sign-in
 (default: read from the deployed site). BARA_SMOKE_CASE_WAIT, BARA_SMOKE_VERDICT_WAIT,
 BARA_SMOKE_OUTCOME_WAIT and BARA_SMOKE_POLL change the waits, in seconds.
 
-stdout: one "ok", "skip" or "FAIL" line per step. stderr: the reason for a failure.
-Exit codes: 0 every step passed (skips allowed unless --strict), 1 a step failed,
+stdout: one "ok" or "FAIL" line per step. stderr: the reason for a failure.
+Exit codes: 0 every step passed, 1 a step failed,
 2 usage error, 3 no project.
 EOF
 }
@@ -56,7 +53,6 @@ parse_args() {
     case "$1" in
       --yes) CONFIRMED=true; shift ;;
       --dry-run) DRY_RUN=true; shift ;;
-      --strict) STRICT=true; shift ;;
       --url)
         [[ $# -ge 2 ]] || { echo "--url needs a value" >&2; exit "$EXIT_USAGE"; }
         URL="$2"; shift 2 ;;
@@ -72,12 +68,6 @@ parse_args() {
 pass() {
   STEP=$((STEP + 1))
   printf 'ok    %d %s\n' "$STEP" "$1"
-}
-
-skip() {
-  STEP=$((STEP + 1))
-  printf 'skip  %d %s\n' "$STEP" "$1"
-  SKIPPED+=("$1")
 }
 
 fail() {
@@ -156,7 +146,7 @@ cases_assigned() {
   call GET "/api/cases?region=riau" ops
   [[ "$CALL_STATUS" == 200 ]] || return 1
   CASE_COUNT="$(new_assigned_ids | wc -l | tr -d ' ')"
-  [[ "$CASE_COUNT" -ge 1 ]]
+  [[ "$CASE_COUNT" -ge 2 ]]
 }
 
 new_assigned_ids() {
@@ -168,10 +158,6 @@ for r in json.load(sys.stdin):
     if case["example"] and case["id"] not in before and case["status"] == "assigned" and r["task_status"] == "open":
         print(case["id"])
 ' <<<"$CALL_BODY"
-}
-
-first_assigned_case() {
-  new_assigned_ids | head -1
 }
 
 verdict_ready() {
@@ -221,9 +207,10 @@ step_trigger() {
 }
 
 step_cases() {
-  poll "$CASE_WAIT_SECONDS" cases_assigned || fail "cases assigned" "no assigned case with an open task within ${CASE_WAIT_SECONDS}s; check the drying.ranked.push subscription and bara.dlq"
-  CASE_ID="$(first_assigned_case)"
-  pass "$CASE_COUNT case(s) assigned, using $CASE_ID"
+  poll "$CASE_WAIT_SECONDS" cases_assigned || fail "cases assigned" "fewer than 2 assigned cases with an open task within ${CASE_WAIT_SECONDS}s; check the drying.ranked.push subscription and bara.dlq"
+  CASE_ID="$(new_assigned_ids | sed -n 1p)"
+  OTHER_ID="$(new_assigned_ids | sed -n 2p)"
+  pass "$CASE_COUNT case(s) assigned, evidence on $CASE_ID, deadline check on $OTHER_ID"
 }
 
 step_task() {
@@ -281,31 +268,50 @@ step_verdict() {
   pass "verdict dam_state broken"
 }
 
+step_deadline() {
+  call GET "/api/cases/$OTHER_ID" ops
+  expect_status 200 "read $OTHER_ID"
+  OTHER_DEADLINE="$(python3 -c '
+import json, sys
+for task in json.load(sys.stdin)["tasks"]:
+    if task["status"] == "open":
+        print(task["deadline_at"])
+        break
+' <<<"$CALL_BODY")" || fail "read deadline" "unreadable case: ${CALL_BODY:0:300}"
+  [[ -n "$OTHER_DEADLINE" ]] || fail "read deadline" "no open task on $OTHER_ID: ${CALL_BODY:0:300}"
+  pass "task on $OTHER_ID is due $OTHER_DEADLINE"
+}
+
+hours_past_deadline() {
+  python3 -c '
+import json, math, sys
+from datetime import datetime
+now = datetime.fromisoformat(json.load(sys.stdin)["now"])
+deadline = datetime.fromisoformat(sys.argv[1])
+print(max(1, math.ceil((deadline - now).total_seconds() / 3600) + 1))
+' "$OTHER_DEADLINE"
+}
+
 step_advance() {
+  call GET /api/clock ops
+  expect_status 200 "read clock"
+  ADVANCE_HOURS="$(hours_past_deadline <<<"$CALL_BODY")" || fail "advance" "cannot compute hours from: ${CALL_BODY:0:300}"
   call POST /api/judge/advance judge "{\"hours\":$ADVANCE_HOURS}"
-  if [[ "$CALL_STATUS" == 404 || "$CALL_STATUS" == 405 ]]; then
-    skip "+${ADVANCE_HOURS}h: /api/judge/advance is not deployed (BT-14)"
-    return
-  fi
   expect_status 200 "advance ${ADVANCE_HOURS}h"
   [[ "$(json_get offset_seconds <<<"$CALL_BODY")" -ge $((ADVANCE_HOURS * 3600)) ]] || fail "advance" "offset is smaller than ${ADVANCE_HOURS}h: $CALL_BODY"
-  pass "advanced ${ADVANCE_HOURS}h"
+  pass "advanced ${ADVANCE_HOURS}h, past the deadline of $OTHER_ID"
 }
 
 case_overdue() {
-  call GET "/api/cases/$CASE_ID" ops
+  call GET "/api/cases/$OTHER_ID" ops
   [[ "$CALL_STATUS" == 200 ]] || return 1
   CASE_STATUS="$(json_get case.status <<<"$CALL_BODY")"
   [[ "$CASE_STATUS" == overdue || "$CASE_STATUS" == escalated ]]
 }
 
 step_outcome() {
-  if [[ "${#SKIPPED[@]}" -gt 0 ]]; then
-    skip "outcome after +${ADVANCE_HOURS}h: no advance, nothing to check"
-    return
-  fi
-  poll "$OUTCOME_WAIT_SECONDS" case_overdue || fail "outcome" "$CASE_ID is $CASE_STATUS, wanted overdue or escalated after +${ADVANCE_HOURS}h"
-  pass "$CASE_ID is $CASE_STATUS after +${ADVANCE_HOURS}h"
+  poll "$OUTCOME_WAIT_SECONDS" case_overdue || fail "outcome" "$OTHER_ID is $CASE_STATUS, wanted overdue or escalated after +${ADVANCE_HOURS}h"
+  pass "$OTHER_ID is $CASE_STATUS after +${ADVANCE_HOURS}h"
 }
 
 print_plan() {
@@ -318,17 +324,14 @@ would run against $URL:
   5 wait for an assigned case with an open task (up to ${CASE_WAIT_SECONDS}s)
   6 upload sample $SAMPLE_ID for the task and complete it
   7 wait for the verdict, expect dam_state broken (up to ${VERDICT_WAIT_SECONDS}s)
-  8 POST /api/judge/advance {"hours":$ADVANCE_HOURS}
-  9 expect a case overdue or escalated
+  8 read the deadline of a second assigned case
+  9 POST /api/judge/advance past that deadline
+  10 expect that case overdue or escalated
 EOF
 }
 
 finish() {
-  if [[ "${#SKIPPED[@]}" -gt 0 && "$STRICT" == true ]]; then
-    echo "${#SKIPPED[@]} step(s) skipped and --strict is set" >&2
-    exit "$EXIT_STEP_FAILED"
-  fi
-  echo "smoke test passed, ${#SKIPPED[@]} skipped"
+  echo "smoke test passed"
 }
 
 main() {
@@ -354,6 +357,7 @@ main() {
   step_task
   step_upload
   step_verdict
+  step_deadline
   step_advance
   step_outcome
   finish

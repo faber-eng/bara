@@ -10,6 +10,7 @@ from conftest import REPO
 
 SCRIPT = str(REPO / "scripts/smoke_test.sh")
 CASE = "case-1"
+SECOND = "case-2"
 
 
 class FakeBara:
@@ -36,7 +37,8 @@ class FakeBara:
         self.calls: list[tuple[str, str, str | None]] = []
         self.advanced = False
 
-    def respond(self, method, path, role):
+    def respond(self, method, path, role, body=b""):
+        self.last_body = body
         self.calls.append((method, path, role))
         if path == "/api/health":
             return 200, {"status": "ok", "git_sha": "abc1234"}
@@ -49,6 +51,10 @@ class FakeBara:
             return 200, self.case_list()
         if path == f"/api/cases/{CASE}":
             return 200, self.detail()
+        if path == f"/api/cases/{SECOND}":
+            return 200, self.second_detail()
+        if path == "/api/clock":
+            return 200, {"now": "2026-07-20T01:00:00Z", "offset_seconds": 0, "judge_mode": True}
         if path == "/api/samples/broken-dam-1/file":
             return self.sample, b"\xff\xd8\xff\xe0jpegbytes"
         if path == "/api/v/vol-ari/uploads":
@@ -63,20 +69,29 @@ class FakeBara:
             return 200, {"id": "e1"}
         if path == "/api/judge/advance":
             self.advanced = self.advance == 200
-            return self.advance, {"now": "x", "offset_seconds": 48 * 3600, "judge_mode": True}
+            self.advance_body = json.loads(self.last_body or b"{}")
+            hours = self.advance_body.get("hours", 0)
+            return self.advance, {"now": "x", "offset_seconds": hours * 3600, "judge_mode": True}
         return 404, {"detail": "no"}
 
     def case_list(self):
         status = "escalated" if self.advanced else "assigned"
         if not self.cases_ready:
             return []
-        rows = [] if not (self.triggered or self.stale) else [
-            {
-                "case": {"id": CASE, "status": status, "example": True},
-                "task_status": "open",
-                "next_deadline_at": None,
-            }
-        ]
+        rows = []
+        if self.triggered or self.stale:
+            rows = [
+                {
+                    "case": {"id": CASE, "status": "assigned", "example": True},
+                    "task_status": "open",
+                    "next_deadline_at": None,
+                },
+                {
+                    "case": {"id": SECOND, "status": status, "example": True},
+                    "task_status": "open",
+                    "next_deadline_at": None,
+                },
+            ]
         if self.real_case:
             rows.append(
                 {
@@ -86,6 +101,24 @@ class FakeBara:
                 }
             )
         return rows
+
+    def second_detail(self):
+        status = "escalated" if self.advanced else "assigned"
+        return {
+            "case": {"id": SECOND, "status": status},
+            "tasks": [
+                {
+                    "id": "t2",
+                    "status": "open",
+                    "assignee_id": "vol-dedi",
+                    "deadline_at": "2026-07-23T01:00:00Z",
+                    "target": {"lat": 0.5, "lon": 102.1},
+                }
+            ],
+            "evidence": [],
+            "agent_runs": [],
+            "timeline": [],
+        }
 
     def detail(self):
         verdict = {"dam_state": self.verdict} if self.verdict else None
@@ -113,9 +146,9 @@ def serve():
         class Handler(BaseHTTPRequestHandler):
             def handle_any(self):
                 length = int(self.headers.get("content-length", 0))
-                self.rfile.read(length)
+                request_body = self.rfile.read(length)
                 status, body = fake.respond(
-                    self.command, self.path, self.headers.get("X-Bara-Role")
+                    self.command, self.path, self.headers.get("X-Bara-Role"), request_body
                 )
                 payload = body if isinstance(body, bytes) else json.dumps(body).encode()
                 self.send_response(status)
@@ -170,7 +203,7 @@ def test_help_lists_the_flags_and_exits_0():
     done = run("--help")
 
     assert done.returncode == 0
-    for flag in ("--yes", "--dry-run", "--url", "--strict"):
+    for flag in ("--yes", "--dry-run", "--url"):
         assert flag in done.stdout
 
 
@@ -204,28 +237,31 @@ def test_every_step_passes_against_a_working_site(serve):
     done = run("--yes", "--url", base)
 
     assert done.returncode == 0, done.stderr
-    assert done.stdout.count("ok ") == 9
-    assert "smoke test passed, 0 skipped" in done.stdout
+    assert done.stdout.count("ok ") == 10
+    assert "smoke test passed" in done.stdout
     roles = {path: role for _, path, role in fake.calls}
     assert roles["/api/judge/reset"] == "judge"
     assert roles["/api/v/vol-ari/uploads"] == "volunteer"
 
 
-def test_the_advance_step_is_skipped_when_the_route_is_missing(serve):
-    base = serve(FakeBara(advance=404))
+def test_the_clock_is_advanced_past_the_deadline_of_the_second_case(serve):
+    fake = FakeBara()
+    base = serve(fake)
 
     done = run("--yes", "--url", base)
 
     assert done.returncode == 0, done.stderr
-    assert done.stdout.count("skip ") == 2
-    assert "BT-14" in done.stdout
-    assert "2 skipped" in done.stdout
+    assert fake.advance_body == {"hours": 73}
+    assert f"{SECOND} is escalated after +73h" in done.stdout
 
 
-def test_strict_makes_a_skip_fail(serve):
+def test_a_missing_advance_route_fails_the_run(serve):
     base = serve(FakeBara(advance=404))
 
-    assert run("--yes", "--strict", "--url", base).returncode == 1
+    done = run("--yes", "--url", base)
+
+    assert done.returncode == 1
+    assert "advance" in done.stderr
 
 
 def test_a_wrong_verdict_fails_loudly(serve):
@@ -270,7 +306,7 @@ def test_a_case_that_exists_before_the_trigger_is_not_used(serve):
     done = run("--yes", "--url", base)
 
     assert done.returncode == 1
-    assert "no assigned case" in done.stderr
+    assert "fewer than 2 assigned" in done.stderr
 
 
 def test_a_sample_that_is_not_served_fails_at_the_download(serve):
