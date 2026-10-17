@@ -4,7 +4,6 @@ const DEFAULT_SOURCES = {
   rankings: "fixture",
   cases: "fixture",
   caseDetail: "fixture",
-  escalations: "fixture",
   tiles: "live",
   clock: "live",
 } as const satisfies Record<string, Source>;

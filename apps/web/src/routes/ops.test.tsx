@@ -81,6 +81,16 @@ describe("/ops", () => {
     expect(await screen.findByRole("button", { name: /riau-0412/ })).toBeInTheDocument();
   });
 
+  it("leaves the drawer when a tab is clicked", async () => {
+    const { router } = renderApp("/ops?tab=cases&case=case-0001");
+    await screen.findByRole("region", { name: "Case detail" });
+
+    fireEvent.click(screen.getByRole("tab", { name: /Ranked areas/ }));
+
+    await waitFor(() => expect(router.state.location.search.case).toBeUndefined());
+    expect(await screen.findByRole("table")).toBeInTheDocument();
+  });
+
   it("ignores an unknown tab value", async () => {
     renderApp("/ops?tab=weird");
 

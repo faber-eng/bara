@@ -115,7 +115,7 @@ describe("CaseDrawer", () => {
 
   it("keeps the button and says so when close fails", async () => {
     vi.stubEnv("VITE_SOURCE_CASEDETAIL", "live");
-    stubApi({
+    const fetchMock = stubApi({
       "GET /api/cases/case-0005": () =>
         Response.json({ ...detail, case: { ...detail.case, status: "human_review" } }),
       "POST /api/cases/case-0005/close": () => new Response("no", { status: 409 }),
@@ -125,6 +125,7 @@ describe("CaseDrawer", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Close case" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not close the case");
+    expect(callsTo(fetchMock, "GET /api/cases/case-0005").length).toBeGreaterThan(1);
     expect(screen.getByRole("button", { name: "Close case" })).toBeEnabled();
   });
 

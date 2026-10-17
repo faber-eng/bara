@@ -31,9 +31,8 @@ function Run({ run, open, onToggle }: RunProps) {
         Model {run.model} · prompt {run.prompt_version} · {run.ms} ms
       </p>
       <ol className="run">
-        {run.tool_calls.map((call, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: tool calls have no id and the list never reorders
-          <ToolCallRow key={`${call.name}-${index}`} call={call} />
+        {run.tool_calls.map((call) => (
+          <ToolCallRow key={`${call.name}-${call.ms}-${call.result_summary}`} call={call} />
         ))}
       </ol>
       {run.final_json !== null && (

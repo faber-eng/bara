@@ -367,7 +367,7 @@ fieldset.join-fieldset {
 }
 .lang-toggle {
   justify-self: start;
-||||||| parent of 15f9357 (feat(web): case drawer on /ops with evidence verdicts, agent runs and Close (FT-3))
+}
 
 .drawer {
   display: grid;
