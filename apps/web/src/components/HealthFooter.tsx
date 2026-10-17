@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchHealth, type Health } from "../lib/health";
+import type { Health } from "../lib/contracts";
+import { fetchHealth } from "../lib/health";
 
 const SHORT_SHA_LENGTH = 7;
 
