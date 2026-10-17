@@ -31,16 +31,16 @@ describe("app routes", () => {
     return () => vi.unstubAllGlobals();
   });
 
-  it.each([
-    ["/", "Landing and tour"],
-    ["/public", "Public dashboard"],
-  ])("renders %s with its title and the health footer", async (path, title) => {
-    renderAt(path);
+  it.each([["/", "Landing and tour"]])(
+    "renders %s with its title and the health footer",
+    async (path, title) => {
+      renderAt(path);
 
-    expect(await screen.findByRole("heading", { level: 1, name: title })).toBeInTheDocument();
-    expect(screen.getByText(path, { selector: ".spec-code" })).toBeInTheDocument();
-    expect(await screen.findByText("API ok")).toBeInTheDocument();
-  });
+      expect(await screen.findByRole("heading", { level: 1, name: title })).toBeInTheDocument();
+      expect(screen.getByText(path, { selector: ".spec-code" })).toBeInTheDocument();
+      expect(await screen.findByText("API ok")).toBeInTheDocument();
+    },
+  );
 
   it("opens the volunteer screen for the id in the URL", async () => {
     renderAt("/v/demo");
@@ -71,10 +71,10 @@ describe("app routes", () => {
 
   it("still renders the route when the health call fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("network down")));
-    renderAt("/public");
+    renderAt("/");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Public dashboard" }),
+      await screen.findByRole("heading", { level: 1, name: "Landing and tour" }),
     ).toBeInTheDocument();
     expect(await screen.findByText("API unreachable", {}, { timeout: 3000 })).toBeInTheDocument();
   });

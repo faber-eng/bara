@@ -1,7 +1,12 @@
 import { useMap } from "@vis.gl/react-google-maps";
 import { useEffect, useRef } from "react";
-import type { CellPoint, RankedDam } from "../../lib/contracts";
-import { type CellLayer, createCellLayer, createDamLayer } from "../../lib/ops/cellLayer";
+import type { CellPoint } from "../../lib/contracts";
+import {
+  type CellLayer,
+  createCellLayer,
+  createDamLayer,
+  type DamMarker,
+} from "../../lib/ops/cellLayer";
 import { fitToRanked, rankedBounds } from "../../lib/ops/rankedView";
 
 export type FocusRequest = { cellId: string };
@@ -62,9 +67,12 @@ export function CellsLayer({ cells, selectedCellId, focus, onSelect }: CellsLaye
   return null;
 }
 
-type DamsLayerProps = { dams: readonly RankedDam[]; onSelect: (dam: RankedDam) => void };
+type DamsLayerProps<T extends DamMarker> = {
+  dams: readonly T[];
+  onSelect: (dam: T) => void;
+};
 
-export function DamsLayer({ dams, onSelect }: DamsLayerProps) {
+export function DamsLayer<T extends DamMarker>({ dams, onSelect }: DamsLayerProps<T>) {
   const map = useMap();
   const onSelectRef = useRef(onSelect);
 

@@ -246,3 +246,20 @@ describe("apiRequest failures", () => {
     expect(error).toMatchObject({ status: 500, detail: null });
   });
 });
+
+describe("apiRequest without sign-in", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sends no token and no role header", async () => {
+    const fetchMock = stubFetch(Response.json({ ok: true }));
+    setJudgeMode(true);
+    selectPerson("vol-ari");
+
+    await apiRequest("/api/public/riau/summary", { anonymous: true });
+
+    expect(sentHeaders(fetchMock).has("Authorization")).toBe(false);
+    expect(sentHeaders(fetchMock).has("X-Bara-Role")).toBe(false);
+  });
+});

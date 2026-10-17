@@ -59,7 +59,7 @@ Example for the facts high_risk_cells 12, dams_broken 0 and \
 tasks_on_time_pct 87.5:
 text_en: "This week in Riau, 12 cells are at high risk. The number of broken \
 dams is 0. 87.5% of tasks were done on time."
-text_id: "Minggu ini di Riau, 12 sel berisiko tinggi. Jumlah bendungan rusak \
+text_id: "Minggu ini di Riau, 12 petak berisiko tinggi. Jumlah sekat kanal rusak \
 adalah 0. Sebanyak 87,5% tugas selesai tepat waktu."
 cited: [{{"field": "high_risk_cells", "value": 12}}, {{"field": \
 "dams_broken", "value": 0}}, {{"field": "tasks_on_time_pct", "value": 87.5}}]

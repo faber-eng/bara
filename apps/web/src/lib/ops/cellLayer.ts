@@ -157,12 +157,14 @@ export function damColor(state: RankedDam["last_state"]): string {
   return DAM_COLORS[state];
 }
 
+export type DamMarker = Pick<RankedDam, "dam_id" | "point" | "last_state">;
+
 export type DamLayer = { destroy: () => void };
 
-export function createDamLayer(
+export function createDamLayer<T extends DamMarker>(
   map: google.maps.Map,
-  dams: readonly RankedDam[],
-  onSelect: (dam: RankedDam) => void,
+  dams: readonly T[],
+  onSelect: (dam: T) => void,
 ): DamLayer {
   const byId = new Map(dams.map((dam) => [dam.dam_id, dam]));
   const data = new google.maps.Data({

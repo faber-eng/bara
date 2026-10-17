@@ -27,6 +27,7 @@ export type RequestOptions = {
   body?: unknown;
   signal?: AbortSignal;
   timeoutMs?: number;
+  anonymous?: boolean;
 };
 
 const BRIGADE_PATH = "/api/brigade/";
@@ -74,7 +75,7 @@ async function send(path: string, options: RequestOptions, signal: AbortSignal):
   const hasBody = options.body !== undefined;
   return fetch(path, {
     method: options.method ?? "GET",
-    headers: await buildHeaders(path, hasBody),
+    headers: options.anonymous ? new Headers() : await buildHeaders(path, hasBody),
     body: hasBody ? JSON.stringify(options.body) : undefined,
     signal,
   });
