@@ -12,7 +12,7 @@ const FORBIDDEN = 403;
 const CONFLICT = 409;
 const RATE_LIMITED = 429;
 
-function failureMessage(error: unknown, copy: ScenarioCopy): string {
+export function failureMessage(error: unknown, copy: ScenarioCopy): string {
   if (!(error instanceof ApiError)) return copy.failed;
   if (error.status === FORBIDDEN) return copy.forbidden;
   if (error.status === RATE_LIMITED) return copy.rateLimited;
