@@ -1,0 +1,6 @@
+{
+  "layer": "drying",
+  "region": "riau",
+  "week": "2026-W42",
+  "url_template": "https://earthengine.googleapis.com/v1/projects/example-project/maps/example-map/tiles/{z}/{x}/{y}"
+}

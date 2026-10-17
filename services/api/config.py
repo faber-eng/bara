@@ -60,6 +60,7 @@ class Settings(Config):
     judge_mode: JudgeMode
     region: str
     api_url: str | None
+    config_dir: Path
 
     @property
     def evidence_bucket(self) -> str:
@@ -83,6 +84,7 @@ def load_settings(
         judge_mode=apply_judge_override(app.judge_mode, environ),
         region=read_optional(environ, "REGION") or DEFAULT_REGION,
         api_url=read_optional(environ, "BARA_API_URL"),
+        config_dir=directory,
     )
 
 

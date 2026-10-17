@@ -292,3 +292,12 @@ export type Health = {
   fallback_used: boolean;
   git_sha: string;
 };
+
+export type TileLayerKind = "drying";
+
+export type TileLayer = {
+  layer: TileLayerKind;
+  region: string;
+  week: IsoWeek;
+  url_template: string;
+};

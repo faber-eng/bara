@@ -104,8 +104,9 @@ def main(
         from google.cloud import bigquery
 
         from adapters import earthengine
+        from ee_lib import session
 
-        earthengine.initialize(project)
+        session.initialize(project)
         return build_grid(
             region=region,
             aoi=aoi,

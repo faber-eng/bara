@@ -50,6 +50,7 @@ Channel = Literal["web", "whatsapp"]
 BulletinSource = Literal["gemini", "template"]
 Language = Literal["id", "en", "ms", "fr"]
 SampleKind = Literal["photo", "voice", "area"]
+TileLayerKind = Literal["drying"]
 
 Subject = Literal["canal_dam", "burned_peat", "smoke_scene", "other"]
 DamState = Literal[
@@ -542,3 +543,10 @@ class Health(Contract):
     models: HealthModels
     fallback_used: bool
     git_sha: str
+
+
+class TileLayer(Contract):
+    layer: TileLayerKind
+    region: str
+    week: IsoWeek
+    url_template: str

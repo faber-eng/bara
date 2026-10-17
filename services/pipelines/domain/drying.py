@@ -4,10 +4,10 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 
+from ee_lib.canals import CANAL_DECAY_M
 from ee_lib.config import DryingWeights
 from ee_lib.peat import PEAT_WEIGHTS
 
-CANAL_DECAY_M = 1000.0
 NEUTRAL_SCORE = 50.0
 
 

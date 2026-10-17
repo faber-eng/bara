@@ -22,6 +22,8 @@ COPY services/api/pyproject.toml services/api/uv.lock services/api/.python-versi
 RUN uv sync --frozen --no-dev
 
 COPY config/ /app/config/
+COPY data/aoi/ /app/data/aoi/
+COPY services/pipelines/ee_lib/ /app/ee_lib/
 COPY services/api/ /app/
 
 ENV BARA_CONFIG_DIR=/app/config
