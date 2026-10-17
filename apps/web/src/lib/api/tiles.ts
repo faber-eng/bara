@@ -12,7 +12,7 @@ export function parseTileLayer(body: unknown): TileLayer {
     throw new ResponseShapeError("tile layer.url_template lacks {x}, {y} or {z}");
   }
   return {
-    layer: readOneOf(record, "layer", "tile layer", ["drying"]),
+    layer: readOneOf(record, "layer", "tile layer", ["drying", "peat", "burn_scars", "reignition"]),
     region: readString(record, "region", "tile layer"),
     week: readString(record, "week", "tile layer"),
     url_template: template,

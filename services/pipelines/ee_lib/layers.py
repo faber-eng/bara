@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 import ee
 
@@ -14,6 +14,7 @@ BURN_PALETTE = ("4a2c1a",)
 PEAT_VIS = {"min": 1, "max": 2, "palette": list(PEAT_PALETTE)}
 BURN_VIS = {"min": 0, "max": 1, "palette": list(BURN_PALETTE)}
 REIGNITION_VIS = {"min": 0, "max": 1, "palette": list(RISK_PALETTE)}
+BURN_LOOKBACK_DAYS = 365
 P_REIGNITE = "p_reignite"
 
 
@@ -29,14 +30,24 @@ def peat_image(data: DataConfig, aoi: dict) -> ee.Image:
     return peat.updateMask(peat.gt(0)).clip(aoi_geometry(aoi))
 
 
+def as_float(image: ee.Image) -> ee.Image:
+    return image.toFloat()
+
+
+def masked_burn_band() -> ee.ImageCollection:
+    empty = ee.Image(0).selfMask().rename(BURN_BAND).toFloat()
+    return ee.ImageCollection([empty])
+
+
 def burn_scars_image(data: DataConfig, aoi: dict, week_end: date) -> ee.Image:
-    first_day = date(week_end.year, 1, 1)
-    burned = (
+    first_day = week_end - timedelta(days=BURN_LOOKBACK_DAYS)
+    months = (
         ee.ImageCollection(data.datasets.burned_area)
         .filterDate(iso(first_day), iso(week_end))
         .select(BURN_BAND)
-        .max()
+        .map(as_float)
     )
+    burned = months.merge(masked_burn_band()).max()
     return burned.gt(0).selfMask().clip(aoi_geometry(aoi))
 
 
