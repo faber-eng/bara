@@ -116,3 +116,48 @@ def test_real_run_grants_each_role_on_the_narrowest_resource(run_script):
         )
     assert len(grants) == len(expected)
     assert any("iam service-accounts create bara-build" in c for c in result.calls)
+
+
+INVOKER_ACCOUNT = f"bara-tasks-invoker@{PROJECT}.iam.gserviceaccount.com"
+INVOKER_GRANT = (
+    "sa-user",
+    f"{INVOKER_ACCOUNT}|{API_ACCOUNT}|roles/iam.serviceAccountUser",
+)
+
+
+def invoker_reports(result):
+    return [r.state for r in result.reports() if (r.kind, r.name) == INVOKER_GRANT]
+
+
+def test_api_may_act_as_the_tasks_invoker_on_a_dry_run(run_script):
+    result = run_script(
+        SCRIPT, "--project", PROJECT, "--dry-run", ok_pattern=SERVICE_EXISTS
+    )
+    assert result.code == 0
+    assert invoker_reports(result) == ["would make"]
+
+
+def test_the_tasks_invoker_grant_is_ok_when_the_binding_exists(run_script):
+    result = run_script(
+        SCRIPT,
+        "--project",
+        PROJECT,
+        "--dry-run",
+        ok_pattern="describe",
+        policy=f"roles/iam.serviceAccountUser,serviceAccount:{API_ACCOUNT}",
+    )
+    assert result.code == 0
+    assert invoker_reports(result) == ["ok"]
+
+
+def test_real_run_grants_service_account_user_on_the_invoker_to_bara_api(run_script):
+    result = run_script(SCRIPT, "--project", PROJECT, ok_pattern=SERVICE_EXISTS)
+    assert result.code == 0
+    grants = [
+        c
+        for c in result.calls
+        if f"iam service-accounts add-iam-policy-binding {INVOKER_ACCOUNT}" in c
+    ]
+    assert len(grants) == 1
+    assert f"--member serviceAccount:{API_ACCOUNT}" in grants[0]
+    assert "--role roles/iam.serviceAccountUser" in grants[0]
