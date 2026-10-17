@@ -157,9 +157,35 @@ def test_an_unknown_region_raises(config_dir):
         load_region(config_dir, "atlantis")
 
 
-def test_a_region_without_drying_settings_raises_unknown_region(config_dir):
-    with pytest.raises(UnknownRegion, match="congo_cuvette"):
-        load_region(config_dir, "congo_cuvette")
+def test_the_congo_region_is_ranking_only_on_the_109_descending_orbit(config_dir):
+    region = load_region(config_dir, "congo_cuvette")
+
+    assert region.full_flow is False
+    assert region.s1_relative_orbit == 109
+    assert region.s1_pass == "DESCENDING"
+    assert region.grid_crs == "EPSG:32633"
+    assert region.timezone == "Africa/Brazzaville"
+
+
+def test_a_region_without_drying_settings_raises_unknown_region(tmp_path):
+    write(
+        tmp_path,
+        "regions.yaml",
+        "nowhere:\n  name: Nowhere\n  aoi: a.geojson\n  timezone: UTC\n"
+        "  full_flow: false\n",
+    )
+
+    with pytest.raises(UnknownRegion, match="nowhere"):
+        load_region(tmp_path, "nowhere")
+
+
+def test_the_congo_aoi_is_a_polygon_inside_the_cuvette(config_dir):
+    region = load_region(config_dir, "congo_cuvette")
+
+    aoi = read_aoi(config_dir, region)
+
+    assert aoi["type"] == "Polygon"
+    assert aoi["coordinates"][0][0] == [17.5, 0.0]
 
 
 def test_an_invalid_timezone_raises(tmp_path):

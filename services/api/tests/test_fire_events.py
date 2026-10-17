@@ -103,6 +103,7 @@ class World:
             clock=FixedClock(),
             spots=spots,
             recheck_hours=hours,
+            region="riau",
         )
 
     def deliver(self, event=None, message_id="m-1"):
@@ -341,3 +342,13 @@ def test_the_cells_after_the_first_are_scheduled_together():
     assert Slow.peak == 2
     assert len(world.task_store.where()) == 3
     assert elapsed < 0.55
+
+
+def test_a_fire_of_a_region_without_the_full_flow_opens_no_case_and_no_task():
+    world = World()
+    event = quiet_event(region="congo_cuvette")
+
+    world.deliver(event)
+
+    assert world.all_cases() == []
+    assert world.assigner.requests == []

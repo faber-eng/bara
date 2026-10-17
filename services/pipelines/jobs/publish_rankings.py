@@ -67,6 +67,10 @@ def build_dams(warehouse: Warehouse, region: str, week_start: date, dams: list):
     return rank_dams(dams, scored, TOP_DAMS)
 
 
+def announces(region: RegionConfig) -> bool:
+    return region.full_flow
+
+
 def publish_rankings(
     *,
     region: str,
@@ -185,6 +189,7 @@ def main(
                 now=datetime.now(UTC),
                 new_id=lambda: uuid.uuid4().hex,
                 dry_run=args.dry_run,
+                announce=announces(region),
             )
         except ValidationError as error:
             raise JobError(f"event does not match the contract: {error}") from error

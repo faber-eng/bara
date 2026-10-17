@@ -66,6 +66,7 @@ class World:
             explanations=self.explanations,
             clock=FixedClock(),
             max_cases=limit,
+            region="riau",
         )
         self.dispatcher = EventDispatcher(
             EventLog(self.event_store, lambda: NOW),
@@ -98,6 +99,18 @@ def test_the_top_three_dams_each_get_a_case_and_one_agent_run():
     assert {case.type for case in cases} == {"dam_risk"}
     assert {case.status for case in cases} == {"open"}
     assert [run[0] for run in world.agent.runs] == ["drying.ranked"] * 3
+
+
+def test_a_ranking_of_a_region_without_the_full_flow_opens_no_case_and_no_run():
+    world = World(five_dams())
+    event = make_drying_ranked_event(region="congo_cuvette")
+
+    outcome = world.deliver(event=event)
+
+    assert outcome == "processed"
+    assert world.all_cases() == []
+    assert world.agent.runs == []
+    assert world.explanations.regions == []
 
 
 def test_a_case_carries_the_dam_cell_score_event_and_clock_time():

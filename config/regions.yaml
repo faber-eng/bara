@@ -13,3 +13,6 @@ congo_cuvette:
   timezone: Africa/Brazzaville
   language: fr
   full_flow: false                      # ranking + map only
+  s1_relative_orbit: 109
+  s1_pass: DESCENDING
+  grid_crs: EPSG:32633

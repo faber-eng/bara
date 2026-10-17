@@ -474,6 +474,16 @@ def test_a_stored_explanation_is_not_made_again(settings):
     assert world.explainer.calls == []
 
 
+def test_a_cell_of_a_region_without_the_full_flow_gets_no_model_explanation(settings):
+    world = World([weekly_row(cell_id="congo_cuvette-1-1", region="congo_cuvette")])
+
+    response = world.client(settings).get("/api/cells/congo_cuvette-1-1", headers=OPS)
+
+    assert response.status_code == 200
+    assert response.json()["explanation"] is None
+    assert world.explainer.calls == []
+
+
 def test_an_explanation_of_an_older_prompt_version_is_made_again(settings):
     world = World([weekly_row()])
     world.ranked_cells.put(

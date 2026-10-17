@@ -238,3 +238,10 @@ def test_the_newest_backfill_week_refreshes_the_latest_set_without_an_event(tmp_
     assert len(by_kind(firestore, "cells")) == 200
     assert pubsub.published == []
     assert "message_id" not in summary
+
+
+def test_only_a_full_flow_region_announces_its_ranking(config_dir):
+    from ee_lib.config import load_region
+
+    assert job.announces(load_region(config_dir, "riau")) is True
+    assert job.announces(load_region(config_dir, "congo_cuvette")) is False
