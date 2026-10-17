@@ -298,8 +298,11 @@ class EscalationRepository:
     def get(self, escalation_id: str) -> Escalation | None:
         return self._escalations.get(escalation_id)
 
-    def for_contact(self, contact_id: str) -> list[Escalation]:
-        return self._escalations.where(Filter("contact_id", "==", contact_id))
+    def open_for_contact(self, contact_id: str) -> list[Escalation]:
+        return self._escalations.where(
+            Filter("contact_id", "==", contact_id),
+            Filter("acknowledged_at", "==", None),
+        )
 
     def open_for_case(self, case_id: str) -> Escalation | None:
         found = self._escalations.where(Filter("case_id", "==", case_id))

@@ -5,6 +5,7 @@ from typing import Protocol
 
 import google.auth
 from google.api_core import exceptions as gax
+from google.auth.exceptions import GoogleAuthError
 from google.auth.transport.requests import Request
 
 MAX_UPLOAD_BYTES = 26214400
@@ -24,6 +25,14 @@ class InvalidObjectName(Exception):
 
 class SigningUnavailable(Exception):
     pass
+
+
+SIGNING_ERRORS = (
+    InvalidObjectName,
+    SigningUnavailable,
+    GoogleAuthError,
+    gax.GoogleAPIError,
+)
 
 
 class SigningAuth(Protocol):
