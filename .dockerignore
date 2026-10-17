@@ -3,7 +3,6 @@
 .githooks
 **/node_modules
 apps/
-data/
 docs/
 infra/
 scripts/
@@ -12,4 +11,3 @@ scripts/
 **/.pytest_cache
 **/.ruff_cache
 services/api/tests/
-services/pipelines/

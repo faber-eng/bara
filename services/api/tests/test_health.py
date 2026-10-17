@@ -53,6 +53,7 @@ def test_create_app_wires_the_repo_config(monkeypatch):
     monkeypatch.delenv("REASONING_MODEL", raising=False)
     monkeypatch.delenv("FAST_MODEL", raising=False)
     monkeypatch.delenv("BARA_CONFIG_DIR", raising=False)
+    monkeypatch.setattr(main, "configure_logging", lambda: None)
     monkeypatch.setattr(
         main,
         "build_vertex_clients",

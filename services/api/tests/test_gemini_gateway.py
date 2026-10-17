@@ -99,3 +99,7 @@ def test_retry_options_cover_5xx_and_leave_404_and_429_to_the_fallback():
 
     assert retry.attempts == 3
     assert set(retry.http_status_codes) == {500, 502, 503, 504}
+
+
+def test_model_calls_time_out_after_60_seconds():
+    assert build_http_options().timeout == 60_000
