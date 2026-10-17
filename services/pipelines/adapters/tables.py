@@ -76,7 +76,7 @@ CREATE TABLE osm_canals
 CLUSTER BY region
 AS
 SELECT
-  osm_way_id,
+  osm_id,
   (SELECT value FROM UNNEST(all_tags) WHERE key = 'waterway' LIMIT 1) AS waterway,
   geometry,
   @region AS region

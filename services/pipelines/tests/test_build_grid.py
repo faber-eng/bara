@@ -170,3 +170,12 @@ def test_a_missing_project_exits_two(capsys):
 
     assert code == 2
     assert "GOOGLE_CLOUD_PROJECT" in capsys.readouterr().err
+
+
+def test_canal_table_keeps_the_osm_way_id_of_each_line():
+    from adapters.tables import canals_sql
+
+    sql = canals_sql(OSM_LINES)
+
+    assert "  osm_id,\n" in sql
+    assert "osm_way_id" not in sql
