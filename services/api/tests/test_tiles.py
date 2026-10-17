@@ -220,3 +220,56 @@ def test_create_app_wires_earth_engine_tiles_without_a_network_call(monkeypatch)
 
     assert isinstance(app.state.tiles, EarthEngineTiles)
     assert app.state.utcnow().tzinfo is not None
+
+
+def test_the_tile_json_carries_a_cache_control_header(settings):
+    client = make_client(settings, FakeTiles())
+
+    response = client.get("/api/tiles/peat", params={"region": "riau"})
+
+    assert response.headers["cache-control"] == "public, max-age=300"
+
+
+def test_an_error_response_has_no_cache_control(settings):
+    client = make_client(settings, FakeTiles(TileSourceError("quota")))
+
+    response = client.get("/api/tiles/peat", params={"region": "riau"})
+
+    assert "cache-control" not in response.headers
+
+
+def test_a_second_request_for_the_same_layer_region_week_makes_no_earth_engine_call(
+    settings,
+):
+    tiles = FakeTiles()
+    client = make_client(settings, tiles)
+    params = {"region": "riau", "week": "2026-W41"}
+
+    first = client.get("/api/tiles/reignition", params=params)
+    second = client.get("/api/tiles/reignition", params=params)
+
+    assert first.json() == second.json()
+    assert len(tiles.calls) == 1
+
+
+def test_another_layer_or_week_is_a_separate_cache_entry(settings):
+    tiles = FakeTiles()
+    client = make_client(settings, tiles)
+
+    client.get("/api/tiles/drying", params={"region": "riau", "week": "2026-W41"})
+    client.get("/api/tiles/drying", params={"region": "riau", "week": "2026-W40"})
+    client.get("/api/tiles/burn_scars", params={"region": "riau", "week": "2026-W41"})
+
+    assert len(tiles.calls) == 3
+
+
+def test_a_failed_build_is_not_cached(settings):
+    tiles = FakeTiles(TileSourceError("quota"))
+    client = make_client(settings, tiles)
+
+    client.get("/api/tiles/peat", params={"region": "riau"})
+    tiles.error = None
+    recovered = client.get("/api/tiles/peat", params={"region": "riau"})
+
+    assert recovered.status_code == 200
+    assert len(tiles.calls) == 2

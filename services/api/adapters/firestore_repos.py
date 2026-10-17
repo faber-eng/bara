@@ -35,6 +35,7 @@ from contracts import (
     RankedCell,
     RankedDam,
     RankExplanation,
+    RankingRun,
     Task,
     Verdict,
     VerdictCacheEntry,
@@ -561,6 +562,14 @@ class RankedDamRepository:
         return sorted(ranked, key=lambda dam: dam.rank)
 
 
+class RankingRunRepository:
+    def __init__(self, runs_for: Callable[[str], Collection[RankingRun]]):
+        self._runs_for = runs_for
+
+    def get(self, region: str, week: str) -> RankingRun | None:
+        return self._runs_for(region).get(week)
+
+
 class BulletinRepository:
     def __init__(self, bulletins: Collection[Bulletin]):
         self._bulletins = bulletins
@@ -600,6 +609,7 @@ class AgentRepositories:
     volunteers: VolunteerRepository
     dams: DamRepository
     agent_runs: AgentRunRepository
+    ranking_runs: RankingRunRepository
 
 
 def build_agent_repositories(db: firestore.Client) -> AgentRepositories:
@@ -628,6 +638,11 @@ def build_agent_repositories(db: firestore.Client) -> AgentRepositories:
         agent_runs=AgentRunRepository(
             lambda case_id: FirestoreCollection(
                 db, f"cases/{case_id}/agent_runs", AgentRun
+            )
+        ),
+        ranking_runs=RankingRunRepository(
+            lambda region: FirestoreCollection(
+                db, f"rankings/{region}/weeks", RankingRun
             )
         ),
     )

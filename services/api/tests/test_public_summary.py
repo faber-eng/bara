@@ -1,7 +1,7 @@
 from datetime import date
 from zoneinfo import ZoneInfo
 
-from contracts import Task
+from contracts import RankingRun, Task
 from domain.public_summary import week_window
 from tests.fakes import InMemoryCollection, make_escalation
 from tests.public_world import NOW, WEEK, PublicWorld, at
@@ -29,11 +29,25 @@ def test_each_summary_field_equals_the_hand_counted_value():
     assert summary.tasks_on_time_pct == 50.0
 
 
-def test_data_as_of_names_the_ranked_week_and_its_start():
+def test_data_as_of_without_a_run_record_falls_back_to_the_week_start():
     summary = PublicWorld().queries().summary("riau", WEEK, NOW)
 
     assert summary.data_as_of.s1_pass_date == date(2026, 10, 12)
     assert summary.data_as_of.ranking_run_at == at(11, 17)
+
+
+def test_data_as_of_reads_the_stored_run_record():
+    world = PublicWorld()
+    ran_at = at(14, 3)
+    world.ranking_runs.put(
+        WEEK,
+        RankingRun(ran_at=ran_at, s1_pass_date=date(2026, 10, 13), cells=200, dams=50),
+    )
+
+    summary = world.queries().summary("riau", WEEK, NOW)
+
+    assert summary.data_as_of.s1_pass_date == date(2026, 10, 13)
+    assert summary.data_as_of.ranking_run_at == ran_at
 
 
 def test_a_week_with_no_tasks_due_has_no_on_time_percentage():

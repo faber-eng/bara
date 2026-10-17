@@ -13,6 +13,7 @@ from contracts import (
     PublicDam,
     PublicSummary,
     RankedCell,
+    RankingRun,
     RecordLine,
     Task,
 )
@@ -52,8 +53,10 @@ def week_window(week_start: date, zone: ZoneInfo) -> Window:
     return Window(start.astimezone(UTC), end.astimezone(UTC))
 
 
-def data_as_of(week_start: date, window: Window) -> DataAsOf:
-    return DataAsOf(s1_pass_date=week_start, ranking_run_at=window.start)
+def data_as_of(week_start: date, window: Window, run: RankingRun | None) -> DataAsOf:
+    if run is None:
+        return DataAsOf(s1_pass_date=week_start, ranking_run_at=window.start)
+    return DataAsOf(s1_pass_date=run.s1_pass_date, ranking_run_at=run.ran_at)
 
 
 def active_in(case: Case, window: Window) -> bool:
@@ -141,6 +144,7 @@ def build_summary(
     cases: Sequence[Case],
     tasks: Sequence[Task],
     evidence: Sequence[Evidence],
+    run: RankingRun | None = None,
 ) -> PublicSummary:
     opened, escalated, closed = count_cases(cases, window)
     return PublicSummary(
@@ -153,7 +157,7 @@ def build_summary(
         cases_closed=closed,
         median_days_to_repair=median_days_to_repair(cases, tasks, evidence, window),
         tasks_on_time_pct=on_time_pct(tasks, window, now),
-        data_as_of=data_as_of(week_start, window),
+        data_as_of=data_as_of(week_start, window, run),
     )
 
 

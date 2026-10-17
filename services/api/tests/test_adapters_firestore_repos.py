@@ -287,3 +287,21 @@ def test_tasks_and_evidence_load_for_many_cases_at_once():
     assert {t.id for t in TaskRepository(tasks).for_cases(["a", "b"])} == {"t1", "t2"}
     assert TaskRepository(tasks).for_cases([]) == []
     assert [e.id for e in EvidenceRepository(evidence).for_cases(["a"])] == ["e1"]
+
+
+def test_ranking_runs_read_the_week_document_the_pipeline_writes():
+    client, repos = firestore_repos()
+    client.collection("rankings/riau/weeks").document("2026-W42").set(
+        {
+            "ran_at": datetime(2026, 10, 17, 12, tzinfo=UTC),
+            "s1_pass_date": "2026-10-12",
+            "cells": 200,
+            "dams": 50,
+        }
+    )
+
+    run = repos.ranking_runs.get("riau", "2026-W42")
+
+    assert run is not None
+    assert run.s1_pass_date.isoformat() == "2026-10-12"
+    assert repos.ranking_runs.get("riau", "2026-W41") is None

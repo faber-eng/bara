@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Callable, Coroutine, Mapping
 from typing import Any, Protocol
 
@@ -28,7 +29,7 @@ class RequestHumanReview:
                 numbers from the tool results.
         """
         try:
-            self._reviewer.request(case_id, reason)
+            await asyncio.to_thread(self._reviewer.request, case_id, reason)
         except ReviewRejected as error:
             return tool_error(str(error))
         return {"case_id": case_id, "status": "human_review"}

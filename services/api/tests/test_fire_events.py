@@ -352,3 +352,41 @@ def test_a_fire_of_a_region_without_the_full_flow_opens_no_case_and_no_task():
 
     assert world.all_cases() == []
     assert world.assigner.requests == []
+def test_at_most_four_volunteer_messages_are_composed_at_once():
+    import asyncio
+    import time
+
+    extra = {f"c-x{index}": CENTROIDS["c-c"] for index in range(8)}
+    CENTROIDS.update(extra)
+
+    class Slow(FakeAssigner):
+        active = 0
+        peak = 0
+
+        async def assign(self, request):
+            Slow.active += 1
+            Slow.peak = max(Slow.peak, Slow.active)
+            await asyncio.sleep(0.1)
+            Slow.active -= 1
+            await super().assign(request)
+
+    cells = [
+        QuietCell(
+            cell_id=cell_id,
+            p_reignite=0.9 - index / 100,
+            top_features=[TopFeature(feature="drying_score", attribution=0.4)],
+        )
+        for index, cell_id in enumerate(["c-a", *extra])
+    ]
+    world = World(spots=9)
+    world.handler._assigner = Slow(world.case_store, world.task_store)
+
+    started = time.perf_counter()
+    world.deliver(quiet_event(payload=FireQuiet(event_id="fire-1", cells=cells)))
+    elapsed = time.perf_counter() - started
+    for cell_id in extra:
+        CENTROIDS.pop(cell_id)
+
+    assert Slow.peak == 4
+    assert len(world.task_store.where()) == 9
+    assert elapsed < 0.1 * 3 + 0.25

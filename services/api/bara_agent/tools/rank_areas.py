@@ -1,5 +1,7 @@
+import asyncio
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Coroutine, Mapping
+from typing import Any
 
 from adapters.firestore_repos import RankingRepository
 from bara_agent.tools.result import ToolResult, count_label, entries, tool_error
@@ -25,10 +27,10 @@ class RankAreas:
         self._rankings = rankings
 
     @property
-    def function(self) -> Callable[..., ToolResult]:
+    def function(self) -> Callable[..., Coroutine[Any, Any, ToolResult]]:
         return self.rank_areas
 
-    def rank_areas(self, region: str, limit: int = 10) -> ToolResult:
+    async def rank_areas(self, region: str, limit: int = 10) -> ToolResult:
         """Lists the driest grid cells of a region this week, rank 1 first.
 
         Args:
@@ -39,7 +41,8 @@ class RankAreas:
             return tool_error(f"limit must be 1 to {MAX_LIMIT}, got {limit}")
         if not REGION_ID.match(region):
             return tool_error(f"region {region!r} is not a region id")
-        cells = newest_week_by_rank(self._rankings.top(region, limit))
+        top = await asyncio.to_thread(self._rankings.top, region, limit)
+        cells = newest_week_by_rank(top)
         week = iso_week_label(cells[0].week_start) if cells else None
         return {
             "region": region,

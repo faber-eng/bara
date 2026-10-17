@@ -584,6 +584,13 @@ class DataAsOf(Contract):
     ranking_run_at: AwareDatetime
 
 
+class RankingRun(Contract):
+    ran_at: AwareDatetime
+    s1_pass_date: date
+    cells: Count
+    dams: Count
+
+
 class PublicSummary(Contract):
     region: str
     week: IsoWeek

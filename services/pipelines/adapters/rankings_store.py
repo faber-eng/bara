@@ -26,6 +26,12 @@ class RankingsStore:
     def __init__(self, client):
         self._client = client
 
+    def write_run(self, region: str, week: str, run: Mapping[str, object]) -> None:
+        document = self._client.collection(f"{ROOT}/{region}/weeks").document(week)
+        batch = self._client.batch()
+        batch.set(document, dict(run))
+        batch.commit()
+
     def replace(
         self,
         region: str,

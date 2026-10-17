@@ -1,6 +1,7 @@
+import asyncio
 import logging
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -107,25 +108,25 @@ class AgentService:
         run_id: str,
         event: Mapping[str, object] | None = None,
     ) -> AgentRun:
-        case = self._cases.get(case_id)
+        case = await asyncio.to_thread(self._cases.get, case_id)
         if case is None:
             raise CaseNotFound(case_id)
+        dam = await asyncio.to_thread(self._dam_for, case)
         recorder = RunRecorder(self._summarizers)
         started_at = self._clock.now()
         started = time.perf_counter()
-        message = render_run_input(
-            RunInput(trigger, case, self._dam_for(case), event, started_at)
-        )
+        message = render_run_input(RunInput(trigger, case, dam, event, started_at))
         context = RunContext(trigger, case_id, run_id, started_at, started, recorder)
-        recorder.on_call_finished(lambda: self._save_progress(context))
-        self._save_progress(context)
+        save_progress = self._progress_saver(context)
+        recorder.on_call_finished(save_progress)
+        await save_progress()
         try:
             text = await self._execute(recorder, message)
         except Exception:
             logger.exception(
                 "agent run failed", extra=context.log_fields("agent_run_failed")
             )
-            self._store_failed_run(context)
+            await asyncio.to_thread(self._store_failed_run, context)
             raise
         try:
             output = parse_output(text)
@@ -134,10 +135,19 @@ class AgentService:
                 "agent output invalid",
                 extra=context.log_fields("agent_output_invalid", error=str(error)),
             )
-            self._store_failed_run(context)
+            await asyncio.to_thread(self._store_failed_run, context)
             raise
         self._warn_on_evidence_mismatch(context, output)
-        return self._save(context, output.to_decision())
+        return await asyncio.to_thread(self._save, context, output.to_decision())
+
+    def _progress_saver(self, context: RunContext) -> Callable[[], Awaitable[None]]:
+        gate = asyncio.Lock()
+
+        async def save() -> None:
+            async with gate:
+                await asyncio.to_thread(self._save_progress, context)
+
+        return save
 
     def _dam_for(self, case: Case) -> Dam | None:
         if case.dam_id is None:

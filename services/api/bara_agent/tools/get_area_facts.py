@@ -1,4 +1,6 @@
-from collections.abc import Callable, Mapping
+import asyncio
+from collections.abc import Callable, Coroutine, Mapping
+from typing import Any
 
 from adapters.cells import CellRepository, CellWeek
 from adapters.firestore_repos import DamRepository
@@ -24,16 +26,19 @@ class GetAreaFacts:
         self._radius_m = radius_m
 
     @property
-    def function(self) -> Callable[..., ToolResult]:
+    def function(self) -> Callable[..., Coroutine[Any, Any, ToolResult]]:
         return self.get_area_facts
 
-    def get_area_facts(self, cell_id: str) -> ToolResult:
+    async def get_area_facts(self, cell_id: str) -> ToolResult:
         """Reads the facts for one grid cell: this week's drying score, rank and
         components, an up-to-8-week trend, the centroid and the dams nearby.
 
         Args:
             cell_id: Grid cell id from the case or from rank_areas.
         """
+        return await asyncio.to_thread(self._facts, cell_id)
+
+    def _facts(self, cell_id: str) -> ToolResult:
         weeks = self._cells.weekly(cell_id, TREND_WEEKS)
         if not weeks:
             return tool_error(f"no drying data for cell {cell_id!r}")

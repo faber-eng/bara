@@ -1,5 +1,6 @@
-from collections.abc import Callable, Mapping
-from typing import get_args
+import asyncio
+from collections.abc import Callable, Coroutine, Mapping
+from typing import Any, get_args
 
 from adapters.cells import CellRepository
 from adapters.firestore_repos import VolunteerRepository
@@ -29,10 +30,12 @@ class FindPeople:
         self._volunteers = volunteers
 
     @property
-    def function(self) -> Callable[..., ToolResult]:
+    def function(self) -> Callable[..., Coroutine[Any, Any, ToolResult]]:
         return self.find_people
 
-    def find_people(self, cell_id: str, role: VolunteerRole, k: int = 3) -> ToolResult:
+    async def find_people(
+        self, cell_id: str, role: VolunteerRole, k: int = 3
+    ) -> ToolResult:
         """Finds the nearest available people of one role for a grid cell,
         nearest first. Real people and example people are listed together.
 
@@ -45,6 +48,9 @@ class FindPeople:
             return tool_error(f"role must be one of {', '.join(ROLES)}, got {role!r}")
         if not 1 <= k <= MAX_K:
             return tool_error(f"k must be 1 to {MAX_K}, got {k}")
+        return await asyncio.to_thread(self._lookup, cell_id, role, k)
+
+    def _lookup(self, cell_id: str, role: VolunteerRole, k: int) -> ToolResult:
         centroid = self._cells.centroid(cell_id)
         if centroid is None:
             return tool_error(f"unknown cell {cell_id!r}")

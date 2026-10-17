@@ -1,5 +1,5 @@
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
 from google.adk.agents.callback_context import CallbackContext
@@ -29,10 +29,10 @@ class RunRecorder(BasePlugin):
         self._summarizers = summarizers
         self._pending: dict[int, tuple[int, float]] = {}
         self._calls: list[ToolCall | None] = []
-        self._on_call_finished: Callable[[], None] | None = None
+        self._on_call_finished: Callable[[], Awaitable[None]] | None = None
         self.model_version: str | None = None
 
-    def on_call_finished(self, listener: Callable[[], None]) -> None:
+    def on_call_finished(self, listener: Callable[[], Awaitable[None]]) -> None:
         self._on_call_finished = listener
 
     @property
@@ -56,7 +56,9 @@ class RunRecorder(BasePlugin):
         tool_context: ToolContext,
         result: dict[str, Any],
     ) -> None:
-        self._finish(tool, tool_args, tool_context, self._summarize(tool.name, result))
+        await self._finish(
+            tool, tool_args, tool_context, self._summarize(tool.name, result)
+        )
 
     async def on_tool_error_callback(
         self,
@@ -66,7 +68,9 @@ class RunRecorder(BasePlugin):
         tool_context: ToolContext,
         error: Exception,
     ) -> None:
-        self._finish(tool, tool_args, tool_context, f"error: {type(error).__name__}")
+        await self._finish(
+            tool, tool_args, tool_context, f"error: {type(error).__name__}"
+        )
 
     async def after_model_callback(
         self, *, callback_context: CallbackContext, llm_response: LlmResponse
@@ -79,7 +83,7 @@ class RunRecorder(BasePlugin):
             return f"error: {one_line(result['error'])}"
         return one_line(self._summarizers[name](result))
 
-    def _finish(
+    async def _finish(
         self,
         tool: BaseTool,
         tool_args: dict[str, Any],
@@ -94,4 +98,4 @@ class RunRecorder(BasePlugin):
             ms=elapsed_ms(started),
         )
         if self._on_call_finished is not None:
-            self._on_call_finished()
+            await self._on_call_finished()

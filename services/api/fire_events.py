@@ -20,6 +20,8 @@ from events import MalformedPush
 
 logger = logging.getLogger(__name__)
 
+MAX_PARALLEL_MESSAGES = 4
+
 RECHECK_HINT = (
     "Look at the burned peat ground in cell {cell_id} for smoke or heat, "
     "{hours} hours after the fire looked out."
@@ -134,9 +136,13 @@ class FireQuietHandler:
         done = {
             first.cell_id: await self._schedule_recheck(case, first.cell_id, patrols)
         }
-        outcomes = await asyncio.gather(
-            *(self._schedule_recheck(case, spot.cell_id, patrols) for spot in rest)
-        )
+        gate = asyncio.Semaphore(MAX_PARALLEL_MESSAGES)
+
+        async def bounded(spot: QuietCell) -> bool:
+            async with gate:
+                return await self._schedule_recheck(case, spot.cell_id, patrols)
+
+        outcomes = await asyncio.gather(*(bounded(spot) for spot in rest))
         done.update(zip((spot.cell_id for spot in rest), outcomes, strict=True))
         return [cell_id for cell_id, ok in done.items() if not ok]
 
