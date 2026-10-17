@@ -3,6 +3,7 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoadingPanel } from "./components/LoadingPanel";
+import { setCopyLanguage } from "./lib/copy/language";
 import { createAppRouter } from "./router";
 
 const validBody = {
@@ -24,6 +25,7 @@ function renderAt(path: string) {
 
 describe("app routes", () => {
   beforeEach(() => {
+    setCopyLanguage("en");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation(() => Promise.resolve(Response.json(validBody))),
@@ -43,6 +45,7 @@ describe("app routes", () => {
   );
 
   it("opens the volunteer screen for the id in the URL", async () => {
+    setCopyLanguage("id");
     renderAt("/v/demo");
 
     expect(
@@ -52,6 +55,7 @@ describe("app routes", () => {
   });
 
   it("opens the draw an area screen", async () => {
+    setCopyLanguage("id");
     renderAt("/area/new");
 
     expect(

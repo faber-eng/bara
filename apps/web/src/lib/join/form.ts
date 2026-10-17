@@ -1,7 +1,7 @@
 import type { GeoPoint, JoinRequest, Language } from "../contracts";
 
 export const LANGUAGES: readonly Language[] = ["id", "en", "ms", "fr"];
-export const DEFAULT_LANGUAGE: Language = "id";
+export const DEFAULT_LANGUAGE: Language = "en";
 
 const WHATSAPP_PATTERN = /^\+[1-9]\d{7,14}$/;
 const NAME_MAX = 80;

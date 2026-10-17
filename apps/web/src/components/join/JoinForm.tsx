@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { type ChangeEvent, type FormEvent, useState } from "react";
 import type { Language } from "../../lib/contracts";
 import type { JoinCopy } from "../../lib/copy/join";
-import { setCopyLanguage } from "../../lib/copy/language";
+import { setCopyLanguage, useCopyLanguage } from "../../lib/copy/language";
 import { classifyJoinError } from "../../lib/join/errors";
 import {
   EMPTY_JOIN_FORM,
@@ -42,7 +42,11 @@ function mirrorCopyLanguage(language: Language): void {
 }
 
 export function JoinForm({ copy, onJoined }: JoinFormProps) {
-  const [values, setValues] = useState<JoinFormValues>(EMPTY_JOIN_FORM);
+  const copyLanguage = useCopyLanguage();
+  const [values, setValues] = useState<JoinFormValues>(() => ({
+    ...EMPTY_JOIN_FORM,
+    language: copyLanguage,
+  }));
   const [errors, setErrors] = useState<JoinField[]>([]);
   const join = useMutation({
     mutationFn: submitJoin,

@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setCopyLanguage } from "../../lib/copy/language";
 import { callsTo, headerOf, renderApp, stubApi } from "../../test-utils";
 
 const getIdToken = vi.hoisted(() => vi.fn().mockResolvedValue("token-1"));
@@ -52,7 +53,12 @@ function handlers(bulletin: object = BULLETIN) {
 }
 
 describe("PublicScreen", () => {
+  beforeEach(() => {
+    setCopyLanguage("id");
+  });
+
   afterEach(() => {
+    setCopyLanguage("en");
     vi.unstubAllGlobals();
     getIdToken.mockClear();
   });

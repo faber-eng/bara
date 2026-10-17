@@ -34,5 +34,6 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  if (typeof localStorage !== "undefined") localStorage.clear();
   stubOfflineFetch();
 });

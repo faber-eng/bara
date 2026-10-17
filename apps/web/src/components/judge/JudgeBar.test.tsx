@@ -108,9 +108,9 @@ describe("judge bar", () => {
   });
 
   it.each([
-    ["vol-ari", "volunteer", "Tugas Anda"],
-    ["team-sari", "volunteer", "Tugas Anda"],
-    ["vol-dedi", "volunteer", "Tugas Anda"],
+    ["vol-ari", "volunteer", "Your tasks"],
+    ["team-sari", "volunteer", "Your tasks"],
+    ["vol-dedi", "volunteer", "Your tasks"],
     ["contact-daops-pekanbaru", "brigade", "Brigade inbox"],
   ])(
     "switching to %s sends %s on the next call, navigates and invalidates",
