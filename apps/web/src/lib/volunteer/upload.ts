@@ -4,7 +4,7 @@ import { putFile, UploadTransferError } from "./putFile";
 
 export const TICKET_LIFE_MS = 14 * 60_000;
 
-export type IssuedTicket = { ticket: UploadTicket; issuedAt: number };
+export type IssuedTicket = { ticket: UploadTicket; issuedAt: number; uploaded: boolean };
 
 export type UploadInput = {
   volunteerId: string;
@@ -33,13 +33,13 @@ async function issueTicket(input: UploadInput): Promise<IssuedTicket> {
     size_bytes: input.blob.size,
     sample: input.sample,
   });
-  const issued = { ticket, issuedAt: Date.now() };
+  const issued = { ticket, issuedAt: Date.now(), uploaded: false };
   input.onTicket(issued);
   return issued;
 }
 
 function isExpiredAnswer(error: unknown): boolean {
-  return error instanceof UploadTransferError && error.status === 403;
+  return error instanceof UploadTransferError && (error.status === 400 || error.status === 403);
 }
 
 function putWith(input: UploadInput, ticket: UploadTicket): Promise<void> {
@@ -51,26 +51,30 @@ function putWith(input: UploadInput, ticket: UploadTicket): Promise<void> {
   });
 }
 
+async function putAndMark(input: UploadInput, issued: IssuedTicket): Promise<UploadTicket> {
+  await putWith(input, issued.ticket);
+  input.onTicket({ ...issued, uploaded: true });
+  return issued.ticket;
+}
+
 async function putReusingWhenFresh(input: UploadInput): Promise<UploadTicket> {
   const reused = input.ticket !== null && isFresh(input.ticket) ? input.ticket : null;
-  if (reused === null) {
-    const issued = await issueTicket(input);
-    await putWith(input, issued.ticket);
-    return issued.ticket;
-  }
+  if (reused === null) return putAndMark(input, await issueTicket(input));
   try {
-    await putWith(input, reused.ticket);
-    return reused.ticket;
+    return await putAndMark(input, reused);
   } catch (error) {
     if (!isExpiredAnswer(error)) throw error;
   }
-  const renewed = await issueTicket(input);
-  await putWith(input, renewed.ticket);
-  return renewed.ticket;
+  return putAndMark(input, await issueTicket(input));
+}
+
+async function ticketReadyToComplete(input: UploadInput): Promise<UploadTicket> {
+  if (input.ticket?.uploaded) return input.ticket.ticket;
+  return putReusingWhenFresh(input);
 }
 
 export async function uploadEvidence(input: UploadInput): Promise<UploadResult> {
-  const ticket = await putReusingWhenFresh(input);
+  const ticket = await ticketReadyToComplete(input);
   const evidence = await completeUpload(input.volunteerId, ticket.evidence_id, {
     point: input.point,
     captured_at: new Date().toISOString(),

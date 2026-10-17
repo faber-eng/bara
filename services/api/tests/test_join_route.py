@@ -209,6 +209,24 @@ def test_a_claim_failure_is_502_and_a_retry_works(settings):
     assert admin.claims_by_uid["u-google"] == {"role": "volunteer"}
 
 
+def test_a_claim_write_failure_after_the_document_is_502_and_a_retry_works(settings):
+    admin = FakeClaimsAdmin()
+    client, volunteers = make_join_app(settings, admin=admin)
+    admin.fail_set_with = IdentityUnavailable("down")
+
+    first = join(client)
+
+    assert first.status_code == 502
+    assert volunteers.get("u-google") is not None
+    admin.fail_set_with = None
+
+    second = join(client)
+
+    assert second.status_code == 200
+    assert second.json()["created"] is False
+    assert admin.claims_by_uid["u-google"] == {"role": "volunteer"}
+
+
 def test_a_secret_failure_is_503_and_creates_nothing(settings):
     secrets = FakeSecretReader(SecretUnavailable("down"))
     client, volunteers = make_join_app(settings, secrets=secrets)
