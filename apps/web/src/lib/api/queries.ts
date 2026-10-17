@@ -55,10 +55,20 @@ export function caseDetailQuery(caseId: string) {
   });
 }
 
-export function brigadeInboxQuery(judgeMode: boolean) {
+export function brigadeContactQuery(judgeMode: boolean) {
   return queryOptions({
-    queryKey: ["brigade", "inbox", judgeMode],
-    queryFn: async ({ signal }) => fetchBrigadeInbox(await brigadeContactId(), signal),
+    queryKey: ["brigade", "contact", judgeMode],
+    queryFn: brigadeContactId,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  });
+}
+
+export function brigadeInboxQuery(contactId: string | undefined) {
+  return queryOptions({
+    queryKey: ["brigade", "inbox", contactId],
+    queryFn: ({ signal }) => fetchBrigadeInbox(contactId ?? "", signal),
+    enabled: contactId !== undefined,
     staleTime: OPS_STALE_MS,
     retry: false,
   });

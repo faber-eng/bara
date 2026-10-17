@@ -14,6 +14,9 @@ describe("mapPoint", () => {
     ["a place name", "https://www.google.com/maps/search/?api=1&query=Pekanbaru"],
     ["one number", "https://www.google.com/maps/search/?api=1&query=0.5"],
     ["not a url", "::"],
+    ["an unparsable url", "https://[x"],
+    ["empty parts", "https://www.google.com/maps/search/?api=1&query=,"],
+    ["three parts", "https://www.google.com/maps/search/?api=1&query=1,2,3"],
   ])("returns null for %s", (_label, url) => {
     expect(mapPoint(url)).toBeNull();
   });

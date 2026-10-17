@@ -2,18 +2,24 @@ import escalation from "@fixtures/escalation.json";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetClock } from "../lib/api/clock";
+import { getIdToken } from "../lib/auth";
 import { setJudgeMode } from "../lib/judge/store";
 import { callsTo, headerOf, renderApp, stubApi } from "../test-utils";
 
-vi.mock("../lib/auth", () => ({
-  getIdToken: vi.fn().mockResolvedValue("claims-token"),
-  getUid: vi.fn().mockResolvedValue("uid-brigade-1"),
-}));
+vi.mock("../lib/auth", () => ({ getIdToken: vi.fn() }));
+
+function tokenFor(uid: string, provider: string): string {
+  return `h.${btoa(JSON.stringify({ sub: uid, firebase: { sign_in_provider: provider } }))}.s`;
+}
+
+const REAL_TOKEN = tokenFor("uid-brigade-1", "google.com");
+const ANONYMOUS_TOKEN = tokenFor("anon-1", "anonymous");
 
 describe("/brigade", () => {
   beforeEach(async () => {
     setJudgeMode(false);
     localStorage.clear();
+    vi.mocked(getIdToken).mockResolvedValue(ANONYMOUS_TOKEN);
     await resetClock();
   });
 
@@ -40,7 +46,7 @@ describe("/brigade", () => {
   it("acknowledges and removes the card, and the case becomes monitoring", async () => {
     renderApp("/brigade");
 
-    fireEvent.click(await screen.findByRole("button", { name: "Acknowledge" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Acknowledge/ }));
 
     expect(await screen.findByText("No open escalations.")).toBeInTheDocument();
     expect(screen.getByText("0 open")).toBeInTheDocument();
@@ -57,6 +63,7 @@ describe("/brigade", () => {
   });
 
   it("works for a real brigade user: own uid, Bearer token, no judge header", async () => {
+    vi.mocked(getIdToken).mockResolvedValue(REAL_TOKEN);
     vi.stubEnv("VITE_SOURCE_ESCALATIONS", "live");
     vi.stubEnv("VITE_SOURCE_CLOCK", "live");
     let acked = false;
@@ -71,18 +78,18 @@ describe("/brigade", () => {
     });
     renderApp("/brigade");
 
-    fireEvent.click(await screen.findByRole("button", { name: "Acknowledge" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Acknowledge/ }));
 
     expect(await screen.findByText("No open escalations.")).toBeInTheDocument();
     const inbox = callsTo(fetchMock, "GET /api/brigade/uid-brigade-1/inbox")[0];
-    expect(headerOf(inbox, "Authorization")).toBe("Bearer claims-token");
+    expect(headerOf(inbox, "Authorization")).toBe(`Bearer ${REAL_TOKEN}`);
     expect(headerOf(inbox, "X-Bara-Role")).toBeNull();
     expect(screen.queryByText("Example data")).not.toBeInTheDocument();
     const ack = callsTo(fetchMock, "POST /api/brigade/escalations/esc-0001/ack")[0];
-    expect(headerOf(ack, "Authorization")).toBe("Bearer claims-token");
+    expect(headerOf(ack, "Authorization")).toBe(`Bearer ${REAL_TOKEN}`);
   });
 
-  it("uses the example contact and the brigade role header in judge mode", async () => {
+  it("uses the example contact and the brigade role in judge mode, even with another person picked", async () => {
     vi.stubEnv("VITE_SOURCE_ESCALATIONS", "live");
     vi.stubEnv("VITE_SOURCE_CLOCK", "live");
     const fetchMock = stubApi({
@@ -96,9 +103,11 @@ describe("/brigade", () => {
     expect(await screen.findByText("Example data")).toBeInTheDocument();
     const calls = callsTo(fetchMock, "GET /api/brigade/contact-daops-pekanbaru/inbox");
     expect(calls.length).toBeGreaterThan(0);
+    expect(headerOf(calls[0], "X-Bara-Role")).toBe("brigade");
   });
 
   it("keeps the card and says so when acknowledging fails", async () => {
+    vi.mocked(getIdToken).mockResolvedValue(REAL_TOKEN);
     vi.stubEnv("VITE_SOURCE_ESCALATIONS", "live");
     vi.stubEnv("VITE_SOURCE_CLOCK", "live");
     stubApi({
@@ -109,13 +118,14 @@ describe("/brigade", () => {
     });
     renderApp("/brigade");
 
-    fireEvent.click(await screen.findByRole("button", { name: "Acknowledge" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Acknowledge/ }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not acknowledge");
-    await waitFor(() => expect(screen.getByRole("button", { name: "Acknowledge" })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole("button", { name: /Acknowledge/ })).toBeEnabled());
   });
 
   it("tells an account without the brigade role", async () => {
+    vi.mocked(getIdToken).mockResolvedValue(REAL_TOKEN);
     vi.stubEnv("VITE_SOURCE_ESCALATIONS", "live");
     vi.stubEnv("VITE_SOURCE_CLOCK", "live");
     stubApi({
@@ -131,6 +141,7 @@ describe("/brigade", () => {
   });
 
   it("shows the empty state", async () => {
+    vi.mocked(getIdToken).mockResolvedValue(REAL_TOKEN);
     vi.stubEnv("VITE_SOURCE_ESCALATIONS", "live");
     vi.stubEnv("VITE_SOURCE_CLOCK", "live");
     stubApi({
