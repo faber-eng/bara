@@ -43,4 +43,32 @@ describe("fetchHealth", () => {
 
     await expect(fetchHealth()).rejects.toThrow("500");
   });
+
+  it("aborts the request when the caller aborts", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(validBody));
+    vi.stubGlobal("fetch", fetchMock);
+    const caller = new AbortController();
+    caller.abort();
+
+    await fetchHealth(caller.signal);
+    const init: RequestInit = fetchMock.mock.calls[0]?.[1];
+    expect(init.signal?.aborted).toBe(true);
+  });
+
+  it("aborts the request after the timeout", async () => {
+    vi.useFakeTimers();
+    let seen: AbortSignal | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((_path: string, init: RequestInit) => {
+        seen = init.signal ?? undefined;
+        return new Promise(() => {});
+      }),
+    );
+
+    void fetchHealth();
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(seen?.aborted).toBe(true);
+    vi.useRealTimers();
+  });
 });

@@ -63,6 +63,16 @@ describe("app routes", () => {
     expect(screen.getByRole("link", { name: "Public" })).not.toHaveAttribute("aria-current");
   });
 
+  it("still renders the route when the health call fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("network down")));
+    renderAt("/ops");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Ops dashboard" }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("API unreachable", {}, { timeout: 3000 })).toBeInTheDocument();
+  });
+
   it("renders a not-found screen for an unknown path", async () => {
     renderAt("/nope");
 
