@@ -106,7 +106,7 @@ Measured on the live site on 17 and 18 October 2026, or from the jobs' own runs.
 | Area explanation | 1.4 to 1.6 s, was 29 s; precomputed for the top 200 |
 | Agent steps | stream direct from Cloud Run: first step 6 to 9 s, done about 40 s. Through Hosting the stream was buffered and arrived at 63 s |
 | Draw an area (100 km2) | 8.9 s first run, 0.21 s cached (DECISIONS, `POST /api/areas/rank` row) |
-| Public routes | p50 0.11 to 0.25 s |
+| Public routes | p50 0.11 to 0.25 s through the Hosting CDN cache; p50 0.24 to 0.49 s with the cache skipped (docs/EVAL.md) |
 | Photo verdict | 4.1 s live |
 | Voice verdict | 9.1 s live |
 | Guided tour | 9 steps in 3:01 live |
