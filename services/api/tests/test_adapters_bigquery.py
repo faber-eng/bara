@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime
 from types import SimpleNamespace
 
 import pytest
+from google.cloud import bigquery
 
 from adapters.bigquery import (
     MAX_BYTES_BILLED,
@@ -16,6 +17,7 @@ class RecordingBigQueryClient:
     def __init__(self, rows=(), insert_errors=()):
         self.queries = []
         self.inserts = []
+        self.loads = []
         self._rows = rows
         self._insert_errors = list(insert_errors)
 
@@ -26,6 +28,10 @@ class RecordingBigQueryClient:
     def insert_rows_json(self, table, rows):
         self.inserts.append((table, rows))
         return self._insert_errors
+
+    def load_table_from_json(self, rows, table, job_config=None):
+        self.loads.append((table, rows, job_config))
+        return SimpleNamespace(result=lambda: None)
 
 
 def make_warehouse(client=None):
@@ -146,3 +152,26 @@ def test_live_parameterised_query_runs():
     warehouse = Warehouse(bigquery.Client(project=project), project, "bara")
 
     assert warehouse.query("SELECT @x AS x", {"x": 1}) == [{"x": 1}]
+
+
+def test_append_rows_loads_with_the_schema_and_appends():
+    warehouse, client = make_warehouse()
+    schema = [bigquery.SchemaField("file", "STRING", mode="REQUIRED")]
+
+    warehouse.append_rows("eval_evidence", schema, [{"file": "a.jpg"}])
+
+    [(table, rows, config)] = client.loads
+    assert table == "p.bara.eval_evidence"
+    assert rows == [{"file": "a.jpg"}]
+    assert config.write_disposition == bigquery.WriteDisposition.WRITE_APPEND
+    assert [field.name for field in config.schema] == ["file"]
+
+
+def test_append_rows_refuses_a_bad_table_name_and_skips_no_rows():
+    warehouse, client = make_warehouse()
+
+    warehouse.append_rows("eval_evidence", [], [])
+    with pytest.raises(InvalidTableName):
+        warehouse.append_rows("bad name", [], [{"file": "a"}])
+
+    assert client.loads == []
