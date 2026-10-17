@@ -2,7 +2,13 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true, "root": "../.." },
   "files": {
-    "includes": ["**", "!**/routeTree.gen.ts", "!**/src/styles/kit.css", "!**/dist"]
+    "includes": [
+      "**",
+      "!**/routeTree.gen.ts",
+      "!**/src/eval/eval.json",
+      "!**/src/styles/kit.css",
+      "!**/dist"
+    ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
   "linter": {
