@@ -181,3 +181,17 @@ def require_signed_in_user(
         logger.warning("auth rejected", extra={"fields": {"reason": "anonymous"}})
         raise HTTPException(status_code=403, detail="anonymous_not_allowed")
     return principal
+
+
+def require_volunteer_owner(
+    volunteer_id: str, principal: Annotated[Principal, Depends(get_principal)]
+) -> Principal:
+    if principal.role != "volunteer":
+        logger.warning(
+            "auth rejected", extra={"fields": {"reason": "role_not_allowed"}}
+        )
+        raise forbidden()
+    if principal.role_source == "claim" and principal.uid != volunteer_id:
+        logger.warning("auth rejected", extra={"fields": {"reason": "not_owner"}})
+        raise forbidden()
+    return principal

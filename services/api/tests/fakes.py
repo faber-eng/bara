@@ -341,3 +341,61 @@ def make_dam(**overrides):
         "example": True,
     }
     return Dam(**{**fields, **overrides})
+
+
+def make_evidence(**overrides):
+    from contracts import Evidence
+
+    fields = {
+        "id": "e1",
+        "task_id": "t1",
+        "case_id": "c1",
+        "kind": "photo",
+        "gcs_uri": "gs://bucket/e1.jpg",
+        "sha256": "0" * 64,
+        "point": None,
+        "captured_at": None,
+        "verdict": None,
+        "location_ok": None,
+        "uploaded_by": "v1",
+        "sample": False,
+    }
+    return Evidence(**{**fields, **overrides})
+
+
+def make_message(**overrides):
+    from datetime import UTC, datetime
+
+    from contracts import Message
+
+    fields = {
+        "id": "m1",
+        "thread": "volunteer",
+        "to_id": "v1",
+        "case_id": "c1",
+        "lang": "id",
+        "text": "halo",
+        "text_en": "hello",
+        "channel": "web",
+        "created_at": datetime(2026, 10, 17, 12, 0, tzinfo=UTC),
+        "delivered": True,
+    }
+    return Message(**{**fields, **overrides})
+
+
+def make_escalation(**overrides):
+    from datetime import UTC, datetime
+
+    from contracts import Escalation, EscalationPack
+
+    fields = {
+        "id": "x1",
+        "case_id": "c1",
+        "contact_id": "ct1",
+        "brief_id": "brief",
+        "brief_en": "brief",
+        "pack": EscalationPack(photos=[], map_url="https://maps.test/x", timeline=[]),
+        "created_at": datetime(2026, 10, 17, 12, 0, tzinfo=UTC),
+        "acknowledged_at": None,
+    }
+    return Escalation(**{**fields, **overrides})
