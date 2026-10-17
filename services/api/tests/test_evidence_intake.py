@@ -365,3 +365,30 @@ def test_a_cancel_failure_keeps_the_evidence_and_logs_a_warning(caplog):
         getattr(r, "fields", {}).get("event") == "deadline_cancel_failed"
         for r in caplog.records
     )
+
+
+def test_a_photo_on_a_done_task_does_not_move_an_assigned_case():
+    world = World(
+        task=make_task(id="t1", assignee_id="v1", status="done"),
+        case=make_case(id="c1", status="assigned"),
+    )
+    world.request()
+    world.put()
+
+    world.complete()
+
+    assert world.cases.get("c1").status == "assigned"
+    assert len(world.publisher.published) == 1
+
+
+def test_completing_after_the_task_was_reassigned_is_refused():
+    world = World()
+    world.request()
+    world.put()
+    world.tasks.update("t1", {"status": "reassigned"})
+
+    with pytest.raises(TaskClosed):
+        world.complete()
+
+    assert world.evidence.get("e1") is None
+    assert world.cases.get("c1").status == "assigned"

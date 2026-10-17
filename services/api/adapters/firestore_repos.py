@@ -205,6 +205,12 @@ class CaseworkStore:
             f"evidence {evidence.id} or its task or case changed",
         )
 
+    def move_case(self, change: StatusChange) -> None:
+        guards, writes = status_writes(change)
+        self._commit(
+            guards, writes, f"case {change.case_id} is no longer {change.expected}"
+        )
+
     def commit_verdict(
         self,
         *,
@@ -307,6 +313,9 @@ class EventLog:
             id=message_id, type=event_type, processed_at=self._utcnow()
         )
         return self._events.create_if_absent(message_id, entry)
+
+    def release(self, message_id: str) -> None:
+        self._events.delete_many([message_id])
 
 
 class FirestoreClockStore:

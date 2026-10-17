@@ -91,6 +91,6 @@ def test_the_broken_dam_sample_reads_as_broken_in_under_10_s():
     elapsed = time.perf_counter() - started
 
     assert checked.verdict.dam_state == "broken", checked.verdict
-    assert checked.cached is False
+    assert checked.from_cache is False
     assert elapsed < VERDICT_BUDGET_S, elapsed
     assert evidence.get("e1").verdict == checked.verdict

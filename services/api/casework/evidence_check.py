@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -22,6 +23,9 @@ from domain.evidence import (
     readable_dam_state,
     verdict_cache_key,
 )
+from logs import log_extra
+
+logger = logging.getLogger(__name__)
 
 
 class CheckError(Exception):
@@ -53,7 +57,8 @@ class CheckedEvidence:
     evidence_id: str
     verdict: Verdict
     location_ok: bool | None
-    cached: bool
+    stored: bool
+    from_cache: bool
 
 
 @dataclass(frozen=True)
@@ -108,7 +113,11 @@ class EvidenceChecker:
         evidence = self._evidence_of(task_id, evidence_id)
         if evidence.verdict is not None:
             return CheckedEvidence(
-                evidence.id, evidence.verdict, evidence.location_ok, cached=True
+                evidence.id,
+                evidence.verdict,
+                evidence.location_ok,
+                stored=False,
+                from_cache=False,
             )
         if evidence.kind != "photo":
             raise UnsupportedEvidence(f"{evidence.kind} evidence is not checked yet")
@@ -118,9 +127,26 @@ class EvidenceChecker:
         location = location_ok(
             task.target, exif_point(data) or evidence.point, self._tolerance_m
         )
-        verdict = final_verdict(read.verdict, self._threshold, location)
-        self._store(evidence, verdict, location)
-        return CheckedEvidence(evidence.id, verdict, location, read.cached)
+        verdict = final_verdict(
+            read.verdict, self._threshold, location, evidence.sample
+        )
+        stored = self._store(evidence, verdict, location)
+        return CheckedEvidence(
+            evidence.id, verdict, location, stored=stored, from_cache=read.cached
+        )
+
+    def flag_for_person(self, case_id: str) -> None:
+        case = self._cases.get(case_id)
+        if case is None or case.status != "reviewing":
+            return
+        try:
+            self._casework.move_case(StatusChange(case_id, "reviewing", "human_review"))
+        except CaseChanged:
+            return
+        logger.info(
+            "case sent to a person",
+            extra=log_extra("case_flagged_for_person", case_id=case_id),
+        )
 
     def _evidence_of(self, task_id: str, evidence_id: str) -> Evidence:
         evidence = self._evidence.get(evidence_id)
@@ -149,7 +175,7 @@ class EvidenceChecker:
     async def _model_verdict(
         self, evidence: Evidence, data: bytes, task_type: TaskType
     ) -> ModelVerdict:
-        key = verdict_cache_key(evidence.sha256, EVIDENCE_PROMPT_VERSION)
+        key = verdict_cache_key(evidence.sha256, EVIDENCE_PROMPT_VERSION, task_type)
         entry = self._cache.get(key)
         if entry is not None:
             return ModelVerdict(entry.verdict, cached=True)
@@ -166,13 +192,14 @@ class EvidenceChecker:
 
     def _store(
         self, evidence: Evidence, verdict: Verdict, location: bool | None
-    ) -> None:
+    ) -> bool:
         try:
             self._commit(evidence, verdict, location)
         except CaseChanged:
             if self._has_verdict(evidence.id):
-                return
+                return False
             self._commit(evidence, verdict, location)
+        return True
 
     def _commit(
         self, evidence: Evidence, verdict: Verdict, location: bool | None

@@ -97,7 +97,11 @@ class EventDispatcher:
                 },
             )
             return "duplicate"
-        handler.handle(message_id, event)
+        try:
+            handler.handle(message_id, event)
+        except Exception:
+            self._events.release(message_id)
+            raise
         return "processed"
 
 

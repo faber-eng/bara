@@ -31,6 +31,7 @@ from contracts import (
 from domain.case_machine import can_transition
 from domain.clock import Clock
 from domain.evidence import object_name
+from logs import log_extra
 
 logger = logging.getLogger(__name__)
 
@@ -81,12 +82,8 @@ class Publisher(Protocol):
     def publish(self, topic: EventType, event: Event) -> str: ...
 
 
-def log_fields(event: str, evidence_id: str, **fields: object) -> dict[str, object]:
-    return {"fields": {"event": event, "evidence_id": evidence_id, **fields}}
-
-
-def case_change_for(case: Case, is_photo: bool) -> StatusChange | None:
-    if not is_photo or not can_transition(case.status, "reviewing"):
+def case_change_for(case: Case, closes_task: bool) -> StatusChange | None:
+    if not closes_task or not can_transition(case.status, "reviewing"):
         return None
     return StatusChange(case.id, case.status, "reviewing")
 
@@ -153,6 +150,8 @@ class EvidenceIntake:
         if stored is not None:
             return self._republish_if_unread(stored)
         task = self._owned_task(volunteer_id, upload.task_id)
+        if task.status not in UPLOADABLE_TASK_STATUSES:
+            raise TaskClosed(f"task {task.id} is {task.status}")
         case = self._case(upload.case_id)
         evidence = self._evidence_from(upload, completion)
         is_photo = upload.kind == "photo"
@@ -162,7 +161,7 @@ class EvidenceIntake:
             self._casework.commit_evidence(
                 evidence=evidence,
                 done_at=done_at,
-                case_change=case_change_for(case, is_photo),
+                case_change=case_change_for(case, done_at is not None),
             )
         except CaseChanged:
             return self._stored_after_race(evidence_id)
@@ -233,9 +232,9 @@ class EvidenceIntake:
             logger.warning(
                 "deadline cancel failed",
                 exc_info=True,
-                extra=log_fields(
+                extra=log_extra(
                     "deadline_cancel_failed",
-                    evidence_id,
+                    evidence_id=evidence_id,
                     task_id=task.id,
                     kind=type(error).__name__,
                 ),
@@ -257,9 +256,9 @@ class EvidenceIntake:
         except Exception as error:
             logger.error(
                 "evidence publish failed",
-                extra=log_fields(
+                extra=log_extra(
                     "evidence_publish_failed",
-                    evidence.id,
+                    evidence_id=evidence.id,
                     case_id=case.id,
                     kind=type(error).__name__,
                 ),

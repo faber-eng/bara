@@ -24,7 +24,8 @@ def checked(**verdict_fields):
         evidence_id="e1",
         verdict=make_verdict(**verdict_fields),
         location_ok=True,
-        cached=False,
+        stored=True,
+        from_cache=False,
     )
 
 

@@ -265,3 +265,30 @@ def test_when_the_rival_case_is_later_this_message_keeps_its_case():
 
     assert len(world.agent.runs) == 1
     assert "case-m-1-dam-1" in {case.id for case in world.all_cases()}
+
+
+class RaisingHandler:
+    def __init__(self):
+        self.calls = 0
+
+    def handle(self, message_id, event):
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("store down")
+
+
+def test_a_handler_error_releases_the_claim_so_a_redelivery_runs_again():
+    store = InMemoryCollection(ProcessedEvent)
+    handler = RaisingHandler()
+    dispatcher = EventDispatcher(
+        EventLog(store, lambda: NOW), {"drying.ranked": handler}
+    )
+
+    with pytest.raises(RuntimeError):
+        dispatcher.dispatch("drying.ranked", "m-1", make_drying_ranked_event())
+
+    assert store.get("m-1") is None
+    assert dispatcher.dispatch("drying.ranked", "m-1", make_drying_ranked_event()) == (
+        "processed"
+    )
+    assert handler.calls == 2

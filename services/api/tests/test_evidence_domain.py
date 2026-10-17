@@ -101,11 +101,11 @@ def test_a_case_not_in_review_keeps_its_status(status):
 def test_the_cache_key_changes_with_the_prompt_version():
     sha = "a" * 64
 
-    first = verdict_cache_key(sha, "evidence-v1")
+    first = verdict_cache_key(sha, "evidence-v1", "dam_check")
 
     assert len(first) == 64
-    assert first == verdict_cache_key(sha, "evidence-v1")
-    assert first != verdict_cache_key(sha, "evidence-v2")
+    assert first == verdict_cache_key(sha, "evidence-v1", "dam_check")
+    assert first != verdict_cache_key(sha, "evidence-v2", "dam_check")
 
 
 @pytest.mark.parametrize(
@@ -143,17 +143,21 @@ def test_no_point_leaves_the_location_unchecked():
 def test_a_confident_verdict_at_the_place_stays_as_read():
     read = verdict(confidence=0.9)
 
-    assert final_verdict(read, threshold=0.7, location=True) == read
+    assert final_verdict(read, threshold=0.7, location=True, sample=False) == read
 
 
 def test_a_low_confidence_verdict_needs_a_person():
-    final = final_verdict(verdict(confidence=0.5), threshold=0.7, location=None)
+    final = final_verdict(
+        verdict(confidence=0.5), threshold=0.7, location=True, sample=False
+    )
 
     assert final.needs_human is True
 
 
 def test_a_location_mismatch_needs_a_person_and_says_why():
-    final = final_verdict(verdict(confidence=0.9), threshold=0.7, location=False)
+    final = final_verdict(
+        verdict(confidence=0.9), threshold=0.7, location=False, sample=False
+    )
 
     assert final.needs_human is True
     assert final.reasons[-1] == "location mismatch"
@@ -162,6 +166,26 @@ def test_a_location_mismatch_needs_a_person_and_says_why():
 def test_a_location_mismatch_keeps_at_most_four_reasons():
     full = verdict(reasons=["a", "b", "c", "d"])
 
-    final = final_verdict(full, threshold=0.7, location=False)
+    final = final_verdict(full, threshold=0.7, location=False, sample=False)
 
     assert final.reasons == ["a", "b", "c", "location mismatch"]
+
+
+def test_a_real_photo_without_a_location_needs_a_person():
+    final = final_verdict(verdict(), threshold=0.7, location=None, sample=False)
+
+    assert final.needs_human is True
+    assert final.reasons[-1] == "no location"
+
+
+def test_a_sample_photo_without_a_location_stays_as_read():
+    read = verdict()
+
+    assert final_verdict(read, threshold=0.7, location=None, sample=True) == read
+
+
+def test_the_cache_key_depends_on_the_task_type():
+    dam = verdict_cache_key("0" * 64, "evidence-v1", "dam_check")
+    patrol = verdict_cache_key("0" * 64, "evidence-v1", "patrol_recheck")
+
+    assert dam != patrol

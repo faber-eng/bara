@@ -10,18 +10,27 @@ from evidence_events import EvidenceReceivedHandler
 from tests.fakes import make_drying_ranked_event, make_verdict
 
 NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
+BROKEN = make_verdict(dam_state="broken")
 
 
 class FakeChecker:
-    def __init__(self, error=None):
+    def __init__(self, verdict=BROKEN, stored=True, error=None):
+        self.verdict = verdict
+        self.stored = stored
         self.error = error
         self.calls = []
+        self.flagged = []
 
     async def check(self, task_id, evidence_id):
         self.calls.append((task_id, evidence_id))
         if self.error is not None:
             raise self.error
-        return CheckedEvidence(evidence_id, make_verdict(), True, cached=False)
+        return CheckedEvidence(
+            evidence_id, self.verdict, True, stored=self.stored, from_cache=False
+        )
+
+    def flag_for_person(self, case_id):
+        self.flagged.append(case_id)
 
 
 class FakeAgent:
@@ -46,10 +55,18 @@ def evidence_event() -> EvidenceReceivedEvent:
     )
 
 
-def test_the_handler_checks_the_evidence_then_runs_the_agent_with_the_event():
+def handle(checker, agent):
+    EvidenceReceivedHandler(checker=checker, agent=agent).handle("m1", evidence_event())
+
+
+def has_event(caplog, name):
+    return any(getattr(r, "fields", {}).get("event") == name for r in caplog.records)
+
+
+def test_a_broken_dam_verdict_runs_the_agent_with_the_event_then_checks_the_case():
     checker, agent = FakeChecker(), FakeAgent()
 
-    EvidenceReceivedHandler(checker=checker, agent=agent).handle("m1", evidence_event())
+    handle(checker, agent)
 
     assert checker.calls == [("t1", "e1")]
     assert agent.runs == [
@@ -60,36 +77,65 @@ def test_the_handler_checks_the_evidence_then_runs_the_agent_with_the_event():
             {"evidence_id": "e1", "task_id": "t1", "case_id": "c1"},
         )
     ]
+    assert checker.flagged == ["c1"]
 
 
-def test_a_failed_check_still_runs_the_agent_and_logs(caplog):
-    checker = FakeChecker(EvidenceMissing("no file"))
+@pytest.mark.parametrize(
+    "verdict",
+    [
+        make_verdict(dam_state="intact"),
+        make_verdict(dam_state="broken", needs_human=True),
+    ],
+)
+def test_a_verdict_with_nothing_for_the_agent_does_not_run_it(verdict):
+    agent = FakeAgent()
+
+    handle(FakeChecker(verdict=verdict), agent)
+
+    assert agent.runs == []
+
+
+def test_a_repeat_event_whose_verdict_was_already_stored_does_nothing(caplog):
+    checker, agent = FakeChecker(stored=False), FakeAgent()
+
+    with caplog.at_level(logging.INFO):
+        handle(checker, agent)
+
+    assert agent.runs == []
+    assert checker.flagged == []
+    assert has_event(caplog, "evidence_already_checked")
+
+
+def test_a_failed_check_sends_the_case_to_a_person_without_the_agent(caplog):
+    checker = FakeChecker(error=EvidenceMissing("no file"))
     agent = FakeAgent()
 
     with caplog.at_level(logging.ERROR):
-        EvidenceReceivedHandler(checker=checker, agent=agent).handle(
-            "m1", evidence_event()
-        )
+        handle(checker, agent)
 
-    assert len(agent.runs) == 1
-    assert any(
-        getattr(r, "fields", {}).get("event") == "evidence_check_failed"
-        for r in caplog.records
-    )
+    assert agent.runs == []
+    assert checker.flagged == ["c1"]
+    assert has_event(caplog, "evidence_check_failed")
 
 
-def test_a_failed_agent_run_is_logged_not_raised(caplog):
+def test_an_unexpected_check_error_propagates_for_a_retry():
+    checker = FakeChecker(error=RuntimeError("firestore down"))
+
+    with pytest.raises(RuntimeError):
+        handle(checker, FakeAgent())
+
+    assert checker.flagged == []
+
+
+def test_a_failed_agent_run_is_logged_and_the_case_goes_to_a_person(caplog):
+    checker = FakeChecker()
     agent = FakeAgent(RuntimeError("model down"))
 
     with caplog.at_level(logging.ERROR):
-        EvidenceReceivedHandler(checker=FakeChecker(), agent=agent).handle(
-            "m1", evidence_event()
-        )
+        handle(checker, agent)
 
-    assert any(
-        getattr(r, "fields", {}).get("event") == "event_case_run_failed"
-        for r in caplog.records
-    )
+    assert has_event(caplog, "event_case_run_failed")
+    assert checker.flagged == ["c1"]
 
 
 def test_another_event_type_is_malformed():
