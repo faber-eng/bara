@@ -28,9 +28,12 @@ def decode_cursor(cursor: str) -> tuple[datetime, str]:
     try:
         raw = base64.urlsafe_b64decode(cursor.encode()).decode()
         opened_at, case_id = raw.split("|", 1)
-        return datetime.fromisoformat(opened_at), case_id
+        position = datetime.fromisoformat(opened_at)
     except (binascii.Error, UnicodeDecodeError, ValueError) as error:
         raise InvalidCursor(cursor) from error
+    if position.utcoffset() is None:
+        raise InvalidCursor(cursor)
+    return position, case_id
 
 
 def comes_after(case: Case, position: tuple[datetime, str]) -> bool:

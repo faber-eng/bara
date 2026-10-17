@@ -1,3 +1,4 @@
+import base64
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime, timedelta
 
@@ -224,6 +225,14 @@ def test_the_case_list_defaults_to_50_rows(settings):
 @pytest.mark.parametrize("limit", [0, 201])
 def test_the_case_list_rejects_a_limit_outside_1_to_200(settings, limit):
     response = World().client(settings).get(f"/api/cases?limit={limit}", headers=OPS)
+
+    assert response.status_code == 422
+
+
+def test_the_case_list_rejects_a_cursor_with_a_naive_time(settings):
+    forged = base64.urlsafe_b64encode(b"2026-01-01T00:00:00|x").decode()
+
+    response = World().client(settings).get(f"/api/cases?cursor={forged}", headers=OPS)
 
     assert response.status_code == 422
 

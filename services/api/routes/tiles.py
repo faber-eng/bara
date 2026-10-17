@@ -45,7 +45,7 @@ def serve_layer(
     label = week_label(week_start)
     try:
         url = cache.get_or_build(
-            (layer, region, label),
+            (layer, region, f"{label}:{local_today(now, config.zone)}"),
             lambda: build_url(tiles, config, week_start, local_today(now, config.zone)),
         )
     except LayerNotReady as error:

@@ -48,7 +48,7 @@ describe("fetchCases", () => {
 
     await fetchCases("riau");
 
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/cases?region=riau");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/cases?region=riau&limit=200");
   });
 
   it("flips an assigned case to overdue once the fixture clock passes its deadline", async () => {

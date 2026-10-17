@@ -98,8 +98,10 @@ export async function fetchFixtureCases(): Promise<CaseSummary[]> {
   return cases.map((summary) => sweepFixtureCase(summary, nowMs));
 }
 
+const CASES_LIMIT = 200;
+
 export async function fetchCases(region: string, signal?: AbortSignal): Promise<CaseSummary[]> {
   if (sourceFor("cases") === "fixture") return fetchFixtureCases();
-  const path = `/api/cases?region=${encodeURIComponent(region)}`;
+  const path = `/api/cases?region=${encodeURIComponent(region)}&limit=${CASES_LIMIT}`;
   return parseCaseSummaries(await apiRequest(path, { signal }));
 }
