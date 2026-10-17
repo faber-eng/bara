@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from typing import Protocol
 
 from adapters.firestore_repos import (
     AgentRunRepository,
@@ -7,8 +8,9 @@ from adapters.firestore_repos import (
     EvidenceRepository,
     TaskRepository,
 )
+from adapters.storage import SIGNING_ERRORS
 from adapters.store import DocumentNotFound
-from contracts import Case, CaseDetail, CaseSummary, Task
+from contracts import Case, CaseDetail, CaseSummary, Evidence, SignedEvidence, Task
 from domain.case_machine import transition
 from domain.case_view import build_timeline, summarize_case
 from domain.clock import Clock
@@ -20,6 +22,10 @@ class UnknownCase(Exception):
     pass
 
 
+class EvidenceSigner(Protocol):
+    def signed_get_url_for(self, uri: str) -> str: ...
+
+
 class CaseQueries:
     def __init__(
         self,
@@ -28,8 +34,10 @@ class CaseQueries:
         tasks: TaskRepository,
         evidence: EvidenceRepository,
         runs: AgentRunRepository,
+        signer: EvidenceSigner,
         clock: Clock,
     ):
+        self._signer = signer
         self._cases = cases
         self._tasks = tasks
         self._evidence = evidence
@@ -57,10 +65,28 @@ class CaseQueries:
         return CaseDetail(
             case=case,
             tasks=tasks,
-            evidence=evidence,
+            evidence=[self._signed(item) for item in evidence],
             agent_runs=runs,
             timeline=build_timeline(case, tasks, evidence, runs),
         )
+
+    def _signed(self, evidence: Evidence) -> SignedEvidence:
+        data = evidence.model_dump()
+        try:
+            data["gcs_uri"] = self._signer.signed_get_url_for(evidence.gcs_uri)
+        except SIGNING_ERRORS as error:
+            logger.warning(
+                "case evidence unsigned",
+                extra={
+                    "fields": {
+                        "event": "case_evidence_unsigned",
+                        "case_id": evidence.case_id,
+                        "evidence_id": evidence.id,
+                        "kind": type(error).__name__,
+                    }
+                },
+            )
+        return SignedEvidence.model_validate(data)
 
     def close(self, case_id: str, closed_by: str) -> Case:
         case = self._cases.get(case_id)

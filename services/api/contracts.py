@@ -475,10 +475,14 @@ class CellFacts(Contract):
     explanation: RankExplanation | None
 
 
+class SignedEvidence(Evidence):
+    gcs_uri: str
+
+
 class CaseDetail(Contract):
     case: Case
     tasks: list[Task]
-    evidence: list[Evidence]
+    evidence: list[SignedEvidence]
     agent_runs: list[AgentRun]
     timeline: list[TimelineEntry]
 

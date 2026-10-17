@@ -48,6 +48,24 @@ from tests.fakes import (
 REAL_NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
 
 
+class RecordingSigner:
+    def __init__(self):
+        self.signed: list[str] = []
+        self.fail_for: set[str] = set()
+
+    def signed_get_url_for(self, uri: str) -> str:
+        from adapters.storage import InvalidObjectName
+
+        if uri in self.fail_for:
+            raise InvalidObjectName(f"{uri!r} is not in the evidence bucket")
+        self.signed.append(uri)
+        return (
+            "https://storage.test/"
+            + uri.removeprefix("gs://")
+            + "?X-Goog-Signature=abc"
+        )
+
+
 class World:
     def __init__(self, weekly_rows=None):
         self.cases = InMemoryCollection(Case)
@@ -66,7 +84,9 @@ class World:
         warehouse = FakeWarehouse({WEEKLY_SQL: weekly_rows or []})
         evidence_repo = EvidenceRepository(self.evidence)
         case_repo = CaseRepository(self.cases)
+        self.signer = RecordingSigner()
         self.case_queries = CaseQueries(
+            signer=self.signer,
             cases=case_repo,
             tasks=TaskRepository(self.tasks),
             evidence=evidence_repo,
@@ -376,3 +396,69 @@ def test_a_case_deleted_during_close_is_404(settings):
         world.client(settings).post("/api/cases/c1/close", headers=OPS).status_code
         == 404
     )
+
+
+def test_case_detail_signs_evidence_urls_and_never_returns_a_gs_uri(settings):
+    world = World()
+    world.add_case("c1")
+    world.evidence.put(
+        "e1",
+        make_evidence(
+            id="e1", case_id="c1", gcs_uri="gs://example-bara-evidence/e1.jpg"
+        ),
+    )
+
+    body = world.client(settings).get("/api/cases/c1", headers=OPS).json()
+
+    url = body["evidence"][0]["gcs_uri"]
+    assert url.startswith("https://storage.test/example-bara-evidence/e1.jpg?")
+    assert world.signer.signed == ["gs://example-bara-evidence/e1.jpg"]
+
+
+def test_evidence_outside_the_bucket_is_not_signed_and_keeps_its_uri(settings, caplog):
+    world = World()
+    world.add_case("c1")
+    world.evidence.put(
+        "e1", make_evidence(id="e1", case_id="c1", gcs_uri="gs://other-bucket/e1.jpg")
+    )
+    world.signer.fail_for = {"gs://other-bucket/e1.jpg"}
+
+    response = world.client(settings).get("/api/cases/c1", headers=OPS)
+
+    assert response.status_code == 200
+    assert response.json()["evidence"][0]["gcs_uri"] == "gs://other-bucket/e1.jpg"
+    assert any(
+        getattr(r, "fields", {}).get("event") == "case_evidence_unsigned"
+        for r in caplog.records
+    )
+
+
+def test_one_unsignable_file_does_not_hide_the_others(settings):
+    world = World()
+    world.add_case("c1")
+    world.evidence.put(
+        "a", make_evidence(id="a", case_id="c1", gcs_uri="gs://bad/a.jpg")
+    )
+    world.evidence.put(
+        "b", make_evidence(id="b", case_id="c1", gcs_uri="gs://ok/b.jpg")
+    )
+    world.signer.fail_for = {"gs://bad/a.jpg"}
+
+    evidence = (
+        world.client(settings).get("/api/cases/c1", headers=OPS).json()["evidence"]
+    )
+
+    assert evidence[0]["gcs_uri"] == "gs://bad/a.jpg"
+    assert evidence[1]["gcs_uri"].startswith("https://")
+
+
+def test_the_stored_evidence_keeps_its_gs_uri(settings):
+    world = World()
+    world.add_case("c1")
+    world.evidence.put(
+        "e1", make_evidence(id="e1", case_id="c1", gcs_uri="gs://ok/e1.jpg")
+    )
+
+    world.client(settings).get("/api/cases/c1", headers=OPS)
+
+    assert world.evidence.get("e1").gcs_uri == "gs://ok/e1.jpg"
