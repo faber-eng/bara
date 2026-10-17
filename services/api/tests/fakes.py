@@ -3,6 +3,7 @@ from collections.abc import Callable, Mapping
 from types import SimpleNamespace
 
 from google.api_core import exceptions as gax
+from google.cloud.firestore_v1 import Increment
 from google.genai import errors, types
 
 from adapters.store import DocumentNotFound, Filter
@@ -42,6 +43,12 @@ class InMemoryClockStore:
 
     def put(self, settings: ClockSettings) -> None:
         self._settings = settings
+
+    def add_seconds(self, seconds: int, updated_by: str) -> None:
+        current = self._settings.offset_seconds if self._settings else 0
+        self._settings = ClockSettings(
+            offset_seconds=current + seconds, updated_by=updated_by
+        )
 
 
 class FakeVerifier:
@@ -93,6 +100,12 @@ class InMemoryCollection[T: Contract]:
         merged = {**self._documents[doc_id].model_dump(), **fields}
         self._documents[doc_id] = self._model.model_validate(merged)
 
+    def add(self, doc_id: str, field: str, amount: int, fields: Mapping[str, object]):
+        current = self._documents.get(doc_id)
+        base = current.model_dump() if current else {field: 0}
+        merged = {**base, **fields, field: base[field] + amount}
+        self._documents[doc_id] = self._model.model_validate(merged)
+
     def where(self, *filters: Filter) -> list[T]:
         return [
             item for item in self._documents.values() if matches(dict(item), filters)
@@ -116,8 +129,19 @@ class StubDocumentRef:
     def get(self) -> StubSnapshot:
         return StubSnapshot(self._store.get(self._doc_id))
 
-    def set(self, data: dict[str, object]) -> None:
-        self._store[self._doc_id] = dict(data)
+    def set(self, data: dict[str, object], merge: bool = False) -> None:
+        if not merge:
+            self._store[self._doc_id] = dict(data)
+            return
+        document = self._store.setdefault(self._doc_id, {})
+        for field, value in data.items():
+            document[field] = self._merge_value(document.get(field), value)
+
+    @staticmethod
+    def _merge_value(current, value):
+        if isinstance(value, Increment):
+            return (current or 0) + value.value
+        return value
 
     def create(self, data: dict[str, object]) -> None:
         if self._doc_id in self._store:

@@ -105,3 +105,12 @@ def test_every_event_type_has_one_envelope_class():
     }
 
     assert envelope_types == set(get_args(EventType))
+
+
+def test_task_rejects_a_naive_deadline():
+    from datetime import datetime
+
+    from tests.fakes import make_task
+
+    with pytest.raises(ValidationError):
+        make_task(deadline_at=datetime(2026, 10, 20, 12, 0))

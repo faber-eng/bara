@@ -25,6 +25,10 @@ class InvalidToken(Exception):
     pass
 
 
+class VerifierUnavailable(Exception):
+    pass
+
+
 class InvalidRoleHeader(Exception):
     pass
 
@@ -40,6 +44,8 @@ class FirebaseTokenVerifier:
     def verify(self, token: str) -> Mapping[str, object]:
         try:
             return firebase_auth.verify_id_token(token, app=self._app)
+        except firebase_auth.CertificateFetchError as error:
+            raise VerifierUnavailable(type(error).__name__) from error
         except (ValueError, FirebaseError) as error:
             raise InvalidToken(type(error).__name__) from error
 
@@ -97,6 +103,10 @@ def forbidden() -> HTTPException:
     return HTTPException(status_code=403, detail="forbidden")
 
 
+def unavailable() -> HTTPException:
+    return HTTPException(status_code=503, detail="auth unavailable")
+
+
 def verify_claims(
     verifier: TokenVerifier, credentials: HTTPAuthorizationCredentials | None
 ) -> Mapping[str, object]:
@@ -111,6 +121,12 @@ def verify_claims(
             extra={"fields": {"reason": "invalid_token", "kind": str(error)}},
         )
         raise unauthorized() from error
+    except VerifierUnavailable as error:
+        logger.error(
+            "auth unavailable",
+            extra={"fields": {"reason": "verifier_unavailable", "kind": str(error)}},
+        )
+        raise unavailable() from error
 
 
 def get_principal(
