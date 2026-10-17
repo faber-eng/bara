@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { APIProvider, Map as GoogleMap } from "@vis.gl/react-google-maps";
 import { useState } from "react";
-import { dryingTilesQuery, rankingsQuery } from "../../lib/api/queries";
+import { allCellsQuery, dryingTilesQuery, rankingsQuery } from "../../lib/api/queries";
 import { damCellId } from "../../lib/ops/cellSelection";
 import {
   buildMapLayers,
@@ -10,7 +10,7 @@ import {
   layerOpacity,
   type MapTypeId,
 } from "../../lib/ops/mapLayers";
-import { OPS_MAP_CENTER, OPS_MAP_ZOOM, OPS_REGION } from "../../lib/ops/region";
+import { OPS_MAP_CENTER, OPS_MAP_ZOOM, OPS_REGION, RANKED_CELL_LIMIT } from "../../lib/ops/region";
 import { CellPanel } from "./CellPanel";
 import { CellsLayer, DamsLayer, type FocusRequest } from "./CellsLayer";
 import { MapLegend, MapTypeControl } from "./MapControls";
@@ -31,10 +31,12 @@ type OpsMapProps = {
 export function OpsMap({ selectedCellId, focus, onCellSelect, onCellClear }: OpsMapProps) {
   const tiles = useQuery(dryingTilesQuery(OPS_REGION));
   const rankings = useQuery(rankingsQuery(OPS_REGION));
+  const allCells = useQuery(allCellsQuery(OPS_REGION));
   const [mapType, setMapType] = useState<MapTypeId>(DEFAULT_MAP_TYPE);
   const [opacities, setOpacities] = useState<LayerOpacities>({});
   const mapsKey = readMapsKey();
   const layers = buildMapLayers(tiles.data);
+  const cells = allCells.data?.cells ?? (allCells.isError ? rankings.data?.cells : undefined);
 
   function handleOpacityChange(layerId: string, opacity: number) {
     setOpacities((previous) => ({ ...previous, [layerId]: opacity }));
@@ -68,23 +70,30 @@ export function OpsMap({ selectedCellId, focus, onCellSelect, onCellClear }: Ops
               opacity={layerOpacity(layer, opacities)}
             />
           ))}
+          {cells !== undefined && (
+            <CellsLayer
+              cells={cells}
+              selectedCellId={selectedCellId}
+              focus={focus}
+              onSelect={onCellSelect}
+            />
+          )}
           {rankings.data && (
-            <>
-              <CellsLayer
-                cells={rankings.data.cells}
-                selectedCellId={selectedCellId}
-                focus={focus}
-                onSelect={onCellSelect}
-              />
-              <DamsLayer
-                dams={rankings.data.dams}
-                onSelect={(dam) => onCellSelect(damCellId(dam))}
-              />
-            </>
+            <DamsLayer dams={rankings.data.dams} onSelect={(dam) => onCellSelect(damCellId(dam))} />
           )}
         </GoogleMap>
       </APIProvider>
       <MapTypeControl value={mapType} onChange={setMapType} />
+      {allCells.isPending && (
+        <p role="status" className="map-note">
+          Loading all areas.
+        </p>
+      )}
+      {allCells.isError && (
+        <p role="status" className="map-note">
+          Only the top {RANKED_CELL_LIMIT} areas are clickable right now.
+        </p>
+      )}
       {tiles.isError && (
         <p role="status" className="map-note">
           Drying layer is unavailable right now.

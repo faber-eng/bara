@@ -24,6 +24,9 @@ vi.mock("../lib/ops/cellLayer", () => ({
 }));
 
 const fakeMap = {
+  fitBounds: vi.fn(),
+  setOptions: vi.fn(),
+  addListener: () => ({ remove: vi.fn() }),
   overlayMapTypes: { push: vi.fn(), getArray: () => [], removeAt: vi.fn() },
 };
 

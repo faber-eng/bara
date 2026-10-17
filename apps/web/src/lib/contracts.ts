@@ -193,6 +193,15 @@ export type RankedCell = {
   explanation: RankExplanation | null;
 };
 
+export type CellPoint = {
+  cell_id: string;
+  centroid: GeoPoint;
+  drying_score: number;
+  rank: number;
+};
+
+export type AllCells = { region: string; week: IsoWeek; cells: CellPoint[] };
+
 export type RankedDam = {
   dam_id: string;
   region: string;

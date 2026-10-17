@@ -1,6 +1,11 @@
+import json
+import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date
 
-from adapters.cells import CellRepository
+from adapters.cells import CellPoint, CellRepository
 from adapters.firestore_repos import (
     CaseRepository,
     DamRepository,
@@ -17,12 +22,49 @@ from domain.weeks import iso_week_label
 RANKED_CELL_LIMIT = 200
 RANKED_DAM_LIMIT = 50
 TREND_WEEKS = 8
+ALL_CELLS_TTL_SECONDS = 300.0
+COORD_DECIMALS = 5
+SCORE_DECIMALS = 1
 
 
 def current_explanation(ranked: RankedCell | None, week_start: date):
     if ranked is None or ranked.week_start != week_start:
         return None
     return ranked.explanation
+
+
+@dataclass(frozen=True)
+class AllCells:
+    region: str
+    week: str
+    body: bytes
+
+
+@dataclass(frozen=True)
+class CachedCells:
+    value: AllCells
+    expires_at: float
+
+
+def compact_row(point: CellPoint) -> list:
+    return [
+        point.cell_id,
+        round(point.lat, COORD_DECIMALS),
+        round(point.lon, COORD_DECIMALS),
+        round(point.drying_score, SCORE_DECIMALS),
+        point.rank,
+    ]
+
+
+def to_all_cells(region: str, points: list[CellPoint]) -> AllCells:
+    week = iso_week_label(points[0].week_start)
+    document = {
+        "region": region,
+        "week": week,
+        "cells": [compact_row(point) for point in points],
+    }
+    body = json.dumps(document, separators=(",", ":")).encode()
+    return AllCells(region=region, week=week, body=body)
 
 
 class NoRankings(Exception):
@@ -44,6 +86,7 @@ class AreaQueries:
         cases: CaseRepository,
         evidence: EvidenceRepository,
         radius_m: float,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self._rankings = rankings
         self._ranked_dams = ranked_dams
@@ -52,6 +95,9 @@ class AreaQueries:
         self._cases = cases
         self._evidence = evidence
         self._radius_m = radius_m
+        self._clock = clock
+        self._all_cells_lock = threading.Lock()
+        self._all_cells: dict[str, CachedCells] = {}
 
     def rankings(self, region: str, week: str | None) -> Rankings:
         if week is None:
@@ -65,6 +111,32 @@ class AreaQueries:
             cells=cells,
             dams=self._ranked_dams.top_in_week(region, week, RANKED_DAM_LIMIT),
         )
+
+    def all_cells(self, region: str) -> AllCells:
+        cached = self._fresh_cells(region)
+        if cached is not None:
+            return cached
+        with self._all_cells_lock:
+            cached = self._fresh_cells(region)
+            if cached is not None:
+                return cached
+            return self._load_all_cells(region)
+
+    def _fresh_cells(self, region: str) -> AllCells | None:
+        entry = self._all_cells.get(region)
+        if entry is None or entry.expires_at <= self._clock():
+            return None
+        return entry.value
+
+    def _load_all_cells(self, region: str) -> AllCells:
+        points = self._cells.all_cells(region)
+        if not points:
+            raise NoRankings(region)
+        value = to_all_cells(region, points)
+        self._all_cells[region] = CachedCells(
+            value=value, expires_at=self._clock() + ALL_CELLS_TTL_SECONDS
+        )
+        return value
 
     def _latest_rankings(self, region: str, week: str | None) -> Rankings:
         cells = newest_week_by_rank(self._rankings.top(region, RANKED_CELL_LIMIT))
