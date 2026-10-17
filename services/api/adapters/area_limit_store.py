@@ -1,10 +1,15 @@
 from collections.abc import Callable
 
+from google.api_core.exceptions import GoogleAPICallError
 from google.cloud import firestore
 
 from contracts import AreaRunState
 
 LIMITS_COLLECTION = "area_rank_limits"
+
+
+class AreaLimitUnavailable(Exception):
+    pass
 
 
 class FirestoreAreaLimitStore:
@@ -17,7 +22,10 @@ class FirestoreAreaLimitStore:
         apply: Callable[[AreaRunState | None], tuple[AreaRunState | None, int]],
     ) -> int:
         reference = self._client.collection(LIMITS_COLLECTION).document(uid)
-        return run_update(self._client.transaction(), reference, apply)
+        try:
+            return run_update(self._client.transaction(), reference, apply)
+        except GoogleAPICallError as error:
+            raise AreaLimitUnavailable(str(error)) from error
 
 
 @firestore.transactional

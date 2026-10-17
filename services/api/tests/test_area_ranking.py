@@ -169,3 +169,21 @@ def test_a_run_over_the_deadline_times_out(settings):
 
     with pytest.raises(AreaTimeout):
         asyncio.run(ranker.rank_within_deadline("u1", RIAU_SQUARE))
+
+
+def test_a_busy_refusal_spends_no_run(settings):
+    gate = threading.Event()
+    source = FakeAreaSource(delay=gate)
+    limits = FakeAreaLimits()
+    ranker = make_ranker(settings, source, limits, max_concurrent=1)
+    holder = threading.Thread(target=ranker.rank, args=("u1", RIAU_SQUARE))
+    holder.start()
+    while not source.calls:
+        pass
+
+    with pytest.raises(AreaBusy):
+        ranker.rank("u2", square(102.2, 0.5, 0.05))
+
+    gate.set()
+    holder.join()
+    assert "u2" not in limits.states

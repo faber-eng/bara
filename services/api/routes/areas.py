@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 
+from adapters.area_limit_store import AreaLimitUnavailable
 from adapters.earthengine_area import AreaSourceError
 from auth import Principal, require_role
 from casework.area_ranking import (
@@ -46,6 +47,12 @@ async def rank_area(
             detail="area_rank_limit",
             headers={"Retry-After": str(error.retry_after)},
         ) from error
+    except AreaLimitUnavailable as error:
+        logger.error(
+            "area limit store failed",
+            extra={"fields": {"uid": principal.uid, "error": str(error)}},
+        )
+        raise HTTPException(status_code=503, detail="area_limit_unavailable") from error
     except AreaBusy as error:
         raise HTTPException(status_code=503, detail="area_busy") from error
     except AreaTimeout as error:
