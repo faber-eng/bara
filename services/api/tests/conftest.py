@@ -15,6 +15,7 @@ def settings() -> Settings:
         region="asia-southeast1",
         api_url="https://api.example.test",
         config_dir=Path(__file__).resolve().parents[3] / "config",
+        samples_dir=Path(__file__).resolve().parents[3] / "data" / "samples",
         models=ModelsConfig(
             reasoning=ModelRoute(
                 model="reasoning-primary",

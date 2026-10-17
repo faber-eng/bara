@@ -102,6 +102,18 @@ Set `PROJECT` in `.secrets/bara.env`. The pre-push hook runs
 [gitleaks](https://github.com/gitleaks/gitleaks/releases), so it must be on your `PATH`. `.secrets/` is
 gitignored; deployed services read secrets from Secret Manager only.
 
+## Grant a role to ops or brigade
+
+The person signs in with Google once on the web app. Then, from the repo root:
+
+```sh
+uv run --project services/api python scripts/grant_role.py <email> <ops|brigade>
+```
+
+It prints `<uid> <role>`. Add `--dry-run` to look the user up and write nothing, `--project <id>` to override
+`PROJECT`. The caller needs `roles/firebaseauth.admin` (ADC login). The person signs in again to get the new claim.
+Exit codes: 2 usage, 3 no such user, 4 Firebase refused.
+
 ## Commits
 
 `wave-N: <what>` (spec §19.9). Cloud Build deploys `main`.

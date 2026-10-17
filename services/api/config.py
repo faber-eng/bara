@@ -61,6 +61,7 @@ class Settings(Config):
     region: str
     api_url: str | None
     config_dir: Path
+    samples_dir: Path
 
     @property
     def evidence_bucket(self) -> str:
@@ -85,6 +86,7 @@ def load_settings(
         region=read_optional(environ, "REGION") or DEFAULT_REGION,
         api_url=read_optional(environ, "BARA_API_URL"),
         config_dir=directory,
+        samples_dir=resolve_samples_dir(environ),
     )
 
 
@@ -100,6 +102,33 @@ def resolve_config_dir(environ: Mapping[str, str], config_dir: Path | None) -> P
             "BARA_CONFIG_DIR is not set and no repo config/ sits above this file"
         )
     return parents[2] / "config"
+
+
+def resolve_samples_dir(environ: Mapping[str, str]) -> Path:
+    from_env = read_optional(environ, "BARA_SAMPLES_DIR")
+    if from_env is not None:
+        return Path(from_env)
+    parents = Path(__file__).resolve().parents
+    if len(parents) < 3:
+        raise ConfigError(
+            "BARA_SAMPLES_DIR is not set and no repo data/samples sits above this file"
+        )
+    return parents[2] / "data" / "samples"
+
+
+def full_flow_region(config_dir: Path) -> str:
+    path = config_dir / "regions.yaml"
+    regions = read_yaml(path)
+    if not isinstance(regions, dict):
+        raise ConfigError(f"{path} is not a mapping of regions")
+    full = [
+        region_id
+        for region_id, entry in regions.items()
+        if isinstance(entry, dict) and entry.get("full_flow") is True
+    ]
+    if len(full) != 1:
+        raise ConfigError(f"{path} must mark exactly one region full_flow: true")
+    return full[0]
 
 
 def read_yaml(path: Path) -> object:

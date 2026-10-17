@@ -2,7 +2,7 @@ from collections.abc import Callable
 from datetime import datetime
 
 from adapters.store import Collection, Filter
-from contracts import Case, ClockSettings, EventType, ProcessedEvent, Task
+from contracts import Case, ClockSettings, EventType, ProcessedEvent, Task, Volunteer
 from domain.clock import is_due
 
 CLOCK_DOCUMENT = "clock"
@@ -27,6 +27,17 @@ class CaseRepository:
         if not live:
             return None
         return min(live, key=lambda case: case.opened_at)
+
+
+class VolunteerRepository:
+    def __init__(self, volunteers: Collection[Volunteer]):
+        self._volunteers = volunteers
+
+    def get(self, volunteer_id: str) -> Volunteer | None:
+        return self._volunteers.get(volunteer_id)
+
+    def create_if_absent(self, volunteer: Volunteer) -> bool:
+        return self._volunteers.create_if_absent(volunteer.id, volunteer)
 
 
 class EventLog:

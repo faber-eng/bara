@@ -7,7 +7,11 @@ from adapters.gemini import ModelGateway, build_vertex_clients
 from auth import FirebaseTokenVerifier, TokenVerifier
 from config import Settings, load_settings
 from logs import configure_logging
-from routes import health, judge_probe, tiles
+from ratelimit import FailureLimiter
+from routes import health, join, judge_probe, samples, tiles
+
+JOIN_MAX_FAILURES = 5
+JOIN_WINDOW_SECONDS = 15 * 60
 
 
 def build_app(
@@ -17,7 +21,10 @@ def build_app(
     app.state.settings = settings
     app.state.gateway = gateway
     app.state.verifier = verifier
+    app.state.join_limiter = FailureLimiter(JOIN_MAX_FAILURES, JOIN_WINDOW_SECONDS)
     app.include_router(health.router)
+    app.include_router(join.router)
+    app.include_router(samples.router)
     app.include_router(judge_probe.router)
     app.include_router(tiles.router)
     return app

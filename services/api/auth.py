@@ -17,6 +17,7 @@ RoleSource = Literal["claim", "header"]
 ROLES: frozenset[str] = frozenset(get_args(Role))
 VOLUNTEER_CLAIM_ALIASES = frozenset({"repair_team", "patrol"})
 ROLE_HEADER = "X-Bara-Role"
+ANONYMOUS_PROVIDER = "anonymous"
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -61,6 +62,7 @@ class Principal:
     uid: str
     role: Role | None
     role_source: RoleSource | None
+    provider: str | None = None
 
 
 def role_from_claim(claims: Mapping[str, object]) -> Role | None:
@@ -78,6 +80,16 @@ def role_from_header(header: str) -> Role:
     if header not in ROLES:
         raise InvalidRoleHeader("unknown role header value")
     return header
+
+
+def provider_from_claims(claims: Mapping[str, object]) -> str | None:
+    firebase = claims.get("firebase")
+    if not isinstance(firebase, Mapping):
+        return None
+    provider = firebase.get("sign_in_provider")
+    if not isinstance(provider, str):
+        return None
+    return provider
 
 
 def resolve_role(
@@ -145,7 +157,9 @@ def get_principal(
     except InvalidRoleHeader as error:
         logger.warning("auth rejected", extra={"fields": {"reason": "bad_role_header"}})
         raise forbidden() from error
-    return Principal(uid, resolution.role, resolution.source)
+    return Principal(
+        uid, resolution.role, resolution.source, provider_from_claims(claims)
+    )
 
 
 def require_role(*allowed: Role) -> Callable[[Principal], Principal]:
@@ -158,3 +172,12 @@ def require_role(*allowed: Role) -> Callable[[Principal], Principal]:
         return principal
 
     return check
+
+
+def require_signed_in_user(
+    principal: Annotated[Principal, Depends(get_principal)],
+) -> Principal:
+    if principal.provider is None or principal.provider == ANONYMOUS_PROVIDER:
+        logger.warning("auth rejected", extra={"fields": {"reason": "anonymous"}})
+        raise HTTPException(status_code=403, detail="anonymous_not_allowed")
+    return principal
