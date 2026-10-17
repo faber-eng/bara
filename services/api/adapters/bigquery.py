@@ -48,15 +48,36 @@ class Warehouse:
         self._project = project
         self._dataset = dataset
 
-    def insert_rows(self, table: str, rows: Sequence[Mapping[str, object]]) -> None:
+    def table_id(self, table: str) -> str:
         if not TABLE_NAME.match(table):
             raise InvalidTableName(f"invalid table name: {table!r}")
+        return f"{self._project}.{self._dataset}.{table}"
+
+    def insert_rows(self, table: str, rows: Sequence[Mapping[str, object]]) -> None:
+        table_id = self.table_id(table)
         if not rows:
             return
-        table_id = f"{self._project}.{self._dataset}.{table}"
         errors = self._client.insert_rows_json(table_id, list(rows))
         if errors:
             raise WarehouseError(f"insert into {table_id} failed: {errors}")
+
+    def append_rows(
+        self,
+        table: str,
+        schema: Sequence[bigquery.SchemaField],
+        rows: Sequence[Mapping[str, object]],
+    ) -> None:
+        table_id = self.table_id(table)
+        if not rows:
+            return
+        config = bigquery.LoadJobConfig(
+            schema=list(schema),
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+        )
+        self._client.load_table_from_json(
+            list(rows), table_id, job_config=config
+        ).result()
 
     def query(self, sql: str, params: Mapping[str, object]) -> list[dict]:
         config = bigquery.QueryJobConfig(
