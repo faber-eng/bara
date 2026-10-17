@@ -14,7 +14,7 @@ import { sourceFor } from "../sources";
 import { fetchFixtureCases, parseCase, TASK_STATUSES } from "./cases";
 import { ApiError, apiRequest } from "./client";
 import { fixtureClockNowMs } from "./clock";
-import { applyFixtureClosure, recordFixtureClosure } from "./fixtureClosures";
+import { applyFixtureOverrides, recordFixtureClosure } from "./fixtureOverrides";
 import {
   type JsonRecord,
   readArray,
@@ -164,7 +164,7 @@ async function loadFixtureDetail(caseId: string): Promise<CaseDetail> {
 
 async function fetchFixtureDetail(caseId: string): Promise<CaseDetail> {
   const detail = await loadFixtureDetail(caseId);
-  return { ...detail, case: applyFixtureClosure(detail.case) };
+  return { ...detail, case: applyFixtureOverrides(detail.case) };
 }
 
 export async function fetchCaseDetail(caseId: string, signal?: AbortSignal): Promise<CaseDetail> {

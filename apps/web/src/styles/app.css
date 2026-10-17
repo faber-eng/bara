@@ -579,4 +579,75 @@ fieldset.join-fieldset {
   line-height: 1;
   text-align: center;
   font-variant-numeric: tabular-nums;
+
+.brigade-inbox {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  display: grid;
+  gap: 16px;
+}
+.brigade-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brigade-head h1 {
+  margin: 0;
+}
+.brigade-card {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  padding: 20px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+}
+.brigade-main {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  justify-items: start;
+}
+.brigade-main h2 {
+  margin: 0;
+}
+.brigade-chips {
+  margin: 0;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.brigade-photo {
+  max-width: 100%;
+  border-radius: var(--radius-inner);
+}
+.brigade-nophoto {
+  margin: 0;
+  padding: 12px;
+  background: var(--sage-card);
+  border-radius: var(--radius-inner);
+  font-size: 14px;
+}
+.brief-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.brief-lang p {
+  margin: 2px 0 0;
+}
+.brigade-side {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+.mini-map svg {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+}
+@media (max-width: 900px) {
+  .brigade-card {
+    grid-template-columns: 1fr;
+  }
 }

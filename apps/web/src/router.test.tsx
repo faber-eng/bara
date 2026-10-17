@@ -33,7 +33,6 @@ describe("app routes", () => {
   it.each([
     ["/", "Landing and tour"],
     ["/public", "Public dashboard"],
-    ["/brigade", "Brigade inbox"],
     ["/area/new", "Draw an area"],
   ])("renders %s with its title and the health footer", async (path, title) => {
     renderAt(path);

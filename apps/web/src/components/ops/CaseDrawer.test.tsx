@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetClock } from "../../lib/api/clock";
-import { clearFixtureClosures } from "../../lib/api/fixtureClosures";
+import { clearFixtureOverrides } from "../../lib/api/fixtureOverrides";
 import { callsTo, stubApi } from "../../test-utils";
 import { CaseDrawer } from "./CaseDrawer";
 
@@ -21,7 +21,7 @@ function renderDrawer(caseId: string, onBack = vi.fn()) {
 
 describe("CaseDrawer", () => {
   beforeEach(async () => {
-    clearFixtureClosures();
+    clearFixtureOverrides();
     await resetClock();
   });
 

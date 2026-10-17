@@ -1,8 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { EmptyScreen } from "../components/EmptyScreen";
+import { BrigadeInbox } from "../components/brigade/BrigadeInbox";
 
-function BrigadeScreen() {
-  return <EmptyScreen title="Brigade inbox" path="/brigade" />;
-}
-
-export const Route = createFileRoute("/brigade")({ component: BrigadeScreen });
+export const Route = createFileRoute("/brigade")({ component: BrigadeInbox });
