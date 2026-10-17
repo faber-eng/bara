@@ -20,6 +20,9 @@ type TileOptions = {
 };
 const layers: unknown[] = [];
 const fakeMap = {
+  fitBounds: vi.fn(),
+  setOptions: vi.fn(),
+  addListener: () => ({ remove: vi.fn() }),
   overlayMapTypes: {
     push: (layer: unknown) => layers.push(layer),
     getArray: () => layers,
@@ -164,6 +167,46 @@ describe("OpsMap", () => {
     expect(layerSpies.createDamLayer).toHaveBeenCalledTimes(1);
     const cells = layerSpies.createCellLayer.mock.calls[0]?.[1] as unknown[];
     expect(cells).toHaveLength(200);
+  });
+
+  it("fits the view to the ranked cells once, capped at zoom 11", async () => {
+    vi.stubEnv("VITE_MAPS_KEY", "test-key");
+    fakeMap.fitBounds.mockReset();
+    renderMap();
+    await waitFor(() => expect(layerSpies.createCellLayer).toHaveBeenCalledTimes(1));
+
+    expect(fakeMap.fitBounds).toHaveBeenCalledTimes(1);
+    expect(fakeMap.setOptions).toHaveBeenCalledWith({ maxZoom: 11 });
+  });
+
+  it("draws every area from /api/cells when the source is live", async () => {
+    vi.stubEnv("VITE_MAPS_KEY", "test-key");
+    vi.stubEnv("VITE_SOURCE_RANKINGS", "live");
+    const rows = Array.from({ length: 3769 }, (_, i) => [`c${i}`, 0.5, 101.4, 50, i + 1]);
+    stubApi({
+      "GET /api/cells?region=riau": () =>
+        Response.json({ region: "riau", week: "2026-W42", cells: rows }),
+      "GET /api/rankings/riau": () =>
+        Response.json({ region: "riau", week: "2026-W42", cells: [], dams: [] }),
+    });
+    renderMap();
+
+    await waitFor(() => expect(layerSpies.createCellLayer).toHaveBeenCalledTimes(1));
+    const cells = layerSpies.createCellLayer.mock.calls[0]?.[1] as unknown[];
+    expect(cells).toHaveLength(3769);
+  });
+
+  it("falls back to the ranked cells and says so when all areas fail to load", async () => {
+    vi.stubEnv("VITE_MAPS_KEY", "test-key");
+    vi.stubEnv("VITE_SOURCE_RANKINGS", "live");
+    stubApi({
+      "GET /api/cells?region=riau": () => new Response("x", { status: 502 }),
+      "GET /api/rankings/riau": () =>
+        Response.json({ region: "riau", week: "2026-W42", cells: [], dams: [] }),
+    });
+    renderMap();
+
+    expect(await screen.findByText(/Only the top 200 areas are clickable/)).toBeInTheDocument();
   });
 
   it("opens the cell panel for the selected cell and reads its facts", async () => {

@@ -30,6 +30,11 @@ class FakeData {
   revertStyle(feature: { id: string }) {
     this.overrides.delete(feature.id);
   }
+  styles: unknown[] = [];
+  setStyle(style: unknown) {
+    this.styles.push(style);
+    this.style = style;
+  }
   setMap(map: unknown) {
     this.mapRef = map;
   }
@@ -110,7 +115,7 @@ describe("createCellLayer", () => {
 
     expect(FakeData.instances).toHaveLength(1);
     expect(FakeData.instances[0]?.addCalls).toBe(2);
-    expect([...map.listeners.keys()].sort()).toEqual(["click", "mousemove"]);
+    expect([...map.listeners.keys()].sort()).toEqual(["click", "mousemove", "zoom_changed"]);
   });
 
   it("selects the cell under a map click by point, not by shape", () => {
@@ -183,17 +188,46 @@ describe("createCellLayer", () => {
     expect(FakeData.instances[0]?.mapRef).toBeNull();
   });
 
+  it("draws cells with a minimum pixel stroke below zoom 12 and thin polygons from zoom 12", () => {
+    const map = makeMap();
+    createCellLayer(map as never, CELLS, { onSelect: vi.fn() });
+    const data = FakeData.instances[0] as FakeData;
+    const feature = { getProperty: () => 95 };
+    const styleOf = () => (data.style as (f: unknown) => { strokeWeight: number })(feature);
+
+    expect(styleOf().strokeWeight).toBe(4);
+    map.zoom = 12;
+    map.listeners.get("zoom_changed")?.({});
+    expect(data.styles).toHaveLength(1);
+    expect(styleOf().strokeWeight).toBe(1);
+    map.zoom = 13;
+    map.listeners.get("zoom_changed")?.({});
+    expect(data.styles).toHaveLength(1);
+    map.zoom = 9;
+    map.listeners.get("zoom_changed")?.({});
+    expect(styleOf().strokeWeight).toBe(4);
+  });
+
   it("builds a 3,769 cell layer and answers clicks", () => {
     const many = Array.from({ length: 3769 }, (_, i) =>
       cell(`c${i}`, -1 + (i % 60) * 0.02, 101 + Math.floor(i / 60) * 0.02, i % 100),
     );
     const map = makeMap();
     const onSelect = vi.fn();
+    const started = performance.now();
     createCellLayer(map as never, many, { onSelect });
+    const builtMs = performance.now() - started;
 
-    map.listeners.get("click")?.(latLng(-1 + 7 * 0.02, 101 + 9 * 0.02));
+    expect(builtMs).toBeLessThan(500);
+    const lookups = 2000;
+    const lookupStarted = performance.now();
+    for (let i = 0; i < lookups; i++) {
+      map.listeners.get("click")?.(latLng(-1 + 7 * 0.02, 101 + 9 * 0.02));
+    }
+    const perLookupMs = (performance.now() - lookupStarted) / lookups;
 
     expect(onSelect).toHaveBeenCalledWith("c547");
+    expect(perLookupMs).toBeLessThan(1);
   });
 });
 

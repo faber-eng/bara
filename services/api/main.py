@@ -2,6 +2,7 @@ import uuid
 
 import firebase_admin
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from google.cloud import firestore
 
 from adapters.channels import WebChannel
@@ -71,6 +72,8 @@ JOIN_WINDOW_SECONDS = 15 * 60
 RESET_WINDOW_SECONDS = 60 * 60
 PUBLIC_MAX_REQUESTS = 60
 PUBLIC_WINDOW_SECONDS = 60
+GZIP_MIN_BYTES = 1024
+GZIP_LEVEL = 5
 
 
 def cors_origins(settings: Settings) -> list[str]:
@@ -94,6 +97,9 @@ def build_app(
     )
     app.state.public_limiter = RequestLimiter(
         PUBLIC_MAX_REQUESTS, PUBLIC_WINDOW_SECONDS
+    )
+    app.add_middleware(
+        GZipMiddleware, minimum_size=GZIP_MIN_BYTES, compresslevel=GZIP_LEVEL
     )
     app.add_middleware(StreamOnlyCors, allow_origins=cors_origins(settings))
     app.include_router(health.router)

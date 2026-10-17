@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from datetime import date
-from typing import Protocol
+from typing import NamedTuple, Protocol
 
 from pydantic import BaseModel, ConfigDict
 
@@ -25,9 +25,33 @@ FROM {DATASET}.cells
 WHERE cell_id = @cell_id
 """
 
+ALL_CELLS_LIMIT = 10_000
+
+ALL_CELLS_SQL = f"""
+SELECT d.cell_id, d.week_start, d.drying_score, d.rank,
+       ST_Y(c.centroid) AS lat, ST_X(c.centroid) AS lon
+FROM {DATASET}.cell_weekly_drying AS d
+JOIN {DATASET}.cells AS c ON c.cell_id = d.cell_id
+WHERE d.region = @region
+  AND d.week_start = (
+    SELECT MAX(week_start) FROM {DATASET}.cell_weekly_drying WHERE region = @region
+  )
+ORDER BY d.rank
+LIMIT @limit
+"""
+
 
 class Queryable(Protocol):
     def query(self, sql: str, params: Mapping[str, object]) -> list[dict]: ...
+
+
+class CellPoint(NamedTuple):
+    cell_id: str
+    week_start: date
+    lat: float
+    lon: float
+    drying_score: float
+    rank: int
 
 
 class CellWeek(BaseModel):
@@ -77,3 +101,19 @@ class CellRepository:
         if not rows:
             return None
         return GeoPoint(lat=rows[0]["lat"], lon=rows[0]["lon"])
+
+    def all_cells(self, region: str) -> list[CellPoint]:
+        rows = self._warehouse.query(
+            ALL_CELLS_SQL, {"region": region, "limit": ALL_CELLS_LIMIT}
+        )
+        return [
+            CellPoint(
+                cell_id=row["cell_id"],
+                week_start=row["week_start"],
+                lat=row["lat"],
+                lon=row["lon"],
+                drying_score=row["drying_score"],
+                rank=row["rank"],
+            )
+            for row in rows
+        ]

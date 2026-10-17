@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { brigadeContactId } from "../brigade/contact";
+import { fetchAllCells } from "./allCells";
 import { fetchCaseDetail } from "./caseDetail";
 import { fetchCases } from "./cases";
 import { fetchCellFacts } from "./cellFacts";
@@ -13,6 +14,7 @@ const CLOCK_RETRIES = 2;
 const CLOCK_RETRY_DELAY_MS = 1_000;
 const OPS_STALE_MS = 30_000;
 const TILES_STALE_MS = 30 * 60_000;
+const ALL_CELLS_STALE_MS = 30 * 60_000;
 
 export const clockQuery = queryOptions({
   queryKey: ["clock"],
@@ -28,6 +30,16 @@ export function rankingsQuery(region: string) {
     queryKey: ["rankings", region],
     queryFn: ({ signal }) => fetchRankings(region, signal),
     staleTime: OPS_STALE_MS,
+    retry: false,
+  });
+}
+
+export function allCellsQuery(region: string) {
+  return queryOptions({
+    queryKey: ["cells", "all", region],
+    queryFn: ({ signal }) => fetchAllCells(region, signal),
+    staleTime: ALL_CELLS_STALE_MS,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }

@@ -1,4 +1,4 @@
-import type { RankedCell, RankedDam } from "../contracts";
+import type { CellPoint, RankedDam } from "../contracts";
 import { buildCellIndex, cellRing, findCellAt } from "./cellGrid";
 import { scoreColor } from "./scoreColor";
 
@@ -6,8 +6,17 @@ const HIT_TOLERANCE_PX = 8;
 const WORLD_TILE_PX = 256;
 const FOCUS_ZOOM = 14;
 const FILL_OPACITY = 0.55;
+const POLYGON_ZOOM = 12;
+const COMPACT_STROKE_PX = 4;
+const COMPACT_STROKE_OPACITY = 0.85;
 
-const BASE_STYLE = { clickable: false, strokeWeight: 1, fillOpacity: FILL_OPACITY } as const;
+const POLYGON_STYLE = { clickable: false, strokeWeight: 1, fillOpacity: FILL_OPACITY } as const;
+const COMPACT_STYLE = {
+  clickable: false,
+  strokeWeight: COMPACT_STROKE_PX,
+  strokeOpacity: COMPACT_STROKE_OPACITY,
+  fillOpacity: COMPACT_STROKE_OPACITY,
+} as const;
 const HOVER_STYLE = { strokeWeight: 3, strokeColor: "#ffffff", fillOpacity: 0.85 } as const;
 const SELECTED_STYLE = {
   strokeWeight: 4,
@@ -28,13 +37,19 @@ function toleranceDeg(zoom: number): number {
   return (HIT_TOLERANCE_PX * 360) / (WORLD_TILE_PX * 2 ** zoom);
 }
 
-function cellStyle(feature: google.maps.Data.Feature): google.maps.Data.StyleOptions {
-  const score = Number(feature.getProperty("score"));
-  const color = scoreColor(score);
-  return { ...BASE_STYLE, fillColor: color, strokeColor: color };
+function isCompactZoom(zoom: number | undefined): boolean {
+  return (zoom ?? 0) < POLYGON_ZOOM;
 }
 
-function addCellFeatures(data: google.maps.Data, cells: readonly RankedCell[]): void {
+function styleFor(compact: boolean) {
+  const base = compact ? COMPACT_STYLE : POLYGON_STYLE;
+  return (feature: google.maps.Data.Feature): google.maps.Data.StyleOptions => {
+    const color = scoreColor(Number(feature.getProperty("score")));
+    return { ...base, fillColor: color, strokeColor: color };
+  };
+}
+
+function addCellFeatures(data: google.maps.Data, cells: readonly CellPoint[]): void {
   for (const cell of cells) {
     data.add({
       id: cell.cell_id,
@@ -48,10 +63,11 @@ function addCellFeatures(data: google.maps.Data, cells: readonly RankedCell[]): 
 
 export function createCellLayer(
   map: google.maps.Map,
-  cells: readonly RankedCell[],
+  cells: readonly CellPoint[],
   handlers: CellLayerHandlers,
 ): CellLayer {
-  const data = new google.maps.Data({ map, style: cellStyle });
+  let compact = isCompactZoom(map.getZoom());
+  const data = new google.maps.Data({ map, style: styleFor(compact) });
   addCellFeatures(data, cells);
   const index = buildCellIndex(cells);
   const byId = new Map(cells.map((cell) => [cell.cell_id, cell]));
@@ -74,7 +90,7 @@ export function createCellLayer(
     else data.overrideStyle(feature, style);
   }
 
-  function hitAt(latLng: google.maps.LatLng | null | undefined): RankedCell | undefined {
+  function hitAt(latLng: google.maps.LatLng | null | undefined): CellPoint | undefined {
     if (!latLng) return undefined;
     const point = { lat: latLng.lat(), lon: latLng.lng() };
     return findCellAt(index, point, toleranceDeg(map.getZoom() ?? 0));
@@ -92,6 +108,12 @@ export function createCellLayer(
   const clickListener = map.addListener("click", (event: google.maps.MapMouseEvent) => {
     const hit = hitAt(event.latLng);
     if (hit) handlers.onSelect(hit.cell_id);
+  });
+  const zoomListener = map.addListener("zoom_changed", () => {
+    const next = isCompactZoom(map.getZoom());
+    if (next === compact) return;
+    compact = next;
+    data.setStyle(styleFor(compact));
   });
   const moveListener = map.addListener("mousemove", (event: google.maps.MapMouseEvent) => {
     cancelAnimationFrame(frame);
@@ -115,6 +137,7 @@ export function createCellLayer(
       cancelAnimationFrame(frame);
       clickListener.remove();
       moveListener.remove();
+      zoomListener.remove();
       data.setMap(null);
     },
   };

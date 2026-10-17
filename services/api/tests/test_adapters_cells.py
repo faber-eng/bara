@@ -1,6 +1,12 @@
 from datetime import date
 
-from adapters.cells import CENTROID_SQL, WEEKLY_SQL, CellRepository
+from adapters.cells import (
+    ALL_CELLS_LIMIT,
+    ALL_CELLS_SQL,
+    CENTROID_SQL,
+    WEEKLY_SQL,
+    CellRepository,
+)
 from contracts import GeoPoint
 from tests.fakes import FakeWarehouse, weekly_row
 
@@ -54,3 +60,42 @@ def test_centroid_reads_the_cell_location():
 
 def test_centroid_of_an_unknown_cell_is_none():
     assert CellRepository(FakeWarehouse()).centroid("nope") is None
+
+
+def all_cells_row(cell_id="riau-1-1", **overrides) -> dict:
+    fields = {
+        "cell_id": cell_id,
+        "week_start": date(2026, 10, 12),
+        "lat": 0.5,
+        "lon": 101.4,
+        "drying_score": 90.5,
+        "rank": 1,
+    }
+    return {**fields, **overrides}
+
+
+def test_all_cells_reads_the_newest_week_of_the_region_with_a_row_cap():
+    warehouse = FakeWarehouse(
+        {
+            ALL_CELLS_SQL: [
+                all_cells_row("riau-1-1"),
+                all_cells_row("riau-1-2", rank=2, drying_score=88.0),
+            ]
+        }
+    )
+
+    points = CellRepository(warehouse).all_cells("riau")
+
+    assert warehouse.queries == [
+        (ALL_CELLS_SQL, {"region": "riau", "limit": ALL_CELLS_LIMIT})
+    ]
+    assert "riau" not in ALL_CELLS_SQL
+    assert [(p.cell_id, p.rank, p.week_start) for p in points] == [
+        ("riau-1-1", 1, date(2026, 10, 12)),
+        ("riau-1-2", 2, date(2026, 10, 12)),
+    ]
+    assert (points[0].lat, points[0].lon, points[0].drying_score) == (0.5, 101.4, 90.5)
+
+
+def test_all_cells_of_a_region_without_data_is_empty():
+    assert CellRepository(FakeWarehouse()).all_cells("nope") == []

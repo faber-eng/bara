@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -83,7 +84,7 @@ class StubExplainer:
 
 
 class World:
-    def __init__(self, weekly_rows=None):
+    def __init__(self, weekly_rows=None, all_cell_rows=None):
         self.cases = InMemoryCollection(Case)
         self.tasks = InMemoryCollection(Task)
         self.evidence = InMemoryCollection(Evidence)
@@ -99,9 +100,12 @@ class World:
             InMemoryClockStore(ClockSettings(offset_seconds=0, updated_by="t")),
             lambda: REAL_NOW,
         )
-        from adapters.cells import WEEKLY_SQL
+        from adapters.cells import ALL_CELLS_SQL, WEEKLY_SQL
 
-        warehouse = FakeWarehouse({WEEKLY_SQL: weekly_rows or []})
+        self.warehouse = FakeWarehouse(
+            {WEEKLY_SQL: weekly_rows or [], ALL_CELLS_SQL: all_cell_rows or []}
+        )
+        warehouse = self.warehouse
         evidence_repo = EvidenceRepository(self.evidence)
         case_repo = CaseRepository(self.cases)
         self.signer = RecordingSigner()
@@ -592,3 +596,93 @@ def test_case_detail_timeline_shows_the_brigade_ack(settings):
         "Escalated to brigade contact-daops",
         "Brigade contact-daops acknowledged",
     ]
+
+
+def all_row(cell_id, rank, score, lat=0.5, lon=101.4):
+    return {
+        "cell_id": cell_id,
+        "week_start": date(2026, 10, 12),
+        "lat": lat,
+        "lon": lon,
+        "drying_score": score,
+        "rank": rank,
+    }
+
+
+def test_all_cells_returns_compact_rows_with_a_cache_header(settings):
+    world = World(all_cell_rows=[all_row("a", 1, 90.54, 0.123456789, 101.987654321)])
+
+    response = world.client(settings).get("/api/cells?region=riau", headers=OPS)
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "private, max-age=300"
+    assert response.json() == {
+        "region": "riau",
+        "week": "2026-W42",
+        "cells": [["a", 0.12346, 101.98765, 90.5, 1]],
+    }
+
+
+def test_all_cells_runs_one_query_for_repeat_requests(settings):
+    world = World(all_cell_rows=[all_row("a", 1, 90.0)])
+    client = world.client(settings)
+
+    for _ in range(3):
+        client.get("/api/cells?region=riau", headers=OPS)
+
+    assert len(world.warehouse.queries) == 1
+
+
+def test_all_cells_runs_one_query_for_concurrent_cold_requests(settings):
+    world = World(all_cell_rows=[all_row("a", 1, 90.0)])
+    queries = world.area_queries
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda _: queries.all_cells("riau"), range(8)))
+
+    assert len(world.warehouse.queries) == 1
+    assert all(result is results[0] for result in results)
+
+
+def test_all_cells_reads_again_after_the_ttl(settings):
+    world = World(all_cell_rows=[all_row("a", 1, 90.0)])
+    now = [0.0]
+    world.area_queries._clock = lambda: now[0]
+
+    world.area_queries.all_cells("riau")
+    now[0] = 299.0
+    world.area_queries.all_cells("riau")
+    now[0] = 301.0
+    world.area_queries.all_cells("riau")
+
+    assert len(world.warehouse.queries) == 2
+
+
+def test_all_cells_of_a_region_without_data_is_404_and_not_cached(settings):
+    world = World()
+    client = world.client(settings)
+
+    assert client.get("/api/cells?region=nope", headers=OPS).status_code == 404
+    assert client.get("/api/cells?region=nope", headers=OPS).status_code == 404
+    assert len(world.warehouse.queries) == 2
+
+
+def test_all_cells_needs_a_region_and_the_ops_role(settings):
+    client = World().client(settings)
+
+    assert client.get("/api/cells", headers=OPS).status_code == 422
+    assert client.get("/api/cells?region=riau").status_code == 401
+    volunteer = {"Authorization": "Bearer volunteer"}
+    assert client.get("/api/cells?region=riau", headers=volunteer).status_code == 403
+
+
+def test_an_unranked_cell_returns_facts_without_a_model_call(settings):
+    world = World([weekly_row(cell_id="riau-9-9", rank=3000, drying_score=12.0)])
+
+    response = world.client(settings).get("/api/cells/riau-9-9", headers=OPS)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["rank"], body["drying_score"]) == (3000, 12.0)
+    assert body["explanation"] is None
+    assert world.explainer.calls == []

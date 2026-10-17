@@ -1,12 +1,13 @@
 import { useMap } from "@vis.gl/react-google-maps";
 import { useEffect, useRef } from "react";
-import type { RankedCell, RankedDam } from "../../lib/contracts";
+import type { CellPoint, RankedDam } from "../../lib/contracts";
 import { type CellLayer, createCellLayer, createDamLayer } from "../../lib/ops/cellLayer";
+import { fitToRanked, rankedBounds } from "../../lib/ops/rankedView";
 
 export type FocusRequest = { cellId: string };
 
 type CellsLayerProps = {
-  cells: readonly RankedCell[];
+  cells: readonly CellPoint[];
   selectedCellId: string | undefined;
   focus: FocusRequest | null;
   onSelect: (cellId: string) => void;
@@ -16,6 +17,7 @@ export function CellsLayer({ cells, selectedCellId, focus, onSelect }: CellsLaye
   const map = useMap();
   const layerRef = useRef<CellLayer | null>(null);
   const selectedRef = useRef(selectedCellId);
+  const fittedRef = useRef(false);
   const onSelectRef = useRef(onSelect);
 
   useEffect(() => {
@@ -33,6 +35,14 @@ export function CellsLayer({ cells, selectedCellId, focus, onSelect }: CellsLaye
       layerRef.current = null;
       layer.destroy();
     };
+  }, [map, cells]);
+
+  useEffect(() => {
+    if (map === null || fittedRef.current) return;
+    const bounds = rankedBounds(cells);
+    if (bounds === undefined) return;
+    fittedRef.current = true;
+    fitToRanked(map, bounds);
   }, [map, cells]);
 
   useEffect(() => {
