@@ -71,10 +71,7 @@ DELETE_WEEK_SQL = """
 DELETE FROM cell_weekly_drying WHERE region = @region AND week_start = @week_start
 """
 
-CANALS_SQL = """
-CREATE TABLE osm_canals
-CLUSTER BY region
-AS
+CANALS_SELECT = """
 SELECT
   osm_id,
   (SELECT value FROM UNNEST(all_tags) WHERE key = 'waterway' LIMIT 1) AS waterway,
@@ -87,6 +84,14 @@ WHERE EXISTS (
   )
   AND ST_DWITHIN(geometry, ST_GEOGFROMGEOJSON(@aoi), @buffer_m)
 """
+
+CANALS_SQL = "CREATE TABLE osm_canals\nCLUSTER BY region\nAS" + CANALS_SELECT
+
+ADD_CANALS_SQL = (
+    "INSERT INTO osm_canals (osm_id, waterway, geometry, region)" + CANALS_SELECT
+)
+
+REGION_CANALS_SQL = "SELECT COUNT(*) AS n FROM osm_canals WHERE region = @region"
 
 REWRITE_CELLS_SQL = """
 BEGIN TRANSACTION;
@@ -105,7 +110,7 @@ nearest AS (
   GROUP BY staged.cell_id
 )
 SELECT staged.cell_id, staged.region, staged.geom, staged.centroid, staged.peat_class,
-  nearest.canal_dist_m
+  COALESCE(nearest.canal_dist_m, @no_canal_m)
 FROM staged
 LEFT JOIN nearest USING (cell_id);
 COMMIT TRANSACTION;
@@ -116,21 +121,37 @@ class InvalidPublicTable(Exception):
     pass
 
 
-def canals_sql(osm_lines: str) -> str:
+def check_public_table(osm_lines: str) -> str:
     if not PUBLIC_TABLE.match(osm_lines):
         raise InvalidPublicTable(f"invalid OSM lines table: {osm_lines!r}")
-    return CANALS_SQL.format(osm_lines=osm_lines)
+    return osm_lines
+
+
+def canals_sql(osm_lines: str) -> str:
+    return CANALS_SQL.format(osm_lines=check_public_table(osm_lines))
+
+
+def add_canals_sql(osm_lines: str) -> str:
+    return ADD_CANALS_SQL.format(osm_lines=check_public_table(osm_lines))
 
 
 def canals_exist(warehouse: Warehouse) -> bool:
     return warehouse.table_exists(CANALS)
 
 
+def region_has_canals(warehouse: Warehouse, region: str) -> bool:
+    result = warehouse.query(REGION_CANALS_SQL, {"region": region})
+    return bool(result.rows) and int(result.rows[0]["n"]) > 0
+
+
 def create_canals(
     warehouse: Warehouse, osm_lines: str, region: str, aoi: dict, dry_run: bool
 ) -> QueryResult:
+    sql = (
+        add_canals_sql(osm_lines) if canals_exist(warehouse) else canals_sql(osm_lines)
+    )
     return warehouse.query(
-        canals_sql(osm_lines),
+        sql,
         {"region": region, "aoi": json.dumps(aoi), "buffer_m": CANAL_BUFFER_M},
         max_bytes_billed=CANAL_MAX_BYTES_BILLED,
         dry_run=dry_run,
@@ -154,7 +175,9 @@ def stage_cells(warehouse: Warehouse, cells: Sequence[StagedCell]) -> None:
 
 def rewrite_cells(warehouse: Warehouse, region: str) -> QueryResult:
     warehouse.ensure_table(CELLS)
-    return warehouse.query(REWRITE_CELLS_SQL, {"region": region})
+    return warehouse.query(
+        REWRITE_CELLS_SQL, {"region": region, "no_canal_m": CANAL_BUFFER_M}
+    )
 
 
 def read_cells(warehouse: Warehouse, region: str) -> QueryResult:

@@ -27,9 +27,19 @@ def feature(grid_index, mode):
 PEAT_FEATURES = [feature("160,38", 1), feature("161,38", 2), feature("162,38", 0)]
 
 
-def run(config_dir, *, existing=(), dry_run=False, features=PEAT_FEATURES):
-    client = RecordingBigQueryClient(existing=existing)
-    region = load_region(config_dir, "riau")
+def run(
+    config_dir,
+    *,
+    existing=(),
+    dry_run=False,
+    features=PEAT_FEATURES,
+    canal_rows=5,
+    region_id="riau",
+):
+    client = RecordingBigQueryClient(
+        existing=existing, responses={"COUNT(*) AS n": [{"n": canal_rows}]}
+    )
+    region = load_region(config_dir, region_id)
     summary = job.build_grid(
         region=region,
         aoi=read_aoi(config_dir, region),
@@ -62,6 +72,25 @@ def test_skips_the_canal_query_when_the_table_exists(config_dir):
     assert not any("CREATE TABLE osm_canals" in sql for sql in client.sql_sent())
 
 
+def test_loads_the_canals_of_a_region_the_table_does_not_hold_yet(config_dir):
+    _, client = run(
+        config_dir,
+        existing=["osm_canals"],
+        canal_rows=0,
+        region_id="congo_cuvette",
+    )
+
+    inserts = [sql for sql in client.sql_sent() if "INSERT INTO osm_canals" in sql]
+    assert len(inserts) == 1
+    assert not any("CREATE TABLE osm_canals" in sql for sql in client.sql_sent())
+    insert_config = next(
+        c for sql, c in client.queries if "INSERT INTO osm_canals" in sql
+    )
+    params = {p.name: p.value for p in insert_config.query_parameters}
+    assert params["region"] == "congo_cuvette"
+    assert insert_config.maximum_bytes_billed == CANAL_MAX_BYTES_BILLED
+
+
 def test_stages_only_peat_cells_with_their_geometry(config_dir):
     _, client = run(config_dir, existing=["osm_canals"])
 
@@ -85,7 +114,11 @@ def test_rewrites_the_region_deleting_before_inserting(config_dir):
     assert "BEGIN TRANSACTION" in sql and "COMMIT TRANSACTION" in sql
     assert "MIN(ST_DISTANCE(" in sql
     assert "LEFT JOIN" in sql
-    assert {p.name: p.value for p in config.query_parameters} == {"region": "riau"}
+    assert {p.name: p.value for p in config.query_parameters} == {
+        "region": "riau",
+        "no_canal_m": 5000,
+    }
+    assert "COALESCE(nearest.canal_dist_m, @no_canal_m)" in sql
 
 
 def test_the_cells_table_exists_before_the_rewrite(config_dir):
@@ -93,7 +126,7 @@ def test_the_cells_table_exists_before_the_rewrite(config_dir):
 
     assert client.created[0].table_id == "cells"
     assert client.created[0].clustering_fields == ["region", "cell_id"]
-    assert client.calls == ["load", "create", "query"]
+    assert client.calls == ["query", "load", "create", "query"]
 
 
 def test_every_query_caps_bytes_billed(config_dir):
@@ -102,7 +135,7 @@ def test_every_query_caps_bytes_billed(config_dir):
     for sql, config in client.queries:
         expected = (
             CANAL_MAX_BYTES_BILLED
-            if "CREATE TABLE osm_canals" in sql
+            if "CREATE TABLE osm_canals" in sql or "INSERT INTO osm_canals" in sql
             else MAX_BYTES_BILLED
         )
         assert config.maximum_bytes_billed == expected

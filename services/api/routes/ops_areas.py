@@ -67,7 +67,7 @@ async def cell_facts(cell_id: str, request: Request, _: OpsReader) -> CellFacts:
         facts = await run_in_threadpool(queries(request).cell_facts, cell_id)
     except UnknownCell as error:
         raise HTTPException(status_code=404, detail="cell_not_found") from error
-    if not needs_explanation(facts):
+    if not needs_explanation(facts, request.app.state.explained_region):
         return facts
     explanation = await explainer(request).explain(cell_id)
     return facts.model_copy(update={"explanation": explanation})

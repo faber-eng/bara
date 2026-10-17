@@ -54,6 +54,7 @@ def make_world(settings):
         explanations=FakeExplanationFiller(),
         clock=FixedClock(),
         max_cases=3,
+        region="riau",
     )
     events = InMemoryCollection(ProcessedEvent)
     dispatcher = EventDispatcher(

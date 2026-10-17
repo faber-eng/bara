@@ -34,6 +34,12 @@ def query_report(step: str, result: QueryResult) -> dict[str, object]:
     return {"step": step, "bytes": result.bytes_billed, "estimate": result.dry_run}
 
 
+def canals_loaded(warehouse: Warehouse, region: str) -> bool:
+    return tables.canals_exist(warehouse) and tables.region_has_canals(
+        warehouse, region
+    )
+
+
 def build_grid(
     *,
     region: RegionConfig,
@@ -48,7 +54,7 @@ def build_grid(
         raise JobError(f"no peat cells in the {region.id} AOI; check {region.aoi}")
     logger.info("%s: %d peat cells", region.id, len(cells))
     queries: list[dict[str, object]] = []
-    if not tables.canals_exist(warehouse):
+    if not canals_loaded(warehouse, region.id):
         created = tables.create_canals(warehouse, osm_lines, region.id, aoi, dry_run)
         queries.append(query_report("osm_canals", created))
     if not dry_run:

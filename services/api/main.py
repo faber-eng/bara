@@ -90,6 +90,7 @@ def build_app(
 ) -> FastAPI:
     app = FastAPI(title="bara-api", version=settings.git_sha)
     app.state.settings = settings
+    app.state.explained_region = full_flow_region(settings.config_dir)
     app.state.gateway = gateway
     app.state.verifier = verifier
     app.state.join_limiter = FailureLimiter(JOIN_MAX_FAILURES, JOIN_WINDOW_SECONDS)
@@ -285,6 +286,7 @@ def build_dispatcher(
         explanations=explanations,
         clock=adapters.clock,
         max_cases=settings.agent.max_cases_per_trigger,
+        region=full_flow_region(settings.config_dir),
     )
     fire_quiet = FireQuietHandler(
         cases=adapters.cases,
@@ -295,6 +297,7 @@ def build_dispatcher(
         clock=adapters.clock,
         spots=settings.reignition.recheck_spots_per_fire,
         recheck_hours=settings.reignition.recheck_after_hours,
+        region=full_flow_region(settings.config_dir),
     )
     evidence_received = EvidenceReceivedHandler(checker=checker, agent=agent)
     task_overdue = TaskOverdueHandler(

@@ -29,7 +29,9 @@ COORD_DECIMALS = 5
 SCORE_DECIMALS = 1
 
 
-def needs_explanation(facts: CellFacts) -> bool:
+def needs_explanation(facts: CellFacts, explained_region: str) -> bool:
+    if facts.region != explained_region:
+        return False
     return facts.explanation is None and facts.rank <= RANKED_CELL_LIMIT
 
 

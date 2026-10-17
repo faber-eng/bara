@@ -80,16 +80,24 @@ def test_no_week_means_the_current_week_in_the_region_timezone(settings):
     assert tiles.calls == [("drying", "riau", date(2026, 10, 19), date(2026, 10, 19))]
 
 
-@pytest.mark.parametrize("region", ["atlantis", "congo_cuvette"])
-def test_a_region_without_a_drying_layer_is_404(settings, region):
+def test_a_region_without_a_drying_layer_is_404(settings):
     tiles = FakeTiles()
     client = make_client(settings, tiles)
 
-    response = client.get("/api/tiles/drying", params={"region": region})
+    response = client.get("/api/tiles/drying", params={"region": "atlantis"})
 
     assert response.status_code == 404
-    assert response.json() == {"detail": f"region {region!r} has no drying layer"}
+    assert response.json() == {"detail": "region 'atlantis' has no drying layer"}
     assert tiles.calls == []
+
+
+def test_the_congo_region_has_a_drying_layer(settings):
+    tiles = FakeTiles()
+    client = make_client(settings, tiles)
+
+    response = client.get("/api/tiles/drying", params={"region": "congo_cuvette"})
+
+    assert response.status_code == 200
 
 
 @pytest.mark.parametrize("week", ["2026-42", "W42", "2027-W53", "next"])

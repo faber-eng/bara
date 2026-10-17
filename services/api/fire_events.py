@@ -81,7 +81,9 @@ class FireQuietHandler:
         clock: Clock,
         spots: int,
         recheck_hours: int,
+        region: str,
     ):
+        self._region = region
         self._cases = cases
         self._tasks = tasks
         self._volunteers = volunteers
@@ -94,6 +96,12 @@ class FireQuietHandler:
     def handle(self, message_id: str, event: Event) -> None:
         if not isinstance(event, FireQuietEvent):
             raise MalformedPush("not a fire.quiet event")
+        if event.region != self._region:
+            logger.info(
+                "fire of a region without the full flow",
+                extra=log_extra("event_region_skipped", region=event.region),
+            )
+            return
         spots = most_likely_cells(event.payload.cells, self._spots)
         if not spots:
             return

@@ -148,7 +148,9 @@ class DryingRankedHandler:
         explanations: ExplanationFiller,
         clock: Clock,
         max_cases: int,
+        region: str,
     ):
+        self._region = region
         self._cases = cases
         self._ranked_dams = ranked_dams
         self._agent = agent
@@ -159,6 +161,14 @@ class DryingRankedHandler:
     def handle(self, message_id: str, event: Event) -> None:
         if not isinstance(event, DryingRankedEvent):
             raise MalformedPush("not a drying.ranked event")
+        if event.region != self._region:
+            logger.info(
+                "ranking of a region without the full flow",
+                extra={
+                    "fields": {"event": "event_region_skipped", "region": event.region}
+                },
+            )
+            return
         opened = self._open_cases(message_id, event)
         asyncio.run(self._run_everything(message_id, event, opened))
 
