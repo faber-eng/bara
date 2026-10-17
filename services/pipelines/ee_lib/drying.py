@@ -23,6 +23,9 @@ INPUT_BANDS = (
     "clim_rain_30d_mm",
 )
 
+MEASURE_SCALE_M = 100
+MEASURE_TILE_SCALE = 4
+
 
 def iso(day: date) -> str:
     return day.isoformat()

@@ -33,6 +33,16 @@ def test_the_last_failure_is_raised():
     assert call.calls == 3
 
 
+def test_a_lasting_earth_engine_error_is_not_retried():
+    def broken() -> str:
+        raise ee.EEException("User memory limit exceeded.")
+
+    waits: list[float] = []
+    with pytest.raises(ee.EEException):
+        with_retries(broken, attempts=3, wait=waits.append)
+    assert waits == []
+
+
 def test_other_errors_are_not_retried():
     def broken() -> str:
         raise KeyError("features")

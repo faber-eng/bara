@@ -35,6 +35,7 @@ class EventWindows:
     rain_7d_before: DateRange | None
     rain_14d_before: DateRange | None
     rain_7d_after: DateRange | None
+    s1_baseline_year: int
 
 
 def iso_week(label: object) -> date:

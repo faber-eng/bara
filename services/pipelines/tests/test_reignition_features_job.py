@@ -16,6 +16,7 @@ EVENTS = [
         "event_id": "riau-1-1-20190801",
         "cell_id": "riau-1-1",
         "region": "riau",
+        "start_date": date(2019, 8, 1),
         "quiet_date": date(2019, 8, 10),
         "reignited": 1,
         "detection_days": 4,
@@ -29,6 +30,7 @@ EVENTS = [
         "event_id": "riau-1-2-20260920",
         "cell_id": "riau-1-2",
         "region": "riau",
+        "start_date": date(2026, 9, 20),
         "quiet_date": date(2026, 9, 27),
         "reignited": None,
         "detection_days": 1,
@@ -191,10 +193,47 @@ def test_a_missing_measure_is_a_job_error(config_dir):
 def test_since_is_the_first_train_year_for_a_full_rebuild(config_dir):
     data = load_data_config(config_dir)
 
-    assert job.resolve_since(True, 60, TODAY, data) == date(2015, 1, 1)
-    assert job.resolve_since(False, 60, TODAY, data) == date(2026, 8, 18)
+    assert job.resolve_since(True, 60, TODAY, data, None) == date(2015, 1, 1)
+    assert job.resolve_since(False, 60, TODAY, data, None) == date(2026, 8, 18)
+
+
+@pytest.mark.parametrize(
+    ("oldest_open", "since"),
+    [
+        (date(2026, 9, 1), date(2026, 8, 18)),
+        (date(2026, 5, 2), date(2026, 5, 2)),
+        (date(2010, 5, 2), date(2015, 1, 1)),
+    ],
+)
+def test_an_incremental_run_reaches_back_to_the_oldest_open_row(
+    config_dir, oldest_open, since
+):
+    data = load_data_config(config_dir)
+
+    assert job.resolve_since(False, 60, TODAY, data, oldest_open) == since
+
+
+def test_the_oldest_open_row_is_read_with_a_capped_query(config_dir):
+    client = RecordingBigQueryClient(
+        responses={"MIN(quiet_date)": [{"oldest": date(2026, 5, 2)}]},
+        existing=["reignition_training"],
+    )
+    warehouse = Warehouse(client, project="p", dataset="bara")
+
+    assert job.oldest_open_quiet_date(warehouse, "riau") == date(2026, 5, 2)
+    sql, config = client.queries[0]
+    assert "reignited IS NULL OR rain_7d_after_mm IS NULL" in sql
+    assert config.maximum_bytes_billed == 1_000_000_000
+
+
+def test_no_table_yet_means_no_open_row(config_dir):
+    client = RecordingBigQueryClient()
+    warehouse = Warehouse(client, project="p", dataset="bara")
+
+    assert job.oldest_open_quiet_date(warehouse, "riau") is None
+    assert client.queries == []
 
 
 def test_days_below_one_is_a_usage_error(config_dir):
     with pytest.raises(UsageError):
-        job.resolve_since(False, 0, TODAY, load_data_config(config_dir))
+        job.resolve_since(False, 0, TODAY, load_data_config(config_dir), None)
