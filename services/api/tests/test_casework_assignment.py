@@ -252,7 +252,7 @@ def test_an_unavailable_person_is_rejected():
     assert world.nothing_written()
 
 
-@pytest.mark.parametrize("status", ["escalated", "closed", "reviewing"])
+@pytest.mark.parametrize("status", ["escalated", "closed", "resolved_pending_human"])
 def test_a_case_that_cannot_be_assigned_is_rejected(status):
     world = World(case=make_case(dam_id="dam-7", status=status))
 

@@ -81,6 +81,22 @@ export function readJsonObjectAt(
   return readJsonObject(readRecord(record[key], `${label}.${key}`), `${label}.${key}`);
 }
 
+export function readStringRecord(
+  record: JsonRecord,
+  key: string,
+  label: string,
+): Record<string, string> {
+  const source = readRecord(record[key], `${label}.${key}`);
+  const result: Record<string, string> = {};
+  for (const [name, value] of Object.entries(source)) {
+    if (typeof value !== "string") {
+      throw new ResponseShapeError(`${label}.${key}.${name} is not a string`);
+    }
+    result[name] = value;
+  }
+  return result;
+}
+
 export function readStringArray(record: JsonRecord, key: string, label: string): string[] {
   return readArray(record[key], `${label}.${key}`).map((item) => {
     if (typeof item !== "string") throw new ResponseShapeError(`${label}.${key} has a non-string`);

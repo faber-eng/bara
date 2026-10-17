@@ -16,6 +16,8 @@ LEGAL_EDGES = [
     ("assigned", "overdue"),
     ("reviewing", "resolved_pending_human"),
     ("reviewing", "human_review"),
+    ("reviewing", "assigned"),
+    ("reviewing", "escalated"),
     ("resolved_pending_human", "closed"),
     ("human_review", "assigned"),
     ("human_review", "escalated"),
@@ -31,9 +33,9 @@ ILLEGAL_EDGES = [
 ]
 
 
-def test_the_legal_edge_list_has_fourteen_pairs():
-    assert len(LEGAL_EDGES) == 14
-    assert len(ILLEGAL_EDGES) == 81 - 14
+def test_the_legal_edge_list_has_sixteen_pairs():
+    assert len(LEGAL_EDGES) == 16
+    assert len(ILLEGAL_EDGES) == 81 - 16
 
 
 @pytest.mark.parametrize(("current", "target"), LEGAL_EDGES)
@@ -52,9 +54,12 @@ def test_every_other_ordered_pair_raises_naming_both(current, target):
     assert can_transition(current, target) is False
 
 
-def test_reviewing_cannot_go_straight_back_to_assigned():
-    with pytest.raises(IllegalTransition):
-        transition("reviewing", "assigned")
+def test_a_reviewed_broken_dam_can_get_a_repair_task():
+    assert transition("reviewing", "assigned") == "assigned"
+
+
+def test_a_reviewed_smoke_report_can_escalate():
+    assert transition("reviewing", "escalated") == "escalated"
 
 
 def test_assigned_cannot_escalate_without_going_overdue():

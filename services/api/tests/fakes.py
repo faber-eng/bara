@@ -6,7 +6,7 @@ from google.api_core import exceptions as gax
 from google.cloud.firestore_v1 import Increment
 from google.genai import errors, types
 
-from adapters.store import DocumentNotFound, Filter, Guard, GuardFailed, Put
+from adapters.store import DocumentNotFound, Filter, GuardFailed, Missing, Put
 from auth import InvalidToken
 from contracts import ClockSettings, Contract
 
@@ -127,7 +127,7 @@ class InMemoryTransactor:
         self.error = error
         self.commits = 0
 
-    def commit(self, guards: Sequence[Guard], writes) -> None:
+    def commit(self, guards: Sequence, writes) -> None:
         if self.error is not None:
             raise self.error
         for guard in guards:
@@ -136,8 +136,12 @@ class InMemoryTransactor:
             self._apply(write)
         self.commits += 1
 
-    def _check(self, guard: Guard) -> None:
+    def _check(self, guard) -> None:
         item = self._collections[guard.collection].get(guard.doc_id)
+        if isinstance(guard, Missing):
+            if item is not None:
+                raise GuardFailed(f"{guard.collection}/{guard.doc_id} exists")
+            return
         if item is None or getattr(item, guard.field) != guard.expected:
             raise GuardFailed(f"{guard.collection}/{guard.doc_id}")
 
@@ -254,21 +258,31 @@ class StubFirestoreClient:
 
 
 class RecordingBlob:
-    def __init__(self, name: str, calls: list[dict[str, object]]):
+    def __init__(
+        self, name: str, calls: list[dict[str, object]], objects: dict[str, bytes]
+    ):
         self.name = name
         self._calls = calls
+        self._objects = objects
 
     def generate_signed_url(self, **kwargs) -> str:
         self._calls.append({"name": self.name, **kwargs})
         return f"https://storage.test/{self.name}?X-Goog-Signature=abc"
 
+    def download_as_bytes(self) -> bytes:
+        if self.name not in self._objects:
+            raise gax.NotFound(self.name)
+        return self._objects[self.name]
+
 
 class RecordingBucket:
-    def __init__(self):
+    def __init__(self, objects: dict[str, bytes] | None = None):
+        self.name = "bucket-test"
         self.calls: list[dict[str, object]] = []
+        self.objects: dict[str, bytes] = {} if objects is None else objects
 
     def blob(self, name: str) -> RecordingBlob:
-        return RecordingBlob(name, self.calls)
+        return RecordingBlob(name, self.calls, self.objects)
 
 
 def fixed_signing_auth() -> SimpleNamespace:
@@ -427,6 +441,24 @@ def make_evidence(**overrides):
         "sample": False,
     }
     return Evidence(**{**fields, **overrides})
+
+
+def make_verdict(**overrides):
+    from contracts import Verdict
+
+    fields = {
+        "subject": "canal_dam",
+        "dam_state": "broken",
+        "smoke": "none",
+        "hot_ground_signs": "none",
+        "open_flame": "no",
+        "transcript": None,
+        "transcript_en": None,
+        "reasons": ["The dam wall has a gap and water flows through."],
+        "confidence": 0.9,
+        "needs_human": False,
+    }
+    return Verdict(**{**fields, **overrides})
 
 
 def make_message(**overrides):

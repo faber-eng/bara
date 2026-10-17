@@ -1,8 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { callsTo, initOf, stubApi } from "../../test-utils";
-import { completeUpload, fetchInbox, parseInbox, requestUpload } from "./volunteer";
+import { ResponseShapeError } from "./parse";
+import {
+  completeUpload,
+  fetchInbox,
+  parseInbox,
+  parseUploadTicket,
+  requestUpload,
+} from "./volunteer";
 
 vi.mock("../auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
+
+const SIGNED_HEADERS = {
+  "Content-Type": "image/jpeg",
+  "x-goog-content-length-range": "0,26214400",
+};
 
 const task = {
   id: "t1",
@@ -84,7 +96,11 @@ describe("volunteer API calls", () => {
   it("asks for a signed upload with the sample flag", async () => {
     const fetchMock = stubApi({
       "POST /api/v/uid-1/uploads": () =>
-        Response.json({ evidence_id: "e1", upload_url: "https://gcs/put" }),
+        Response.json({
+          evidence_id: "e1",
+          upload_url: "https://gcs/put",
+          headers: SIGNED_HEADERS,
+        }),
     });
     const ticket = await requestUpload("uid-1", {
       task_id: "t1",
@@ -93,9 +109,33 @@ describe("volunteer API calls", () => {
       size_bytes: 10,
       sample: true,
     });
-    expect(ticket).toEqual({ evidence_id: "e1", upload_url: "https://gcs/put" });
+    expect(ticket).toEqual({
+      evidence_id: "e1",
+      upload_url: "https://gcs/put",
+      headers: SIGNED_HEADERS,
+    });
     const call = callsTo(fetchMock, "POST /api/v/uid-1/uploads")[0];
     expect(JSON.parse(String(initOf(call).body))).toMatchObject({ sample: true, kind: "photo" });
+  });
+
+  it("keeps the signed headers of an upload ticket", () => {
+    const ticket = parseUploadTicket({
+      evidence_id: "e1",
+      upload_url: "https://gcs/put",
+      headers: SIGNED_HEADERS,
+    });
+    expect(ticket.headers).toEqual(SIGNED_HEADERS);
+  });
+
+  it("rejects an upload ticket without headers", () => {
+    expect(() => parseUploadTicket({ evidence_id: "e1", upload_url: "https://gcs/put" })).toThrow(
+      ResponseShapeError,
+    );
+  });
+
+  it("rejects an upload ticket with a non-string header value", () => {
+    const body = { evidence_id: "e1", upload_url: "https://gcs/put", headers: { "X-Size": 10 } };
+    expect(() => parseUploadTicket(body)).toThrow(ResponseShapeError);
   });
 
   it("returns the evidence from complete when the body is one, else null", async () => {

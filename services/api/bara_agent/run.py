@@ -1,6 +1,6 @@
 import logging
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -15,7 +15,7 @@ from pydantic import ValidationError
 from adapters.firestore_repos import AgentRunRepository, CaseRepository, DamRepository
 from bara_agent.agent import AgentTool, build_coordinator, summarizers
 from bara_agent.output import AgentOutput
-from bara_agent.prompts import PROMPT_VERSION, render_run_input
+from bara_agent.prompts import PROMPT_VERSION, RunInput, render_run_input
 from bara_agent.recorder import RunRecorder, elapsed_ms
 from contracts import AgentDecision, AgentRun, Case, Dam
 from domain.clock import Clock
@@ -100,14 +100,22 @@ class AgentService:
         self._clock = clock
         self._max_llm_calls = max_llm_calls
 
-    async def run_case(self, trigger: str, case_id: str, run_id: str) -> AgentRun:
+    async def run_case(
+        self,
+        trigger: str,
+        case_id: str,
+        run_id: str,
+        event: Mapping[str, object] | None = None,
+    ) -> AgentRun:
         case = self._cases.get(case_id)
         if case is None:
             raise CaseNotFound(case_id)
         recorder = RunRecorder(self._summarizers)
         started_at = self._clock.now()
         started = time.perf_counter()
-        message = render_run_input(trigger, case, self._dam_for(case), started_at)
+        message = render_run_input(
+            RunInput(trigger, case, self._dam_for(case), event, started_at)
+        )
         context = RunContext(trigger, case_id, run_id, started_at, started, recorder)
         try:
             text = await self._execute(recorder, message)

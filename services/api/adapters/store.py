@@ -28,6 +28,14 @@ class Guard(NamedTuple):
     expected: object
 
 
+class Missing(NamedTuple):
+    collection: str
+    doc_id: str
+
+
+type Precondition = Guard | Missing
+
+
 class Put(NamedTuple):
     collection: str
     doc_id: str
@@ -44,7 +52,9 @@ type Write = Put | Update
 
 
 class Transactor(Protocol):
-    def commit(self, guards: Sequence[Guard], writes: Sequence[Write]) -> None: ...
+    def commit(
+        self, guards: Sequence[Precondition], writes: Sequence[Write]
+    ) -> None: ...
 
 
 class Filter(NamedTuple):
@@ -137,7 +147,7 @@ class FirestoreTransactor:
     def __init__(self, client):
         self._client = client
 
-    def commit(self, guards: Sequence[Guard], writes: Sequence[Write]) -> None:
+    def commit(self, guards: Sequence[Precondition], writes: Sequence[Write]) -> None:
         guarded_commit(self._client.transaction(), self._client, guards, writes)
 
 
@@ -151,10 +161,14 @@ def guarded_commit(
         apply_write(transaction, client, write)
 
 
-def check_guard(transaction, client, guard: Guard) -> None:
+def check_guard(transaction, client, guard: Precondition) -> None:
     reference = client.collection(guard.collection).document(guard.doc_id)
     snapshot = reference.get(transaction=transaction)
     data = snapshot.to_dict() if snapshot.exists else None
+    if isinstance(guard, Missing):
+        if data is not None:
+            raise GuardFailed(f"{guard.collection}/{guard.doc_id} exists")
+        return
     if data is None or data.get(guard.field) != guard.expected:
         raise GuardFailed(
             f"{guard.collection}/{guard.doc_id}.{guard.field} is not {guard.expected!r}"

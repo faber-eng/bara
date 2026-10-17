@@ -37,9 +37,14 @@ class FakeXhr {
   }
 }
 
+const TICKET_HEADERS = {
+  "Content-Type": "image/jpeg",
+  "x-goog-content-length-range": "0,26214400",
+};
+
 function start(onProgress = vi.fn()) {
   const blob = new Blob(["x"]);
-  const done = putFile({ url: "https://gcs/put", blob, contentType: "image/jpeg", onProgress });
+  const done = putFile({ url: "https://gcs/put", blob, headers: TICKET_HEADERS, onProgress });
   return { blob, done, xhr: FakeXhr.last, onProgress };
 }
 
@@ -48,7 +53,7 @@ describe("putFile", () => {
     vi.unstubAllGlobals();
   });
 
-  it("PUTs the blob with its content type and resolves on 200", async () => {
+  it("PUTs the blob and resolves on 200", async () => {
     vi.stubGlobal("XMLHttpRequest", FakeXhr);
     const { blob, done, xhr } = start();
 
@@ -58,8 +63,14 @@ describe("putFile", () => {
     await expect(done).resolves.toBeUndefined();
     expect(xhr.method).toBe("PUT");
     expect(xhr.url).toBe("https://gcs/put");
-    expect(xhr.headers["Content-Type"]).toBe("image/jpeg");
     expect(xhr.sent).toBe(blob);
+  });
+
+  it("sets every header of the ticket on the request", () => {
+    vi.stubGlobal("XMLHttpRequest", FakeXhr);
+    const { xhr } = start();
+
+    expect(xhr.headers).toEqual(TICKET_HEADERS);
   });
 
   it("reports progress as a fraction", () => {

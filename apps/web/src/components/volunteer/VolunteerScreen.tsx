@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ApiError } from "../../lib/api/client";
 import { clockQuery } from "../../lib/api/queries";
-import type { Inbox } from "../../lib/api/volunteerTypes";
+import type { Inbox } from "../../lib/contracts";
 import { useCopyLanguage } from "../../lib/copy/language";
 import { type VolunteerCopy, volunteerCopy } from "../../lib/copy/volunteer";
 import { LanguageToggle } from "../LanguageToggle";

@@ -31,6 +31,9 @@ def test_build_adapters_wires_every_adapter_offline(settings):
     assert adapters.scheduler is not None
     assert adapters.clock is not None
     assert adapters.warehouse is not None
+    assert adapters.uploads is not None
+    assert adapters.messages is not None
+    assert adapters.verdicts is not None
 
 
 def test_without_an_api_url_the_scheduler_is_none(settings):
@@ -42,8 +45,11 @@ def test_without_an_api_url_the_scheduler_is_none(settings):
 def test_build_agent_service_wires_the_coordinator_offline(settings, monkeypatch):
     monkeypatch.setenv("GOOGLE_GENAI_USE_ENTERPRISE", "True")
 
+    adapters = build_adapters(settings)
+    gateway = offline_gateway(settings)
+
     service = main.build_agent_service(
-        settings, build_adapters(settings), offline_gateway(settings)
+        settings, adapters, gateway, main.build_checker(settings, adapters, gateway)
     )
 
     assert isinstance(service, AgentService)
@@ -54,21 +60,26 @@ def test_build_agent_service_without_enterprise_mode_fails_at_boot(
 ):
     monkeypatch.delenv("GOOGLE_GENAI_USE_ENTERPRISE", raising=False)
 
+    adapters = build_adapters(settings)
+    gateway = offline_gateway(settings)
+
     with pytest.raises(ConfigError, match="GOOGLE_GENAI_USE_ENTERPRISE"):
         main.build_agent_service(
-            settings, build_adapters(settings), offline_gateway(settings)
+            settings, adapters, gateway, main.build_checker(settings, adapters, gateway)
         )
 
 
-def test_build_dispatcher_handles_drying_ranked_and_trigger_wires_offline(
+def test_build_dispatcher_handles_both_topics_and_trigger_wires_offline(
     settings, monkeypatch
 ):
     monkeypatch.setenv("GOOGLE_GENAI_USE_ENTERPRISE", "True")
     adapters = build_adapters(settings)
-    agent = main.build_agent_service(settings, adapters, offline_gateway(settings))
+    gateway = offline_gateway(settings)
+    checker = main.build_checker(settings, adapters, gateway)
+    agent = main.build_agent_service(settings, adapters, gateway, checker)
 
-    dispatcher = main.build_dispatcher(settings, adapters, agent)
+    dispatcher = main.build_dispatcher(settings, adapters, agent, checker)
     trigger = main.build_trigger(settings, adapters)
 
-    assert set(dispatcher._handlers) == {"drying.ranked"}
+    assert set(dispatcher._handlers) == {"drying.ranked", "evidence.received"}
     assert trigger is not None

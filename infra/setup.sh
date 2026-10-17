@@ -24,7 +24,7 @@ readonly JOBS_ROLES=(
   roles/pubsub.publisher roles/serviceusage.serviceUsageConsumer roles/bigquery.readSessionUser
 )
 readonly API_SERVICE=bara-api
-readonly PUSH_TOPICS=(drying.ranked)
+readonly PUSH_TOPICS=(drying.ranked evidence.received)
 readonly PUSH_INVOKER=bara-tasks-invoker
 readonly PUSH_ACK_DEADLINE=600
 readonly PUSH_MAX_ATTEMPTS=5
@@ -155,6 +155,7 @@ has_cors() {
   local config origin
   config="$(gcloud storage buckets describe "gs://$1" --project "$PROJECT" --format='value(cors_config)')"
   [[ "$config" == *PUT* ]] || return 1
+  [[ "$config" == *x-goog-content-length-range* ]] || return 1
   for origin in $(cors_origins); do
     [[ "$config" == *"$origin"* ]] || return 1
   done
@@ -167,7 +168,7 @@ set_cors() {
   origins="$(cors_origins)"
   origins="\"${origins// /\", \"}\""
   cat >"$file" <<EOF
-[{"origin": [$origins], "method": ["PUT", "GET"], "responseHeader": ["Content-Type"], "maxAgeSeconds": 3600}]
+[{"origin": [$origins], "method": ["PUT", "GET"], "responseHeader": ["Content-Type", "x-goog-content-length-range"], "maxAgeSeconds": 3600}]
 EOF
   gcloud storage buckets update "gs://$1" --project "$PROJECT" --cors-file "$file" --quiet >/dev/null
 }

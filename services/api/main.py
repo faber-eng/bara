@@ -19,10 +19,15 @@ from bara_agent.agent import build_tools
 from bara_agent.run import AgentService
 from case_queries import CaseQueries
 from casework.assignment import TaskAssigner
+from casework.evidence_check import EvidenceChecker
+from casework.evidence_intake import EvidenceIntake
+from casework.evidence_reader import EvidenceReader
+from casework.inbox import InboxReader
 from casework.messenger import Messenger
 from config import Settings, full_flow_region, load_settings, region_timezones
 from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
+from evidence_events import EvidenceReceivedHandler
 from logs import configure_logging
 from push_auth import GoogleOidcVerifier
 from ratelimit import FailureLimiter
@@ -38,6 +43,7 @@ from routes import (
     ops_cases,
     samples,
     tiles,
+    volunteer,
 )
 from scenario_reset import ScenarioResetter
 from trigger import JudgeTrigger
@@ -69,6 +75,7 @@ def build_app(
     app.include_router(judge_reset.router)
     app.include_router(ops_cases.router)
     app.include_router(ops_areas.router)
+    app.include_router(volunteer.router)
     return app
 
 
@@ -101,8 +108,50 @@ def build_assigner(
     )
 
 
-def build_agent_service(
+def build_checker(
     settings: Settings, adapters: Adapters, gateway: ModelGateway
+) -> EvidenceChecker:
+    return EvidenceChecker(
+        evidence=adapters.evidence,
+        tasks=adapters.tasks,
+        cases=adapters.cases,
+        storage=adapters.storage,
+        cache=adapters.verdicts,
+        casework=adapters.casework,
+        reader=EvidenceReader(gateway),
+        clock=adapters.clock,
+        model=settings.models.for_role("fast").model,
+        human_review_confidence=settings.tasks.human_review_confidence,
+        location_tolerance_m=settings.tasks.location_tolerance_m,
+    )
+
+
+def build_intake(adapters: Adapters) -> EvidenceIntake:
+    return EvidenceIntake(
+        tasks=adapters.tasks,
+        cases=adapters.cases,
+        uploads=adapters.uploads,
+        evidence=adapters.evidence,
+        casework=adapters.casework,
+        storage=adapters.storage,
+        scheduler=adapters.scheduler,
+        publisher=adapters.publisher,
+        clock=adapters.clock,
+        new_id=new_id,
+    )
+
+
+def build_inbox(adapters: Adapters) -> InboxReader:
+    return InboxReader(
+        tasks=adapters.tasks, messages=adapters.messages, evidence=adapters.evidence
+    )
+
+
+def build_agent_service(
+    settings: Settings,
+    adapters: Adapters,
+    gateway: ModelGateway,
+    checker: EvidenceChecker,
 ) -> AgentService:
     return AgentService(
         model=build_agent_model(settings),
@@ -112,6 +161,7 @@ def build_agent_service(
             dams=adapters.dams,
             volunteers=adapters.volunteers,
             assigner=build_assigner(settings, adapters, gateway),
+            checker=checker,
             radius_m=settings.grid_cell_m,
         ),
         cases=adapters.cases,
@@ -123,7 +173,10 @@ def build_agent_service(
 
 
 def build_dispatcher(
-    settings: Settings, adapters: Adapters, agent: AgentService
+    settings: Settings,
+    adapters: Adapters,
+    agent: AgentService,
+    checker: EvidenceChecker,
 ) -> EventDispatcher:
     drying_ranked = DryingRankedHandler(
         cases=adapters.cases,
@@ -132,7 +185,11 @@ def build_dispatcher(
         clock=adapters.clock,
         max_cases=settings.agent.max_cases_per_trigger,
     )
-    return EventDispatcher(adapters.events, {"drying.ranked": drying_ranked})
+    evidence_received = EvidenceReceivedHandler(checker=checker, agent=agent)
+    return EventDispatcher(
+        adapters.events,
+        {"drying.ranked": drying_ranked, "evidence.received": evidence_received},
+    )
 
 
 def build_trigger(settings: Settings, adapters: Adapters) -> JudgeTrigger:
@@ -179,10 +236,15 @@ def create_app() -> FastAPI:
     gateway = ModelGateway(settings.models, build_vertex_clients(settings))
     app = build_app(settings, gateway, build_token_verifier(settings))
     app.state.adapters = build_adapters(settings)
-    app.state.agent = build_agent_service(settings, app.state.adapters, gateway)
-    app.state.dispatcher = build_dispatcher(
-        settings, app.state.adapters, app.state.agent
+    checker = build_checker(settings, app.state.adapters, gateway)
+    app.state.agent = build_agent_service(
+        settings, app.state.adapters, gateway, checker
     )
+    app.state.dispatcher = build_dispatcher(
+        settings, app.state.adapters, app.state.agent, checker
+    )
+    app.state.evidence_intake = build_intake(app.state.adapters)
+    app.state.inbox_reader = build_inbox(app.state.adapters)
     app.state.trigger = build_trigger(settings, app.state.adapters)
     app.state.push_verifier = GoogleOidcVerifier()
     app.state.resetter = build_resetter(settings)

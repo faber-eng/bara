@@ -248,6 +248,24 @@ export type Bulletin = {
   created_at: IsoDateTime;
 };
 
+export type UploadRequest = {
+  task_id: string;
+  kind: EvidenceKind;
+  content_type: string;
+  size_bytes: number;
+  sample: boolean;
+};
+
+export type UploadTicket = {
+  evidence_id: string;
+  upload_url: string;
+  headers: Record<string, string>;
+};
+
+export type CompleteRequest = { point: GeoPoint | null; captured_at: IsoDateTime };
+
+export type Inbox = { tasks: Task[]; messages: Message[]; evidence: Evidence[] };
+
 export type ClockState = { now: IsoDateTime; offset_seconds: number; judge_mode: boolean };
 
 export type CaseSummary = {

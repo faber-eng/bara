@@ -9,6 +9,7 @@ from adapters.store import (
     FirestoreTransactor,
     Guard,
     GuardFailed,
+    Missing,
     Put,
     Update,
 )
@@ -46,6 +47,13 @@ def test_a_live_guarded_commit_writes_all_or_nothing():
                 [open_guard], [Update(LIVE_CASES, case_id, {"status": "escalated"})]
             )
         assert cases.get(case_id).status == "assigned"
+
+        with pytest.raises(GuardFailed):
+            transactor.commit(
+                [Missing(LIVE_MESSAGES, case_id)],
+                [Put(LIVE_MESSAGES, case_id, make_message(id=case_id, text="x"))],
+            )
+        assert messages.get(case_id).text == "halo"
     finally:
         client.collection(LIVE_CASES).document(case_id).delete()
         client.collection(LIVE_MESSAGES).document(case_id).delete()

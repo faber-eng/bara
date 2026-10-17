@@ -14,6 +14,13 @@ CI_ACCOUNT = f"bara-build@{PROJECT}.iam.gserviceaccount.com"
 
 STUB_SCRIPT = """#!/usr/bin/env bash
 printf '%s\\n' "$*" >> "$STUB_LOG"
+prev=""
+for arg in "$@"; do
+  if [[ "$prev" == "--cors-file" ]]; then
+    printf 'CORS_FILE %s\\n' "$(cat "$arg")" >> "$STUB_LOG"
+  fi
+  prev="$arg"
+done
 if [[ "$*" == *get-iam-policy* && -n "${STUB_POLICY:-}" ]]; then
   printf '%s\\n' "$STUB_POLICY"
   exit 0
@@ -24,6 +31,10 @@ if [[ "$*" == *"value(status.url)"* ]]; then
 fi
 if [[ "$*" == *"value(projectNumber)"* ]]; then
   printf '%s\\n' "123456"
+  exit 0
+fi
+if [[ "$*" == *"value(cors_config)"* ]]; then
+  printf '%s\\n' "${STUB_CORS:-}"
   exit 0
 fi
 if [[ -n "${STUB_OK_PATTERN:-}" && "$*" =~ $STUB_OK_PATTERN ]]; then
@@ -89,6 +100,7 @@ def run_script(tmp_path: Path, stub_bin: Path):
         path: Path | None = None,
         ok_pattern: str = "",
         policy: str = "",
+        cors: str = "",
     ) -> Result:
         log = tmp_path / "calls.log"
         log.write_text("")
@@ -99,6 +111,7 @@ def run_script(tmp_path: Path, stub_bin: Path):
             "STUB_LOG": str(log),
             "STUB_OK_PATTERN": ok_pattern,
             "STUB_POLICY": policy,
+            "STUB_CORS": cors,
         }
         bash = shutil.which("bash")
         done = subprocess.run(

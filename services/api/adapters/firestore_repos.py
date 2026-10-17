@@ -10,6 +10,8 @@ from adapters.store import (
     FirestoreCollection,
     Guard,
     GuardFailed,
+    Missing,
+    Precondition,
     Put,
     Transactor,
     Update,
@@ -22,14 +24,18 @@ from contracts import (
     ClockSettings,
     Contact,
     Dam,
+    DamState,
     Escalation,
     EventType,
     Evidence,
     Message,
+    PendingUpload,
     ProcessedEvent,
     RankedCell,
     RankedDam,
     Task,
+    Verdict,
+    VerdictCacheEntry,
     Volunteer,
     VolunteerRole,
 )
@@ -41,6 +47,10 @@ CLOCK_DOCUMENT = "clock"
 TASKS = "tasks"
 CASES = "cases"
 MESSAGES = "messages"
+EVIDENCE = "evidence"
+UPLOADS = "uploads"
+DAMS = "dams"
+VERDICT_CACHE = "verdict_cache"
 IN_QUERY_LIMIT = 30
 
 
@@ -56,6 +66,9 @@ class TaskRepository:
 
     def set_cloud_task_name(self, task_id: str, name: str) -> None:
         self._tasks.update(task_id, {"cloud_task_name": name})
+
+    def for_assignee(self, assignee_id: str) -> list[Task]:
+        return self._tasks.where(Filter("assignee_id", "==", assignee_id))
 
     def for_case(self, case_id: str) -> list[Task]:
         return self._tasks.where(Filter("case_id", "==", case_id))
@@ -74,6 +87,12 @@ class EvidenceRepository:
 
     def for_cases(self, case_ids: list[str]) -> list[Evidence]:
         return children(self._evidence, case_ids)
+
+    def get(self, evidence_id: str) -> Evidence | None:
+        return self._evidence.get(evidence_id)
+
+    def for_uploader(self, uploaded_by: str) -> list[Evidence]:
+        return self._evidence.where(Filter("uploaded_by", "==", uploaded_by))
 
 
 class CaseRepository:
@@ -119,6 +138,27 @@ class CaseChanged(Exception):
     pass
 
 
+@dataclass(frozen=True)
+class StatusChange:
+    case_id: str
+    expected: CaseStatus
+    next: CaseStatus
+
+
+@dataclass(frozen=True)
+class DamCheck:
+    dam_id: str
+    state: DamState
+    checked_at: datetime
+
+
+def status_writes(change: StatusChange | None) -> tuple[list[Guard], list[Write]]:
+    if change is None:
+        return [], []
+    guard = Guard(CASES, change.case_id, "status", change.expected)
+    return [guard], [Update(CASES, change.case_id, {"status": change.next})]
+
+
 class CaseworkStore:
     def __init__(self, transactor: Transactor):
         self._transactor = transactor
@@ -140,12 +180,103 @@ class CaseworkStore:
         for task_id in reassigned_task_ids:
             writes.append(Update(TASKS, task_id, {"status": "reassigned"}))
         guard = Guard(CASES, task.case_id, "status", expected_status)
+        self._commit(
+            [guard], writes, f"case {task.case_id} is no longer {expected_status}"
+        )
+
+    def commit_evidence(
+        self,
+        *,
+        evidence: Evidence,
+        done_at: datetime | None,
+        case_change: StatusChange | None,
+    ) -> None:
+        guards: list[Precondition] = [Missing(EVIDENCE, evidence.id)]
+        writes: list[Write] = [Put(EVIDENCE, evidence.id, evidence)]
+        if done_at is not None:
+            guards.append(Guard(TASKS, evidence.task_id, "status", "open"))
+            writes.append(
+                Update(TASKS, evidence.task_id, {"status": "done", "done_at": done_at})
+            )
+        case_guards, case_writes = status_writes(case_change)
+        self._commit(
+            guards + case_guards,
+            writes + case_writes,
+            f"evidence {evidence.id} or its task or case changed",
+        )
+
+    def commit_verdict(
+        self,
+        *,
+        evidence_id: str,
+        verdict: Verdict,
+        location_ok: bool | None,
+        case_change: StatusChange | None,
+        dam_check: DamCheck | None,
+    ) -> None:
+        unread = Guard(EVIDENCE, evidence_id, "verdict", None)
+        writes: list[Write] = [
+            Update(
+                EVIDENCE,
+                evidence_id,
+                {"verdict": verdict.model_dump(), "location_ok": location_ok},
+            )
+        ]
+        case_guards, case_writes = status_writes(case_change)
+        if dam_check is not None:
+            writes.append(
+                Update(
+                    DAMS,
+                    dam_check.dam_id,
+                    {
+                        "last_state": dam_check.state,
+                        "last_checked_at": dam_check.checked_at,
+                    },
+                )
+            )
+        self._commit(
+            [unread, *case_guards],
+            writes + case_writes,
+            f"evidence {evidence_id} or its case changed",
+        )
+
+    def _commit(
+        self, guards: Sequence[Precondition], writes: Sequence[Write], reason: str
+    ) -> None:
         try:
-            self._transactor.commit([guard], writes)
+            self._transactor.commit(guards, writes)
         except GuardFailed as error:
-            raise CaseChanged(
-                f"case {task.case_id} is no longer {expected_status}"
-            ) from error
+            raise CaseChanged(reason) from error
+
+
+class MessageRepository:
+    def __init__(self, messages: Collection[Message]):
+        self._messages = messages
+
+    def to(self, recipient_id: str) -> list[Message]:
+        return self._messages.where(Filter("to_id", "==", recipient_id))
+
+
+class UploadRepository:
+    def __init__(self, uploads: Collection[PendingUpload]):
+        self._uploads = uploads
+
+    def get(self, evidence_id: str) -> PendingUpload | None:
+        return self._uploads.get(evidence_id)
+
+    def save(self, upload: PendingUpload) -> None:
+        self._uploads.put(upload.id, upload)
+
+
+class VerdictCache:
+    def __init__(self, entries: Collection[VerdictCacheEntry]):
+        self._entries = entries
+
+    def get(self, key: str) -> VerdictCacheEntry | None:
+        return self._entries.get(key)
+
+    def put(self, entry: VerdictCacheEntry) -> None:
+        self._entries.put(entry.id, entry)
 
 
 class VolunteerRepository:
