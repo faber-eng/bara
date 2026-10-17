@@ -292,3 +292,66 @@ def test_a_handler_error_releases_the_claim_so_a_redelivery_runs_again():
         "processed"
     )
     assert handler.calls == 2
+
+
+class SlowAgent:
+    def __init__(self, seconds: float, fail_for: set[str] | None = None):
+        self.seconds = seconds
+        self.active = 0
+        self.peak = 0
+        self.finished: list[str] = []
+        self._fail_for = fail_for or set()
+
+    async def run_case(self, trigger: str, case_id: str, run_id: str):
+        import asyncio
+
+        self.active += 1
+        self.peak = max(self.peak, self.active)
+        try:
+            await asyncio.sleep(self.seconds)
+            if case_id in self._fail_for:
+                raise RuntimeError("model down")
+            self.finished.append(case_id)
+        finally:
+            self.active -= 1
+
+
+def slow_world(agent, dams=None, limit=3):
+    world = World(dams or five_dams(), limit=limit)
+    world.handler._agent = agent
+    return world
+
+
+def test_the_case_runs_overlap_so_three_cases_take_one_run_not_three():
+    import time
+
+    agent = SlowAgent(0.3)
+    world = slow_world(agent)
+
+    started = time.perf_counter()
+    world.deliver()
+    elapsed = time.perf_counter() - started
+
+    assert agent.peak == 3
+    assert len(agent.finished) == 3
+    assert elapsed < 0.7
+
+
+def test_no_more_than_three_runs_are_in_flight_at_once():
+    agent = SlowAgent(0.05)
+    world = slow_world(agent, limit=5)
+
+    world.deliver()
+
+    assert agent.peak == 3
+    assert len(agent.finished) == 5
+
+
+def test_a_failing_run_does_not_block_or_fail_the_others():
+    agent = SlowAgent(0.05, fail_for={"case-m-1-dam-2"})
+    world = slow_world(agent)
+
+    outcome = world.deliver()
+
+    assert outcome == "processed"
+    assert sorted(agent.finished) == ["case-m-1-dam-1", "case-m-1-dam-3"]
