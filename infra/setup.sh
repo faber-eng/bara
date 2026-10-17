@@ -20,7 +20,7 @@ readonly API_ROLES=(
 )
 readonly JOBS_ROLES=(
   roles/earthengine.writer roles/bigquery.dataEditor roles/bigquery.jobUser roles/datastore.user
-  roles/pubsub.publisher roles/serviceusage.serviceUsageConsumer
+  roles/pubsub.publisher roles/serviceusage.serviceUsageConsumer roles/bigquery.readSessionUser
 )
 readonly API_SERVICE=bara-api
 readonly IMAGE_REPO=bara

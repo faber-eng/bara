@@ -74,8 +74,8 @@ class FakeEarth:
         self.calls.append(("peat_cells", region.id))
         return list(self.peat_features)
 
-    def chirps_last_day(self):
-        self.calls.append(("chirps_last_day", None))
+    def chirps_last_day(self, before):
+        self.calls.append(("chirps_last_day", before))
         return self.chirps_last
 
     def drying_inputs(self, region, aoi, cells_table, week_start, window):
