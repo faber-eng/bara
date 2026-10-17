@@ -22,7 +22,6 @@ readonly JOBS_ROLES=(
   roles/earthengine.writer roles/bigquery.dataEditor roles/bigquery.jobUser roles/datastore.user
   roles/pubsub.publisher roles/serviceusage.serviceUsageConsumer
 )
-readonly CI_ACCOUNT=bara-build
 readonly API_SERVICE=bara-api
 readonly IMAGE_REPO=bara
 readonly CI_SECRETS=(maps-key firebase-web-config)

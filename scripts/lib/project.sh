@@ -4,6 +4,7 @@ readonly EXIT_USAGE=2
 readonly EXIT_NO_PROJECT=3
 readonly EXIT_NO_TOOL=4
 readonly REGION=asia-southeast1
+readonly CI_ACCOUNT=bara-build
 
 repo_root() {
   git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel
