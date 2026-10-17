@@ -20,6 +20,8 @@ Change made to every photo: resized so the long edge is at most 1600 px, re-enco
 | photos/intact_dam_04.jpg | Blocked grip on Hoove - geograph.org.uk - 3049561.jpg | Trevor Littlewood | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | <https://commons.wikimedia.org/wiki/File:Blocked_grip_on_Hoove_-_geograph.org.uk_-_3049561.jpg> |
 | photos/intact_dam_05.jpg | Blocked 'grip' on shallow-angled moorland - geograph.org.uk - 6807367.jpg | Trevor Littlewood | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | <https://commons.wikimedia.org/wiki/File:Blocked_%27grip%27_on_shallow-angled_moorland_-_geograph.org.uk_-_6807367.jpg> |
 | photos/intact_dam_06.jpg | 'Grip blocking', Byerhope Moss - geograph.org.uk - 249580.jpg | Tim Heaton | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | <https://commons.wikimedia.org/wiki/File:%27Grip_blocking%27,_Byerhope_Moss_-_geograph.org.uk_-_249580.jpg> |
+| photos/intact_dam_07.jpg | Peat Compaction Dam South Sumatra Indonesia.jpg | Gambut Pratama | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | <https://commons.wikimedia.org/wiki/File:Peat_Compaction_Dam_South_Sumatra_Indonesia.jpg> |
+| photos/intact_dam_08.jpg | Grip block on moorland north of Hempshaw's - geograph.org.uk - 5729634.jpg | Gary Rogers | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | <https://commons.wikimedia.org/wiki/File:Grip_block_on_moorland_north_of_Hempshaw%27s_-_geograph.org.uk_-_5729634.jpg> |
 | photos/burned_smoke_01.jpg | Peatland Forest fires.jpg | Muhammad Pasya Ramadhan | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | <https://commons.wikimedia.org/wiki/File:Peatland_Forest_fires.jpg> |
 | photos/burned_smoke_02.jpg | Marking the Fire.jpg | DenY Krisbiyantoro | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | <https://commons.wikimedia.org/wiki/File:Marking_the_Fire.jpg> |
 | photos/burned_smoke_03.jpg | Risk and Dangerous.jpg | DenY Krisbiyantoro | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | <https://commons.wikimedia.org/wiki/File:Risk_and_Dangerous.jpg> |
@@ -58,4 +60,4 @@ Change made to every photo: resized so the long edge is at most 1600 px, re-enco
 ## Still to record
 
 - Voice notes: 10 team recordings are in `voice/`, which meets the spec minimum. All are Faber Fathers team recordings under CC BY 4.0.
-- 2 more photos to reach 40 (it has 38). Southeast Asian canal blocks, broken or intact, are still missing: no finished Southeast Asian canal block with a confirmed open licence was found on Commons, Openverse or Flickr.
+- Photos: 40, the spec minimum. Southeast Asian canal blocks are still thin: one finished block (intact_dam_01) and one under construction (intact_dam_07). No Southeast Asian broken canal block with a confirmed open licence was found on Commons, Openverse or Flickr.
