@@ -3,6 +3,7 @@
 readonly EXIT_USAGE=2
 readonly EXIT_NO_PROJECT=3
 readonly EXIT_NO_TOOL=4
+readonly REGION=asia-southeast1
 
 repo_root() {
   git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel
@@ -46,4 +47,12 @@ require_tools() {
       exit "$EXIT_NO_TOOL"
     fi
   done
+}
+
+require_flag_value() {
+  local flag="$1" arg_count="$2"
+  if [[ "$arg_count" -lt 2 ]]; then
+    echo "$flag needs a value" >&2
+    exit "$EXIT_USAGE"
+  fi
 }

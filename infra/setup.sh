@@ -2,8 +2,8 @@
 set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib/project.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib/ensure.sh"
 
-readonly REGION=asia-southeast1
 readonly BQ_LOCATION=US
 readonly DATASET=bara
 readonly QUEUE=task-deadlines
@@ -21,6 +21,13 @@ readonly API_ROLES=(
 readonly JOBS_ROLES=(
   roles/earthengine.writer roles/bigquery.dataEditor roles/bigquery.jobUser roles/datastore.user
   roles/pubsub.publisher roles/serviceusage.serviceUsageConsumer
+)
+readonly CI_ACCOUNT=bara-build
+readonly API_SERVICE=bara-api
+readonly IMAGE_REPO=bara
+readonly CI_SECRETS=(maps-key firebase-web-config)
+readonly CI_PROJECT_ROLES=(
+  roles/logging.logWriter roles/firebasehosting.admin roles/serviceusage.serviceUsageConsumer
 )
 
 DRY_RUN=false
@@ -40,8 +47,9 @@ anything that already exists is left as it is.
 Prints one line per resource: "ok" (exists), "made" or "would make".
 Exit codes: 0 done, 1 a gcloud call failed, 2 usage error, 3 no project, 4 tool missing.
 
-Push subscriptions, Cloud Scheduler jobs and run.invoker grants need the deployed
-bara-api and bara-jobs services; they are created by the Cloud Build step (OT-4).
+The Cloud Build service account bara-build and its grants need the deployed bara-api
+service and the secrets maps-key and firebase-web-config. Push subscriptions, Cloud
+Scheduler jobs and run.invoker grants wait for the bara-api event route and bara-jobs.
 EOF
 }
 
@@ -49,32 +57,13 @@ parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --project)
-        [[ $# -ge 2 ]] || { echo "--project needs a value" >&2; exit "$EXIT_USAGE"; }
+        require_flag_value "$1" "$#"
         PROJECT_FLAG="$2"; shift 2 ;;
       --dry-run) DRY_RUN=true; shift ;;
       -h|--help) usage; exit 0 ;;
       *) echo "unknown argument: $1" >&2; usage >&2; exit "$EXIT_USAGE" ;;
     esac
   done
-}
-
-report() {
-  local state="$1" kind="$2" name="$3"
-  printf '%-10s %-16s %s\n' "$state" "$kind" "$name"
-}
-
-ensure() {
-  local kind="$1" name="$2" check_fn="$3" create_fn="$4"
-  if "$check_fn" "$name"; then
-    report ok "$kind" "$name"
-    return
-  fi
-  if [[ "$DRY_RUN" == true ]]; then
-    report "would make" "$kind" "$name"
-    return
-  fi
-  "$create_fn" "$name"
-  report made "$kind" "$name"
 }
 
 policy_has_binding() {
@@ -214,6 +203,69 @@ create_queue() {
   gcloud tasks queues create "$1" --location "$REGION" --project "$PROJECT" --quiet >/dev/null
 }
 
+split_binding() {
+  local rest="${1#*|}"
+  BINDING_NAME="${1%%|*}"
+  BINDING_MEMBER="${rest%%|*}"
+  BINDING_ROLE="${rest##*|}"
+}
+
+has_repo_role() {
+  split_binding "$1"
+  policy_has_binding "$BINDING_ROLE" "$BINDING_MEMBER" \
+    gcloud artifacts repositories get-iam-policy "$BINDING_NAME" --location "$REGION" --project "$PROJECT"
+}
+
+grant_repo_role() {
+  split_binding "$1"
+  with_retry gcloud artifacts repositories add-iam-policy-binding "$BINDING_NAME" --location "$REGION" \
+    --project "$PROJECT" --member "serviceAccount:$BINDING_MEMBER" --role "$BINDING_ROLE" --quiet --format none
+}
+
+has_service_role() {
+  split_binding "$1"
+  policy_has_binding "$BINDING_ROLE" "$BINDING_MEMBER" \
+    gcloud run services get-iam-policy "$BINDING_NAME" --region "$REGION" --project "$PROJECT"
+}
+
+grant_service_role() {
+  split_binding "$1"
+  with_retry gcloud run services add-iam-policy-binding "$BINDING_NAME" --region "$REGION" \
+    --project "$PROJECT" --member "serviceAccount:$BINDING_MEMBER" --role "$BINDING_ROLE" --quiet --format none
+}
+
+has_sa_user() {
+  split_binding "$1"
+  policy_has_binding "$BINDING_ROLE" "$BINDING_MEMBER" \
+    gcloud iam service-accounts get-iam-policy "$BINDING_NAME" --project "$PROJECT"
+}
+
+grant_sa_user() {
+  split_binding "$1"
+  with_retry gcloud iam service-accounts add-iam-policy-binding "$BINDING_NAME" --project "$PROJECT" \
+    --member "serviceAccount:$BINDING_MEMBER" --role "$BINDING_ROLE" --quiet --format none
+}
+
+has_secret_role() {
+  split_binding "$1"
+  policy_has_binding "$BINDING_ROLE" "$BINDING_MEMBER" \
+    gcloud secrets get-iam-policy "$BINDING_NAME" --project "$PROJECT"
+}
+
+grant_secret_role() {
+  split_binding "$1"
+  with_retry gcloud secrets add-iam-policy-binding "$BINDING_NAME" --project "$PROJECT" \
+    --member "serviceAccount:$BINDING_MEMBER" --role "$BINDING_ROLE" --quiet --format none
+}
+
+require_api_service() {
+  if ! gcloud run services describe "$API_SERVICE" --region "$REGION" --project "$PROJECT" >/dev/null 2>&1; then
+    echo "Cloud Run service $API_SERVICE not found in $REGION" >&2
+    echo "deploy it once, then run infra/setup.sh again" >&2
+    exit 1
+  fi
+}
+
 load_enabled_apis() {
   ENABLED_APIS="$(gcloud services list --enabled --project "$PROJECT" --format='value(config.name)')"
 }
@@ -268,6 +320,23 @@ setup_messaging() {
   ensure tasks-queue "$QUEUE" queue_exists create_queue
 }
 
+setup_ci() {
+  local ci api role secret
+  ci="$(sa_email "$CI_ACCOUNT")"
+  api="$(sa_email bara-api)"
+  require_api_service
+  ensure service-account "$CI_ACCOUNT" sa_exists create_sa
+  for role in "${CI_PROJECT_ROLES[@]}"; do
+    ensure project-role "$ci|$role" has_project_role grant_project_role
+  done
+  ensure repo-role "$IMAGE_REPO|$ci|roles/artifactregistry.writer" has_repo_role grant_repo_role
+  ensure service-role "$API_SERVICE|$ci|roles/run.developer" has_service_role grant_service_role
+  ensure sa-user "$api|$ci|roles/iam.serviceAccountUser" has_sa_user grant_sa_user
+  for secret in "${CI_SECRETS[@]}"; do
+    ensure secret-role "$secret|$ci|roles/secretmanager.secretAccessor" has_secret_role grant_secret_role
+  done
+}
+
 main() {
   parse_args "$@"
   require_tools gcloud bq
@@ -281,6 +350,7 @@ main() {
   setup_buckets
   setup_data_stores
   setup_messaging
+  setup_ci
 }
 
 main "$@"

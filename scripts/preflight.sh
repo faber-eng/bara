@@ -38,7 +38,7 @@ parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --project)
-        [[ $# -ge 2 ]] || { echo "--project needs a value" >&2; exit "$EXIT_USAGE"; }
+        require_flag_value "$1" "$#"
         PROJECT_FLAG="$2"; shift 2 ;;
       -h|--help) usage; exit 0 ;;
       P1|P2|P3|P4) CHECKS+=("$1"); shift ;;
