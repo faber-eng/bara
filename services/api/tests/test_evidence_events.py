@@ -14,9 +14,10 @@ BROKEN = make_verdict(dam_state="broken")
 
 
 class FakeChecker:
-    def __init__(self, verdict=BROKEN, stored=True, error=None):
+    def __init__(self, verdict=BROKEN, stored=True, awaits_agent=True, error=None):
         self.verdict = verdict
         self.stored = stored
+        self.awaits_agent = awaits_agent
         self.error = error
         self.calls = []
         self.flagged = []
@@ -26,7 +27,12 @@ class FakeChecker:
         if self.error is not None:
             raise self.error
         return CheckedEvidence(
-            evidence_id, self.verdict, True, stored=self.stored, from_cache=False
+            evidence_id,
+            self.verdict,
+            True,
+            stored=self.stored,
+            from_cache=False,
+            awaits_agent=self.awaits_agent,
         )
 
     def flag_for_person(self, case_id):
@@ -80,23 +86,17 @@ def test_a_broken_dam_verdict_runs_the_agent_with_the_event_then_checks_the_case
     assert checker.flagged == ["c1"]
 
 
-@pytest.mark.parametrize(
-    "verdict",
-    [
-        make_verdict(dam_state="intact"),
-        make_verdict(dam_state="broken", needs_human=True),
-    ],
-)
-def test_a_verdict_with_nothing_for_the_agent_does_not_run_it(verdict):
-    agent = FakeAgent()
+def test_a_verdict_the_case_does_not_wait_on_does_not_run_the_agent():
+    checker, agent = FakeChecker(awaits_agent=False), FakeAgent()
 
-    handle(FakeChecker(verdict=verdict), agent)
+    handle(checker, agent)
 
     assert agent.runs == []
+    assert checker.flagged == ["c1"]
 
 
 def test_a_repeat_event_whose_verdict_was_already_stored_does_nothing(caplog):
-    checker, agent = FakeChecker(stored=False), FakeAgent()
+    checker, agent = FakeChecker(stored=False, awaits_agent=False), FakeAgent()
 
     with caplog.at_level(logging.INFO):
         handle(checker, agent)

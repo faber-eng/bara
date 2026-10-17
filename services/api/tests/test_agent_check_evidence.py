@@ -26,6 +26,7 @@ def checked(**verdict_fields):
         location_ok=True,
         stored=True,
         from_cache=False,
+        awaits_agent=False,
     )
 
 
