@@ -1310,7 +1310,8 @@ fieldset.join-fieldset {
   flex-wrap: wrap;
   gap: var(--space-2);
   justify-content: flex-end;
-||||||| parent of 6754344 (feat(web): EVAL panel on /public reads eval.json)
+}
+
 .pub-eval {
   display: grid;
   gap: 18px;
