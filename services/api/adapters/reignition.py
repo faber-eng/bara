@@ -3,9 +3,10 @@ from datetime import date
 from typing import Protocol
 
 from google.api_core import exceptions as gax
+from google.auth.exceptions import GoogleAuthError
 
 from adapters.bigquery import DATASET
-from adapters.earthengine import LayerNotReady
+from adapters.earthengine import LayerNotReady, TileSourceError
 from ee_lib.layers import ScoredCell
 
 SCORES_TABLE = "reignition_scores"
@@ -16,7 +17,7 @@ SELECT s.cell_id, MAX(s.p_reignite) AS p_reignite,
   ANY_VALUE(ST_ASGEOJSON(c.geom)) AS geojson
 FROM {DATASET}.{SCORES_TABLE} AS s
 JOIN {DATASET}.cells AS c ON c.cell_id = s.cell_id
-WHERE c.region = @region AND DATE(s.quiet_date) <= @until
+WHERE c.region = @region AND DATE(s.quiet_date) < @until
 GROUP BY s.cell_id
 ORDER BY p_reignite DESC
 LIMIT {MAX_CELLS}
@@ -38,8 +39,12 @@ class ReignitionScores:
             raise LayerNotReady(
                 f"bara.{SCORES_TABLE} does not exist yet; the reignition scorer has not run"
             ) from error
+        except (gax.GoogleAPICallError, GoogleAuthError) as error:
+            raise TileSourceError(str(error)) from error
         if not rows:
-            raise LayerNotReady(f"bara.{SCORES_TABLE} has no scores for {region}")
+            raise LayerNotReady(
+                f"bara.{SCORES_TABLE} has no scores for {region} before {until}"
+            )
         return [
             ScoredCell(
                 cell_id=row["cell_id"],
