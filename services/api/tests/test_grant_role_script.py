@@ -6,8 +6,10 @@ from pathlib import Path
 
 import pytest
 
+from adapters.firestore_repos import ContactRepository
 from adapters.identity import IdentityUnavailable
-from tests.fakes import FakeClaimsAdmin
+from contracts import Contact
+from tests.fakes import FakeClaimsAdmin, InMemoryCollection
 
 SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "grant_role.py"
 ENV = {"PROJECT": "example-project"}
@@ -23,7 +25,11 @@ def load_script():
 script = load_script()
 
 
-def run(argv, admin=None, environ=None):
+def new_contacts():
+    return ContactRepository(InMemoryCollection(Contact))
+
+
+def run(argv, admin=None, environ=None, contacts=None):
     admin = admin or FakeClaimsAdmin(
         {"u1": {"role": "volunteer", "locale": "id"}}, {"a@b.test": "u1"}
     )
@@ -34,10 +40,12 @@ def run(argv, admin=None, environ=None):
         projects.append(project)
         return admin
 
+    store = contacts if contacts is not None else new_contacts()
     code = script.main(
         argv,
         environ=ENV if environ is None else environ,
         admin_factory=factory,
+        contacts_factory=lambda project: store,
         out=out,
         err=err,
     )
@@ -172,3 +180,93 @@ def test_the_real_entry_point_with_no_arguments_exits_2():
 
     assert result.returncode == 2
     assert result.stdout == ""
+
+
+def test_granting_brigade_creates_the_contact_for_the_uid():
+    admin = FakeClaimsAdmin(
+        uid_by_email={"b@b.test": "u7"}, names_by_uid={"u7": "Bu Rina"}
+    )
+    contacts = new_contacts()
+
+    code, out, err, _, _ = run(["b@b.test", "brigade"], admin=admin, contacts=contacts)
+
+    assert code == 0
+    assert out == "u7 brigade\n"
+    contact = contacts.get("u7")
+    assert (contact.name, contact.region, contact.example) == ("Bu Rina", "riau", False)
+    assert contact.channels.web is True
+    assert "contacts/u7 created" in err
+
+
+def test_the_name_falls_back_to_the_email_name_and_the_flags_set_org_and_region():
+    admin = FakeClaimsAdmin(uid_by_email={"rina@b.test": "u7"})
+    contacts = new_contacts()
+
+    run(
+        ["rina@b.test", "brigade", "--org", "Manggala Agni", "--region", "riau"],
+        admin=admin,
+        contacts=contacts,
+    )
+
+    contact = contacts.get("u7")
+    assert (contact.name, contact.org) == ("rina", "Manggala Agni")
+
+
+def test_an_existing_contact_is_left_as_it_is():
+    admin = FakeClaimsAdmin(
+        uid_by_email={"b@b.test": "u7"}, names_by_uid={"u7": "New Name"}
+    )
+    contacts = new_contacts()
+    first_code, *_ = run(["b@b.test", "brigade"], admin=admin, contacts=contacts)
+    admin.names_by_uid["u7"] = "Changed"
+
+    code, _, err, _, _ = run(["b@b.test", "brigade"], admin=admin, contacts=contacts)
+
+    assert (first_code, code) == (0, 0)
+    assert contacts.get("u7").name == "New Name"
+    assert "contacts/u7 exists" in err
+
+
+def test_granting_ops_creates_no_contact():
+    contacts = new_contacts()
+
+    run(["a@b.test", "ops"], contacts=contacts)
+
+    assert contacts.get("u1") is None
+
+
+def test_brigade_dry_run_creates_no_contact_and_says_so():
+    contacts = new_contacts()
+
+    code, out, err, admin, _ = run(
+        ["a@b.test", "brigade", "--dry-run"], contacts=contacts
+    )
+
+    assert code == 0
+    assert out == "u1 brigade\n"
+    assert contacts.get("u1") is None
+    assert admin.writes == []
+    assert "would create contacts/u1" in err
+
+
+def test_a_firestore_error_exits_5_and_says_the_claim_is_set():
+    from google.api_core.exceptions import PermissionDenied
+
+    class Refusing(InMemoryCollection):
+        def create_if_absent(self, doc_id, item):
+            raise PermissionDenied("no datastore.user")
+
+    contacts = ContactRepository(Refusing(Contact))
+
+    code, out, err, _, _ = run(["a@b.test", "brigade"], contacts=contacts)
+
+    assert code == 5
+    assert out == ""
+    assert "claim is set" in err
+
+
+def test_help_lists_the_contact_flags():
+    _, out, _, _, _ = run(["--help"])
+
+    assert "--region" in out
+    assert "--org" in out

@@ -24,6 +24,8 @@ class ClaimsAdmin(Protocol):
 
     def uid_for_email(self, email: str) -> str | None: ...
 
+    def display_name(self, uid: str) -> str | None: ...
+
 
 class FirebaseClaimsAdmin:
     def __init__(self, app=None):
@@ -47,6 +49,12 @@ class FirebaseClaimsAdmin:
             return firebase_auth.get_user_by_email(email, app=self._app).uid
         except firebase_auth.UserNotFoundError:
             return None
+        except (FirebaseError, GoogleAuthError) as error:
+            raise IdentityUnavailable(describe(error)) from error
+
+    def display_name(self, uid: str) -> str | None:
+        try:
+            return firebase_auth.get_user(uid, app=self._app).display_name
         except (FirebaseError, GoogleAuthError) as error:
             raise IdentityUnavailable(describe(error)) from error
 

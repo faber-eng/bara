@@ -327,6 +327,12 @@ class ContactRepository:
     def for_region(self, region: str) -> list[Contact]:
         return self._contacts.where(Filter("region", "==", region))
 
+    def get(self, contact_id: str) -> Contact | None:
+        return self._contacts.get(contact_id)
+
+    def create_if_absent(self, contact: Contact) -> bool:
+        return self._contacts.create_if_absent(contact.id, contact)
+
 
 class MessageRepository:
     def __init__(self, messages: Collection[Message]):

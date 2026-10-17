@@ -353,7 +353,9 @@ class FakeClaimsAdmin:
         self,
         claims_by_uid: dict[str, dict[str, object]] | None = None,
         uid_by_email: dict[str, str] | None = None,
+        names_by_uid: dict[str, str] | None = None,
     ):
+        self.names_by_uid = names_by_uid or {}
         self.claims_by_uid = claims_by_uid or {}
         self.uid_by_email = uid_by_email or {}
         self.writes: list[tuple[str, dict[str, object]]] = []
@@ -374,6 +376,10 @@ class FakeClaimsAdmin:
     def uid_for_email(self, email: str) -> str | None:
         self._raise_if_failing()
         return self.uid_by_email.get(email)
+
+    def display_name(self, uid: str) -> str | None:
+        self._raise_if_failing()
+        return self.names_by_uid.get(uid)
 
     def _raise_if_failing(self) -> None:
         if self.fail_with is not None:
