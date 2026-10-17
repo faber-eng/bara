@@ -39,6 +39,12 @@ describe("layer definitions", () => {
   });
 });
 
+describe("drying default opacity", () => {
+  it("lets the base map show through", () => {
+    expect(definitionFor("drying").defaultOpacity).toBe(0.45);
+  });
+});
+
 describe("clampOpacity", () => {
   it("keeps the value between 0 and 1", () => {
     expect(clampOpacity(-1)).toBe(0);

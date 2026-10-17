@@ -5,17 +5,18 @@ import { scoreColor } from "./scoreColor";
 const HIT_TOLERANCE_PX = 8;
 const WORLD_TILE_PX = 256;
 const FOCUS_ZOOM = 14;
-const FILL_OPACITY = 0.55;
+const FILL_OPACITY = 0.4;
 const POLYGON_ZOOM = 12;
-const COMPACT_STROKE_PX = 4;
-const COMPACT_STROKE_OPACITY = 0.85;
+const COMPACT_STROKE_PX = 3;
+const COMPACT_STROKE_OPACITY = 0.6;
+const COMPACT_FILL_OPACITY = 0.35;
 
 const POLYGON_STYLE = { clickable: false, strokeWeight: 1, fillOpacity: FILL_OPACITY } as const;
 const COMPACT_STYLE = {
   clickable: false,
   strokeWeight: COMPACT_STROKE_PX,
   strokeOpacity: COMPACT_STROKE_OPACITY,
-  fillOpacity: COMPACT_STROKE_OPACITY,
+  fillOpacity: COMPACT_FILL_OPACITY,
 } as const;
 const HOVER_STYLE = { strokeWeight: 3, strokeColor: "#ffffff", fillOpacity: 0.85 } as const;
 const SELECTED_STYLE = {

@@ -30,7 +30,7 @@ export const LAYER_DEFINITIONS: readonly LayerDefinition[] = [
     id: "drying",
     label: "Drying score",
     weekly: true,
-    defaultOpacity: 0.7,
+    defaultOpacity: 0.45,
     defaultOn: true,
     legend: { kind: "ramp", low: "0 low", high: "100 high" },
   },
