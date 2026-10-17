@@ -297,6 +297,13 @@ setup_project_roles() {
   ensure sa-role "$api" has_self_token_creator grant_self_token_creator
 }
 
+setup_tasks_invoker_grant() {
+  local api invoker
+  api="$(sa_email bara-api)"
+  invoker="$(sa_email bara-tasks-invoker)"
+  ensure sa-user "$invoker|$api|roles/iam.serviceAccountUser" has_sa_user grant_sa_user
+}
+
 setup_buckets() {
   local evidence="${PROJECT}-bara-evidence" exports="${PROJECT}-bara-exports"
   ensure bucket "$evidence" bucket_exists create_bucket
@@ -346,6 +353,7 @@ main() {
   setup_apis
   setup_service_accounts
   setup_project_roles
+  setup_tasks_invoker_grant
   setup_buckets
   setup_data_stores
   setup_messaging
