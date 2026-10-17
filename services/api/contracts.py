@@ -640,6 +640,10 @@ class PublicBulletin(Contract):
     created_at: AwareDatetime | None
 
 
+class AreaRunState(Contract):
+    runs: list[AwareDatetime]
+
+
 class HealthModels(Contract):
     reasoning: str
     fast: str
@@ -657,3 +661,25 @@ class TileLayer(Contract):
     region: str
     week: IsoWeek
     url_template: str
+
+
+AreaRankStatus = Literal["ranked", "no_peat"]
+
+
+class AreaCell(Contract):
+    cell_id: str
+    centroid: GeoPoint
+    drying_score: Percent
+    rank: Annotated[int, Field(ge=1)]
+
+
+class AreaRanking(Contract):
+    status: AreaRankStatus
+    region: str
+    week: IsoWeek
+    polygon_hash: Sha256
+    area_km2: Annotated[float, Field(gt=0)]
+    peat_cells: Count
+    cells: list[AreaCell]
+    tile_url_template: str | None
+    cached: bool

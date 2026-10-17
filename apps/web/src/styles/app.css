@@ -855,3 +855,33 @@ fieldset.join-fieldset {
     z-index: 30;
   }
 }
+
+.area-map {
+  height: 420px;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--surface-sunk);
+}
+.area-draw {
+  display: grid;
+  gap: var(--space-2);
+}
+.area-draw > * {
+  margin: 0;
+}
+.area-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.area-result {
+  display: grid;
+  gap: var(--space-2);
+}
+.area-result > * {
+  margin: 0;
+}
+.area-cells {
+  padding-left: var(--space-4);
+  margin: 0;
+}

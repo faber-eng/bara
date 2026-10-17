@@ -1,4 +1,5 @@
 import { ResponseShapeError, readArray, readRecord, readString } from "../api/parse";
+import type { GeoPoint } from "../contracts";
 
 export type AreaSummary = { name: string; vertices: number };
 
@@ -26,4 +27,15 @@ export function summarizeArea(geojson: unknown): AreaSummary {
   const geometry = readRecord(feature.geometry, "geometry");
   if (geometry.type !== "Polygon") throw new ResponseShapeError("the area is not a polygon");
   return { name: featureName(feature), vertices: polygonVertices(geometry) };
+}
+
+export function samplePoints(geojson: unknown): GeoPoint[] {
+  const collection = readRecord(geojson, "area");
+  const feature = readRecord(readArray(collection.features, "features")[0], "feature");
+  const geometry = readRecord(feature.geometry, "geometry");
+  const ring = readArray(readArray(geometry.coordinates, "coordinates")[0], "ring");
+  return ring.slice(0, -1).map((position) => {
+    const pair = readArray(position, "position");
+    return { lon: Number(pair[0]), lat: Number(pair[1]) };
+  });
 }
