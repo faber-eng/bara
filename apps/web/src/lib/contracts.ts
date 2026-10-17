@@ -305,6 +305,48 @@ export type PublicSummary = {
   data_as_of: { s1_pass_date: IsoDate; ranking_run_at: IsoDateTime };
 };
 
+export type RecordKind = "opened" | "task" | "overdue" | "escalated" | "closed";
+
+export type PublicCell = {
+  cell_id: string;
+  centroid: GeoPoint;
+  drying_score: number;
+  rank: number;
+  rank_change: number | null;
+  components: RankingComponents;
+};
+
+export type PublicCells = {
+  region: string;
+  week: IsoWeek;
+  cells: PublicCell[];
+};
+
+export type PublicDam = {
+  id: string;
+  point: GeoPoint;
+  last_state: DamState;
+  last_checked_at: IsoDateTime | null;
+  repair_due_at: IsoDateTime | null;
+};
+
+export type RecordLine = {
+  at: IsoDateTime;
+  cell_id: string;
+  kind: RecordKind;
+  text: string;
+};
+
+export type PublicBulletin = {
+  region: string;
+  week: IsoWeek;
+  text_id: string | null;
+  text_en: string | null;
+  cited: CitedValue[];
+  source: BulletinSource | null;
+  created_at: IsoDateTime | null;
+};
+
 export type Health = {
   status: string;
   models: { reasoning: string; fast: string };

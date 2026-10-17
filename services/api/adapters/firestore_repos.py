@@ -19,6 +19,7 @@ from adapters.store import (
 )
 from contracts import (
     AgentRun,
+    Bulletin,
     Case,
     CaseStatus,
     ClockSettings,
@@ -321,6 +322,9 @@ class EscalationRepository:
     def for_case(self, case_id: str) -> list[Escalation]:
         return self._escalations.where(Filter("case_id", "==", case_id))
 
+    def for_cases(self, case_ids: list[str]) -> list[Escalation]:
+        return children(self._escalations, case_ids)
+
     def open_for_case(self, case_id: str) -> Escalation | None:
         for escalation in self.for_case(case_id):
             if escalation.acknowledged_at is None:
@@ -510,6 +514,14 @@ class RankedDamRepository:
     def top(self, region: str, limit: int) -> list[RankedDam]:
         ranked = self._dams_for(region).where(Filter("rank", "<=", limit))
         return sorted(ranked, key=lambda dam: dam.rank)
+
+
+class BulletinRepository:
+    def __init__(self, bulletins: Collection[Bulletin]):
+        self._bulletins = bulletins
+
+    def get(self, bulletin_id: str) -> Bulletin | None:
+        return self._bulletins.get(bulletin_id)
 
 
 class DamRepository:
