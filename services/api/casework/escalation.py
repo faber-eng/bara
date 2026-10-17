@@ -128,7 +128,9 @@ class Escalator:
         point = self._point(case)
         evidence = self._evidence.for_cases([case_id])
         tasks = self._tasks.for_case(case_id)
-        timeline = build_timeline(case, tasks, evidence, self._runs.for_case(case_id))
+        timeline = build_timeline(
+            case, tasks, evidence, self._runs.for_case(case_id), []
+        )
         url = map_url(point) if point is not None else ""
         brief = await self._brief.write(self._facts(case, reason, timeline, url))
         escalation = Escalation(

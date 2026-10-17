@@ -9,6 +9,7 @@ from adapters.firestore_repos import (
     AgentRunRepository,
     CaseRepository,
     DamRepository,
+    EscalationRepository,
     EvidenceRepository,
     RankedDamRepository,
     RankingRepository,
@@ -22,6 +23,7 @@ from contracts import (
     Case,
     ClockSettings,
     Dam,
+    Escalation,
     Evidence,
     RankedCell,
     RankedDam,
@@ -38,6 +40,7 @@ from tests.fakes import (
     make_agent_run,
     make_case,
     make_dam,
+    make_escalation,
     make_evidence,
     make_ranked_cell,
     make_ranked_dam,
@@ -71,6 +74,7 @@ class World:
         self.cases = InMemoryCollection(Case)
         self.tasks = InMemoryCollection(Task)
         self.evidence = InMemoryCollection(Evidence)
+        self.escalations = InMemoryCollection(Escalation)
         self.ranked_cells = InMemoryCollection(RankedCell)
         self.ranked_dams = InMemoryCollection(RankedDam)
         self.dams = InMemoryCollection(Dam)
@@ -91,6 +95,7 @@ class World:
             tasks=TaskRepository(self.tasks),
             evidence=evidence_repo,
             runs=AgentRunRepository(self.runs_for),
+            escalations=EscalationRepository(self.escalations),
             clock=self.clock,
         )
         self.area_queries = AreaQueries(
@@ -462,3 +467,26 @@ def test_the_stored_evidence_keeps_its_gs_uri(settings):
     world.client(settings).get("/api/cases/c1", headers=OPS)
 
     assert world.evidence.get("e1").gcs_uri == "gs://ok/e1.jpg"
+
+
+def test_case_detail_timeline_shows_the_brigade_ack(settings):
+    world = World()
+    world.add_case("c1", status="monitoring", opened_at=REAL_NOW)
+    world.escalations.put(
+        "x1",
+        make_escalation(
+            case_id="c1",
+            contact_id="contact-daops",
+            created_at=REAL_NOW + timedelta(hours=1),
+            acknowledged_at=REAL_NOW + timedelta(hours=2),
+        ),
+    )
+    world.escalations.put("x2", make_escalation(id="x2", case_id="other"))
+
+    body = world.client(settings).get("/api/cases/c1", headers=OPS).json()
+
+    texts = [entry["text"] for entry in body["timeline"]]
+    assert texts[-2:] == [
+        "Escalated to brigade contact-daops",
+        "Brigade contact-daops acknowledged",
+    ]

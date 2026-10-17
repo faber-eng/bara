@@ -2,6 +2,7 @@ from contracts import (
     AgentRun,
     Case,
     CaseSummary,
+    Escalation,
     Evidence,
     PastCheck,
     Task,
@@ -72,11 +73,27 @@ def run_entry(run: AgentRun) -> TimelineEntry:
     )
 
 
+def escalation_entries(escalation: Escalation) -> list[TimelineEntry]:
+    contact = escalation.contact_id
+    entries = [
+        TimelineEntry(at=escalation.created_at, text=f"Escalated to brigade {contact}")
+    ]
+    if escalation.acknowledged_at is not None:
+        entries.append(
+            TimelineEntry(
+                at=escalation.acknowledged_at,
+                text=f"Brigade {contact} acknowledged",
+            )
+        )
+    return entries
+
+
 def build_timeline(
     case: Case,
     tasks: list[Task],
     evidence: list[Evidence],
     runs: list[AgentRun],
+    escalations: list[Escalation],
 ) -> list[TimelineEntry]:
     entries = case_entries(case)
     for task in tasks:
@@ -84,6 +101,8 @@ def build_timeline(
     for item in evidence:
         entries.extend(evidence_entries(item))
     entries.extend(run_entry(run) for run in runs)
+    for escalation in escalations:
+        entries.extend(escalation_entries(escalation))
     return sorted(entries, key=lambda entry: entry.at)
 
 

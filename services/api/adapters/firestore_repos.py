@@ -312,9 +312,11 @@ class EscalationRepository:
             Filter("acknowledged_at", "==", None),
         )
 
+    def for_case(self, case_id: str) -> list[Escalation]:
+        return self._escalations.where(Filter("case_id", "==", case_id))
+
     def open_for_case(self, case_id: str) -> Escalation | None:
-        found = self._escalations.where(Filter("case_id", "==", case_id))
-        for escalation in found:
+        for escalation in self.for_case(case_id):
             if escalation.acknowledged_at is None:
                 return escalation
         return None
