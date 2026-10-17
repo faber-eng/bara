@@ -23,10 +23,12 @@ RUN uv sync --frozen --no-dev
 
 COPY config/ /app/config/
 COPY data/aoi/ /app/data/aoi/
+COPY data/samples/ /app/samples/
 COPY services/pipelines/ee_lib/ /app/ee_lib/
 COPY services/api/ /app/
 
-ENV BARA_CONFIG_DIR=/app/config
+ENV BARA_CONFIG_DIR=/app/config \
+    BARA_SAMPLES_DIR=/app/samples
 
 ARG GIT_SHA=unknown
 ENV GIT_SHA=${GIT_SHA}

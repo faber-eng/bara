@@ -195,3 +195,41 @@ def test_resource_names_derive_from_the_project():
         settings.tasks_invoker_email
         == "bara-tasks-invoker@example-project.iam.gserviceaccount.com"
     )
+
+
+def test_samples_dir_defaults_to_the_repo_data_samples():
+    settings = load_settings(BASE_ENV, REPO_CONFIG_DIR)
+
+    assert settings.samples_dir == REPO_CONFIG_DIR.parent / "data" / "samples"
+
+
+def test_samples_dir_comes_from_the_environment(tmp_path):
+    env = {**BASE_ENV, "BARA_SAMPLES_DIR": str(tmp_path)}
+
+    assert load_settings(env, REPO_CONFIG_DIR).samples_dir == tmp_path
+
+
+def test_the_full_flow_region_is_riau():
+    from config import full_flow_region
+
+    assert full_flow_region(REPO_CONFIG_DIR) == "riau"
+
+
+def test_no_full_flow_region_is_a_config_error(tmp_path):
+    from config import full_flow_region
+
+    (tmp_path / "regions.yaml").write_text("a:\n  full_flow: false\n")
+
+    with pytest.raises(ConfigError):
+        full_flow_region(tmp_path)
+
+
+def test_two_full_flow_regions_are_a_config_error(tmp_path):
+    from config import full_flow_region
+
+    (tmp_path / "regions.yaml").write_text(
+        "a:\n  full_flow: true\nb:\n  full_flow: true\n"
+    )
+
+    with pytest.raises(ConfigError):
+        full_flow_region(tmp_path)

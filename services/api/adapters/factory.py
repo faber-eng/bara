@@ -2,7 +2,14 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from google.cloud import bigquery, firestore, pubsub_v1, storage, tasks_v2
+from google.cloud import (
+    bigquery,
+    firestore,
+    pubsub_v1,
+    secretmanager,
+    storage,
+    tasks_v2,
+)
 
 from adapters.bigquery import Warehouse
 from adapters.firestore_repos import (
@@ -10,13 +17,16 @@ from adapters.firestore_repos import (
     EventLog,
     FirestoreClockStore,
     TaskRepository,
+    VolunteerRepository,
 )
+from adapters.identity import ClaimsAdmin, FirebaseClaimsAdmin
 from adapters.pubsub import EventPublisher
+from adapters.secrets import SecretManagerReader, SecretReader
 from adapters.storage import AdcSigningAuth, EvidenceStorage
 from adapters.store import FirestoreCollection
 from adapters.tasks import DeadlineScheduler
 from config import Settings
-from contracts import Case, ClockSettings, ProcessedEvent, Task
+from contracts import Case, ClockSettings, ProcessedEvent, Task, Volunteer
 from domain.clock import Clock
 
 logger = logging.getLogger(__name__)
@@ -35,6 +45,9 @@ class Adapters:
     storage: EvidenceStorage
     publisher: EventPublisher
     scheduler: DeadlineScheduler | None
+    volunteers: VolunteerRepository
+    secrets: SecretReader
+    claims: ClaimsAdmin
 
 
 def utcnow() -> datetime:
@@ -75,4 +88,11 @@ def build_adapters(settings: Settings) -> Adapters:
         storage=EvidenceStorage(bucket, AdcSigningAuth),
         publisher=EventPublisher(pubsub_v1.PublisherClient(), settings.project),
         scheduler=build_scheduler(settings),
+        volunteers=VolunteerRepository(
+            FirestoreCollection(db, "volunteers", Volunteer)
+        ),
+        secrets=SecretManagerReader(
+            secretmanager.SecretManagerServiceClient(), settings.project
+        ),
+        claims=FirebaseClaimsAdmin(),
     )

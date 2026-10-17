@@ -254,3 +254,90 @@ def make_case(**overrides):
         "example": False,
     }
     return Case(**{**fields, **overrides})
+
+
+class FakeSecretReader:
+    def __init__(self, code: str | Exception = "bara-secret"):
+        self._code = code
+        self.reads = 0
+
+    def join_code(self) -> str:
+        self.reads += 1
+        if isinstance(self._code, Exception):
+            raise self._code
+        return self._code
+
+
+class FakeClaimsAdmin:
+    def __init__(
+        self,
+        claims_by_uid: dict[str, dict[str, object]] | None = None,
+        uid_by_email: dict[str, str] | None = None,
+    ):
+        self.claims_by_uid = claims_by_uid or {}
+        self.uid_by_email = uid_by_email or {}
+        self.writes: list[tuple[str, dict[str, object]]] = []
+        self.fail_with: Exception | None = None
+
+    def get_claims(self, uid: str) -> dict[str, object]:
+        self._raise_if_failing()
+        return dict(self.claims_by_uid.get(uid, {}))
+
+    def set_claims(self, uid: str, claims: dict[str, object]) -> None:
+        self._raise_if_failing()
+        self.claims_by_uid[uid] = dict(claims)
+        self.writes.append((uid, dict(claims)))
+
+    def uid_for_email(self, email: str) -> str | None:
+        self._raise_if_failing()
+        return self.uid_by_email.get(email)
+
+    def _raise_if_failing(self) -> None:
+        if self.fail_with is not None:
+            raise self.fail_with
+
+
+def make_volunteer(**overrides):
+    from contracts import Channels, GeoPoint, Volunteer
+
+    fields = {
+        "id": "v1",
+        "name": "Sari",
+        "role": "volunteer",
+        "region": "riau",
+        "home": GeoPoint(lat=0.5, lon=101.4),
+        "language": "id",
+        "channels": Channels(web=True, whatsapp=None),
+        "available": True,
+        "example": False,
+    }
+    return Volunteer(**{**fields, **overrides})
+
+
+def make_contact(**overrides):
+    from contracts import Channels, Contact
+
+    fields = {
+        "id": "ct1",
+        "name": "Daops",
+        "org": "Manggala Agni",
+        "channels": Channels(web=True, whatsapp=None),
+        "region": "riau",
+        "example": True,
+    }
+    return Contact(**{**fields, **overrides})
+
+
+def make_dam(**overrides):
+    from contracts import Dam, GeoPoint
+
+    fields = {
+        "id": "dam-1",
+        "point": GeoPoint(lat=0.5, lon=101.4),
+        "canal_osm_id": None,
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": None,
+        "example": True,
+    }
+    return Dam(**{**fields, **overrides})

@@ -125,3 +125,15 @@ def test_clock_store_add_seconds_uses_a_firestore_increment():
         "offset_seconds": 150,
         "updated_by": "b",
     }
+
+
+def test_volunteer_create_if_absent_creates_once_and_keeps_the_first():
+    from adapters.firestore_repos import VolunteerRepository
+    from contracts import Volunteer
+    from tests.fakes import make_volunteer
+
+    repo = VolunteerRepository(InMemoryCollection(Volunteer))
+
+    assert repo.create_if_absent(make_volunteer(id="u1", name="First")) is True
+    assert repo.create_if_absent(make_volunteer(id="u1", name="Second")) is False
+    assert repo.get("u1").name == "First"
