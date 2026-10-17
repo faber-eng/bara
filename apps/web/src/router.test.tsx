@@ -33,16 +33,14 @@ describe("app routes", () => {
     return () => vi.unstubAllGlobals();
   });
 
-  it.each([["/", "Landing and tour"]])(
-    "renders %s with its title and the health footer",
-    async (path, title) => {
-      renderAt(path);
+  it("renders the landing page with the health footer", async () => {
+    renderAt("/");
 
-      expect(await screen.findByRole("heading", { level: 1, name: title })).toBeInTheDocument();
-      expect(screen.getByText(path, { selector: ".spec-code" })).toBeInTheDocument();
-      expect(await screen.findByText("API ok")).toBeInTheDocument();
-    },
-  );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: /Peat fires burn for weeks/ }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("API ok")).toBeInTheDocument();
+  });
 
   it("opens the volunteer screen for the id in the URL", async () => {
     setCopyLanguage("id");
@@ -78,7 +76,7 @@ describe("app routes", () => {
     renderAt("/");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Landing and tour" }),
+      await screen.findByRole("heading", { level: 1, name: /Peat fires burn for weeks/ }),
     ).toBeInTheDocument();
     expect(await screen.findByText("API unreachable", {}, { timeout: 3000 })).toBeInTheDocument();
   });
