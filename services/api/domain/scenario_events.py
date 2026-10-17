@@ -3,12 +3,15 @@ from datetime import datetime
 from contracts import (
     DryingRanked,
     DryingRankedEvent,
+    FireQuiet,
+    FireQuietEvent,
     RankedCell,
     RankedDam,
     TopCellRef,
     TopDamRef,
 )
 from domain.rankings import newest_week_by_rank
+from domain.scenario import Scenario
 from domain.weeks import iso_week_label
 
 TOP_REFS = 10
@@ -55,4 +58,18 @@ def build_drying_ranked_event(
         example=True,
         type="drying.ranked",
         payload=payload,
+    )
+
+
+def build_fire_quiet_event(
+    *, scenario: Scenario, event_id: str, occurred_at: datetime
+) -> FireQuietEvent:
+    fire = scenario.spec.fire_event
+    return FireQuietEvent(
+        id=event_id,
+        occurred_at=occurred_at,
+        region=scenario.spec.region,
+        example=True,
+        type="fire.quiet",
+        payload=FireQuiet(event_id=fire.event_id, cells=list(fire.cells)),
     )

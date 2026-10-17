@@ -114,3 +114,63 @@ def test_a_broken_dam_file_is_a_scenario_error(tmp_path):
 
     with pytest.raises(ScenarioError):
         load_scenario(directory)
+
+
+def test_the_fire_event_has_three_high_risk_example_cells_quiet_on_sim_day_ten(
+    scenario,
+):
+    fire = scenario.spec.fire_event
+
+    assert len(fire.cells) == 3
+    assert all(cell.p_reignite >= 0.6 for cell in fire.cells)
+    assert (fire.quiet_date - scenario.spec.sim_start.date()).days == 10
+    assert "example" in fire.source
+
+
+def test_a_fire_quiet_date_off_sim_day_ten_is_refused(tmp_path):
+    def shift(spec):
+        spec["fire_event"]["quiet_date"] = "2026-07-31"
+
+    with pytest.raises(ScenarioError, match="sim day 10"):
+        load_scenario(write_scenario(tmp_path, shift))
+
+
+def test_a_fire_with_two_cells_is_refused(tmp_path):
+    def drop(spec):
+        spec["fire_event"]["cells"].pop()
+
+    with pytest.raises(ScenarioError, match="3 cells"):
+        load_scenario(write_scenario(tmp_path, drop))
+
+
+def test_a_repeated_fire_cell_is_refused(tmp_path):
+    def repeat(spec):
+        spec["fire_event"]["cells"][1]["cell_id"] = spec["fire_event"]["cells"][0][
+            "cell_id"
+        ]
+
+    with pytest.raises(ScenarioError, match="duplicate fire cells"):
+        load_scenario(write_scenario(tmp_path, repeat))
+
+
+def test_the_fire_quiet_event_is_built_from_the_scenario(scenario):
+    from datetime import UTC, datetime
+
+    from contracts import FireQuietEvent
+    from domain.scenario_events import build_fire_quiet_event
+
+    event = build_fire_quiet_event(
+        scenario=scenario,
+        event_id="evt-1",
+        occurred_at=datetime(2026, 10, 17, tzinfo=UTC),
+    )
+
+    assert isinstance(event, FireQuietEvent)
+    assert event.example is True
+    assert event.region == "riau"
+    assert event.payload.event_id == "fire-riau-2026-demo-01"
+    assert [c.cell_id for c in event.payload.cells] == [
+        "riau-182-61",
+        "riau-183-61",
+        "riau-182-60",
+    ]
