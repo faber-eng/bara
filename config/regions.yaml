@@ -4,6 +4,9 @@ riau:
   timezone: Asia/Jakarta
   language: id
   full_flow: true
+  s1_relative_orbit: 91
+  s1_pass: DESCENDING
+  grid_crs: EPSG:32648
 congo_cuvette:
   name: Cuvette Centrale peatlands, Congo Basin
   aoi: data/aoi/congo_cuvette_focus.geojson

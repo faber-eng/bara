@@ -1,8 +1,14 @@
 grid_cell_m: 1000
+datasets:
+  s1: COPERNICUS/S1_GRD
+  chirps: UCSB-CHG/CHIRPS/DAILY
+  peat: projects/sat-io/open-datasets/GLOBAL-PEATLAND-DATABASE
+  osm_lines: bigquery-public-data.geo_openstreetmap.planet_features_lines
 drying:
   wet_baseline_months: [1, 2, 3]       # Jan-Mar wet-season reference
   s1_window_days: 12
   rain_window_days: 30
+  clim_years: [2000, 2025]
   weights: { s1_anomaly: 0.45, rain_deficit: 0.30, canal_proximity: 0.15, peat_class: 0.10 }
 reignition:
   quiet_days: 3                        # no detection for >= 3 days = "looks out"

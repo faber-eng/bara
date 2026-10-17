@@ -1,0 +1,124 @@
+import json
+import re
+from collections.abc import Sequence
+
+from google.cloud.bigquery import SchemaField
+
+from adapters.bigquery import QueryResult, TableSpec, Warehouse
+from domain.grid import StagedCell
+
+CANAL_MAX_BYTES_BILLED = 110_000_000_000
+CANAL_BUFFER_M = 5000
+CANALS = "osm_canals"
+PUBLIC_TABLE = re.compile(r"^[a-z0-9-]+\.[A-Za-z0-9_]+\.[A-Za-z0-9_]+$")
+
+CELLS = TableSpec(
+    name="cells",
+    schema=(
+        SchemaField("cell_id", "STRING", mode="REQUIRED"),
+        SchemaField("region", "STRING", mode="REQUIRED"),
+        SchemaField("geom", "GEOGRAPHY", mode="REQUIRED"),
+        SchemaField("centroid", "GEOGRAPHY", mode="REQUIRED"),
+        SchemaField("peat_class", "INT64", mode="REQUIRED"),
+        SchemaField("canal_dist_m", "FLOAT64", mode="REQUIRED"),
+    ),
+    partition_field=None,
+    clustering=("region", "cell_id"),
+)
+
+CELLS_STAGING = TableSpec(
+    name="cells_staging",
+    schema=(
+        SchemaField("cell_id", "STRING", mode="REQUIRED"),
+        SchemaField("region", "STRING", mode="REQUIRED"),
+        SchemaField("geom", "GEOGRAPHY", mode="REQUIRED"),
+        SchemaField("peat_class", "INT64", mode="REQUIRED"),
+    ),
+    partition_field=None,
+    clustering=(),
+)
+
+CANALS_SQL = """
+CREATE TABLE osm_canals
+CLUSTER BY region
+AS
+SELECT
+  osm_way_id,
+  (SELECT value FROM UNNEST(all_tags) WHERE key = 'waterway' LIMIT 1) AS waterway,
+  geometry,
+  @region AS region
+FROM `{osm_lines}`
+WHERE EXISTS (
+    SELECT 1 FROM UNNEST(all_tags)
+    WHERE key = 'waterway' AND value IN ('canal', 'ditch', 'drain')
+  )
+  AND ST_DWITHIN(geometry, ST_GEOGFROMGEOJSON(@aoi), @buffer_m)
+"""
+
+REWRITE_CELLS_SQL = """
+BEGIN TRANSACTION;
+DELETE FROM cells WHERE region = @region;
+INSERT INTO cells (cell_id, region, geom, centroid, peat_class, canal_dist_m)
+WITH staged AS (
+  SELECT cell_id, region, geom, ST_CENTROID(geom) AS centroid, peat_class
+  FROM cells_staging
+  WHERE region = @region
+),
+nearest AS (
+  SELECT staged.cell_id, MIN(ST_DISTANCE(staged.centroid, canal.geometry)) AS canal_dist_m
+  FROM staged
+  CROSS JOIN osm_canals AS canal
+  WHERE canal.region = @region
+  GROUP BY staged.cell_id
+)
+SELECT staged.cell_id, staged.region, staged.geom, staged.centroid, staged.peat_class,
+  nearest.canal_dist_m
+FROM staged
+LEFT JOIN nearest USING (cell_id);
+COMMIT TRANSACTION;
+"""
+
+
+class InvalidPublicTable(Exception):
+    pass
+
+
+def canals_sql(osm_lines: str) -> str:
+    if not PUBLIC_TABLE.match(osm_lines):
+        raise InvalidPublicTable(f"invalid OSM lines table: {osm_lines!r}")
+    return CANALS_SQL.format(osm_lines=osm_lines)
+
+
+def canals_exist(warehouse: Warehouse) -> bool:
+    return warehouse.table_exists(CANALS)
+
+
+def create_canals(
+    warehouse: Warehouse, osm_lines: str, region: str, aoi: dict, dry_run: bool
+) -> QueryResult:
+    return warehouse.query(
+        canals_sql(osm_lines),
+        {"region": region, "aoi": json.dumps(aoi), "buffer_m": CANAL_BUFFER_M},
+        max_bytes_billed=CANAL_MAX_BYTES_BILLED,
+        dry_run=dry_run,
+    )
+
+
+def staging_row(cell: StagedCell) -> dict[str, object]:
+    return {
+        "cell_id": cell.cell_id,
+        "region": cell.region,
+        "geom": json.dumps(cell.geometry),
+        "peat_class": cell.peat_class,
+    }
+
+
+def stage_cells(warehouse: Warehouse, cells: Sequence[StagedCell]) -> None:
+    warehouse.load_rows(
+        CELLS_STAGING, [staging_row(cell) for cell in cells], write="truncate"
+    )
+
+
+def rewrite_cells(warehouse: Warehouse, region: str) -> QueryResult:
+    warehouse.ensure_table(CELLS)
+    return warehouse.query(REWRITE_CELLS_SQL, {"region": region})
