@@ -64,7 +64,8 @@ def wet_baseline(
         for month in data.drying.wet_baseline_months
     ]
     in_year = collection.filterDate(iso(date(year, 1, 1)), iso(date(year + 1, 1, 1)))
-    return in_year.filter(ee.Filter.Or(*months)).map(smooth).median()
+    passes = in_year.filter(ee.Filter.Or(*months)).map(smooth)
+    return passes.merge(masked_band()).median()
 
 
 def rain_sum(data: DataConfig, span: DateRange) -> ee.Image:

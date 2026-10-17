@@ -19,8 +19,8 @@ WRITE_DISPOSITIONS: dict[WriteMode, str] = {
 
 REWRITE_REGION_SQL = """
 BEGIN TRANSACTION;
-DELETE FROM {table} WHERE region = @region;
-INSERT INTO {table} SELECT * FROM {staging} WHERE region = @region;
+DELETE FROM {table} WHERE region = @region{since};
+INSERT INTO {table} SELECT * FROM {staging} WHERE region = @region{since};
 COMMIT TRANSACTION;
 """
 
@@ -35,6 +35,12 @@ class TableSpec:
     schema: tuple[bigquery.SchemaField, ...]
     partition_field: str | None
     clustering: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Since:
+    column: str
+    day: date
 
 
 @dataclass(frozen=True)
@@ -141,12 +147,25 @@ class Warehouse:
         self._client.create_table(table, exists_ok=True)
 
     def rewrite_region(
-        self, spec: TableSpec, region: str, rows: Sequence[Mapping[str, object]]
+        self,
+        spec: TableSpec,
+        region: str,
+        rows: Sequence[Mapping[str, object]],
+        since: Since | None = None,
     ) -> QueryResult:
         staging = staging_spec(spec)
         self.table_id(spec.name)
         self.table_id(staging.name)
+        params: dict[str, object] = {"region": region}
+        since_sql = ""
+        if since is not None:
+            if not TABLE_NAME.match(since.column):
+                raise InvalidTableName(f"invalid column name: {since.column!r}")
+            since_sql = f" AND {since.column} >= @since"
+            params["since"] = since.day
         self.ensure_table(spec)
         self.load_rows(staging, rows, write="truncate")
-        sql = REWRITE_REGION_SQL.format(table=spec.name, staging=staging.name)
-        return self.query(sql, {"region": region})
+        sql = REWRITE_REGION_SQL.format(
+            table=spec.name, staging=staging.name, since=since_sql
+        )
+        return self.query(sql, params)

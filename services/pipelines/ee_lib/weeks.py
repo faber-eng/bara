@@ -29,6 +29,14 @@ class DryingWindow:
     rain: DateRange
 
 
+@dataclass(frozen=True)
+class EventWindows:
+    s1: DateRange
+    rain_7d_before: DateRange | None
+    rain_14d_before: DateRange | None
+    rain_7d_after: DateRange | None
+
+
 def iso_week(label: object) -> date:
     match = WEEK_LABEL.match(label) if isinstance(label, str) else None
     if match is None:
