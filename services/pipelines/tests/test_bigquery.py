@@ -6,6 +6,7 @@ from google.cloud import bigquery
 from adapters.bigquery import (
     MAX_BYTES_BILLED,
     InvalidTableName,
+    Since,
     TableSpec,
     Warehouse,
 )
@@ -160,3 +161,32 @@ def test_rewrite_region_loads_staging_then_swaps_the_region_in_one_transaction()
         "region": "riau"
     }
     assert client.calls == ["create", "load", "query"]
+
+
+def test_rewrite_region_since_a_day_keeps_the_older_rows():
+    warehouse, client = make_warehouse()
+
+    warehouse.rewrite_region(
+        SPEC, "riau", [{"cell_id": "riau-1-1"}], Since("week_start", date(2026, 8, 1))
+    )
+
+    sql, config = client.queries[0]
+    assert (
+        "DELETE FROM cell_weekly_drying WHERE region = @region"
+        " AND week_start >= @since;"
+    ) in sql
+    assert "WHERE region = @region AND week_start >= @since;\nCOMMIT" in sql
+    assert {p.name: p.value for p in config.query_parameters} == {
+        "region": "riau",
+        "since": date(2026, 8, 1),
+    }
+
+
+def test_rewrite_region_refuses_an_unsafe_since_column_before_any_write():
+    warehouse, client = make_warehouse()
+
+    with pytest.raises(InvalidTableName):
+        warehouse.rewrite_region(
+            SPEC, "riau", [], Since("week_start; DROP", date(2026, 8, 1))
+        )
+    assert client.calls == []

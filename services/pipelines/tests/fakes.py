@@ -98,6 +98,26 @@ class FakeFireEarth:
         return list(self.features_by_year.get(start.year, []))
 
 
+class FakeFeatureEarth:
+    def __init__(self, measures=(), peat=(), chirps_last=None):
+        self.measures = list(measures)
+        self.peat = list(peat)
+        self.chirps_last = chirps_last
+        self.calls: list[tuple[str, object]] = []
+
+    def chirps_last_day(self, before):
+        self.calls.append(("chirps_last_day", before))
+        return self.chirps_last
+
+    def reignition_measures(self, region, aoi, cells_table, dates):
+        self.calls.append(("reignition_measures", (cells_table, dates)))
+        return list(self.measures)
+
+    def peat_fractions(self, region, cells_table):
+        self.calls.append(("peat_fractions", cells_table))
+        return list(self.peat)
+
+
 class FakeDocumentRef:
     def __init__(self, store: dict, path: str, doc_id: str):
         self.store = store

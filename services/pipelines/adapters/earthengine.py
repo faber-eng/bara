@@ -2,13 +2,14 @@ from datetime import UTC, date, datetime
 
 import ee
 
-from ee_lib import drying, fires, grid, session
+from ee_lib import drying, fires, grid, reignition, session
 from ee_lib.config import DataConfig, RegionConfig
-from ee_lib.weeks import DryingWindow
+from ee_lib.weeks import DryingWindow, EventWindows
 
 PAGE_SIZE = 1000
 MEASURE_SCALE_M = 100
 MEASURE_TILE_SCALE = 4
+DATES_PER_CALL = 10
 
 
 class EarthEngineError(Exception):
@@ -73,3 +74,30 @@ class EarthEngineSource:
         self, aoi: dict, buffer_m: int, start: date, end: date
     ) -> list[dict]:
         return compute_features(fires.detections(self._data, aoi, buffer_m, start, end))
+
+    def reignition_measures(
+        self,
+        region: RegionConfig,
+        aoi: dict,
+        cells_table: str,
+        dates: list[tuple[date, list[str], EventWindows]],
+    ) -> list[dict]:
+        cells = drying.cells_collection(cells_table, region)
+        measures: list[dict] = []
+        for start in range(0, len(dates), DATES_PER_CALL):
+            chunk = [
+                reignition.date_measures(
+                    self._data, region, aoi, cells, quiet_date, cell_ids, windows
+                )
+                for quiet_date, cell_ids, windows in dates[
+                    start : start + DATES_PER_CALL
+                ]
+            ]
+            features = compute_features(ee.FeatureCollection(chunk).flatten())
+            measures.extend(feature["properties"] for feature in features)
+        return measures
+
+    def peat_fractions(self, region: RegionConfig, cells_table: str) -> list[dict]:
+        cells = drying.cells_collection(cells_table, region)
+        features = compute_features(reignition.peat_fractions(self._data, cells))
+        return [feature["properties"] for feature in features]
