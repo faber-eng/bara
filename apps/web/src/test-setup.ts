@@ -6,6 +6,7 @@ configure({ asyncUtilTimeout: 4000 });
 
 beforeEach(() => {
   vi.stubEnv("VITE_SOURCE_CLOCK", "fixture");
+  vi.stubEnv("VITE_SOURCE_TILES", "fixture");
 });
 
 afterEach(() => {
