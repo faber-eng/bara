@@ -40,7 +40,7 @@ describe("judge bar", () => {
   it("holds the page back until the first clock request settles", async () => {
     const pending = deferred();
     const fetchMock = stubApi({ "GET /api/clock": () => pending.promise });
-    renderApp("/public");
+    renderApp("/");
 
     await waitFor(() => expect(callsTo(fetchMock, "GET /api/clock")).toHaveLength(1));
     expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
@@ -48,33 +48,33 @@ describe("judge bar", () => {
     pending.resolve(Response.json(clockOn));
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Public dashboard" }),
+      await screen.findByRole("heading", { level: 1, name: "Landing and tour" }),
     ).toBeInTheDocument();
   });
 
   it("shows the sim time in Asia/Jakarta with a Sim label", async () => {
     stubApi({ "GET /api/clock": () => Response.json(clockOn) });
-    renderApp("/public");
+    renderApp("/");
 
     expect(await screen.findByText("Sim · 20 Jul 2026, 08:00")).toBeInTheDocument();
   });
 
   it("is hidden when judge mode is off", async () => {
     stubApi({ "GET /api/clock": () => Response.json({ ...clockOn, judge_mode: false }) });
-    renderApp("/public");
+    renderApp("/");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Public dashboard" }),
+      await screen.findByRole("heading", { level: 1, name: "Landing and tour" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
   });
 
   it("is hidden and the page still renders when the clock request fails", async () => {
     stubApi({ "GET /api/clock": () => new Response("down", { status: 500 }) });
-    renderApp("/public");
+    renderApp("/");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Public dashboard" }),
+      await screen.findByRole("heading", { level: 1, name: "Landing and tour" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
   });
@@ -83,8 +83,8 @@ describe("judge bar", () => {
     const fetchMock = stubApi({
       "GET /api/clock": () => Response.json({ ...clockOn, judge_mode: false }),
     });
-    renderApp("/public");
-    await screen.findByRole("heading", { level: 1, name: "Public dashboard" });
+    renderApp("/");
+    await screen.findByRole("heading", { level: 1, name: "Landing and tour" });
 
     const clockCall = callsTo(fetchMock, "GET /api/clock")[0];
     expect(headerOf(clockCall, "Authorization")).toBe("Bearer token-1");
@@ -93,7 +93,7 @@ describe("judge bar", () => {
 
   it("lists the five example people in the role switcher", async () => {
     stubApi({ "GET /api/clock": () => Response.json(clockOn) });
-    renderApp("/public");
+    renderApp("/");
     await screen.findByRole("region", { name: "Judge mode" });
 
     const options = within(screen.getByRole("combobox", { name: "Role" })).getAllByRole("option");
@@ -118,7 +118,7 @@ describe("judge bar", () => {
       const fetchMock = stubApi({ "GET /api/clock": () => Response.json(clockOn) });
       const queryClient = new QueryClient();
       queryClient.setQueryData(["cases", "riau"], []);
-      renderApp("/public", queryClient);
+      renderApp("/", queryClient);
       const select = await screen.findByRole("combobox", { name: "Role" });
       const callsBefore = callsTo(fetchMock, "GET /api/clock").length;
 
@@ -136,7 +136,7 @@ describe("judge bar", () => {
 
   it("keeps ops as the first role header", async () => {
     const fetchMock = stubApi({ "GET /api/clock": () => Response.json(clockOn) });
-    renderApp("/public");
+    renderApp("/");
     await screen.findByRole("region", { name: "Judge mode" });
 
     expect(headerOf(callsTo(fetchMock, "GET /api/clock")[0], "X-Bara-Role")).toBeNull();
@@ -156,7 +156,7 @@ describe("judge bar", () => {
       "GET /api/clock": () => Response.json(clockOn),
       "POST /api/judge/advance": () => Response.json(clockAdvanced),
     });
-    renderApp("/public");
+    renderApp("/");
     await screen.findByRole("region", { name: "Judge mode" });
 
     fireEvent.click(within(bar()).getByRole("button", { name: `+${hours}h` }));
@@ -175,7 +175,7 @@ describe("judge bar", () => {
     });
     const queryClient = new QueryClient();
     queryClient.setQueryData(["cases", "riau"], []);
-    renderApp("/public", queryClient);
+    renderApp("/", queryClient);
     await screen.findByRole("region", { name: "Judge mode" });
 
     fireEvent.click(within(bar()).getByRole("button", { name: "+48h" }));
@@ -197,7 +197,7 @@ describe("judge bar", () => {
       "GET /api/clock": () => Response.json(clockOn),
       "POST /api/judge/advance": () => new Response("boom", { status: 500 }),
     });
-    renderApp("/public");
+    renderApp("/");
     await screen.findByRole("region", { name: "Judge mode" });
 
     fireEvent.click(within(bar()).getByRole("button", { name: "+24h" }));
@@ -215,7 +215,7 @@ describe("judge bar", () => {
         return Response.json(clockOn);
       },
     });
-    renderApp("/public");
+    renderApp("/");
     await screen.findByText("Sim · 22 Jul 2026, 08:00");
 
     fireEvent.click(within(bar()).getByRole("button", { name: "Reset scenario" }));
@@ -229,7 +229,7 @@ describe("judge bar", () => {
       "GET /api/clock": () => Response.json(clockOn),
       "POST /api/judge/reset": () => new Response("slow down", { status: 429 }),
     });
-    renderApp("/public");
+    renderApp("/");
     await screen.findByRole("region", { name: "Judge mode" });
 
     fireEvent.click(within(bar()).getByRole("button", { name: "Reset scenario" }));
@@ -251,7 +251,7 @@ describe("judge bar on the clock fixture", () => {
 
   it("moves the sim time with no request to the API", async () => {
     const fetchMock = stubApi({});
-    renderApp("/public");
+    renderApp("/");
     await screen.findByText("Sim · 20 Jul 2026, 08:00");
 
     fireEvent.click(within(bar()).getByRole("button", { name: "+48h" }));

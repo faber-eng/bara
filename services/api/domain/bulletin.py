@@ -20,8 +20,8 @@ FIELDS = (
     "tasks_on_time_pct",
 )
 FIELD_NAMES = {
-    "high_risk_cells": ("high-risk cells", "sel berisiko tinggi", "cells"),
-    "dams_broken": ("dams broken or damaged", "bendungan rusak", "dams"),
+    "high_risk_cells": ("high-risk cells", "petak berisiko tinggi", "cells"),
+    "dams_broken": ("dams broken or damaged", "sekat kanal rusak atau jebol", "dams"),
     "cases_open": ("open cases", "kasus terbuka", "cases"),
     "cases_escalated": ("escalated cases", "kasus dieskalasi", "cases"),
     "cases_closed": ("cases closed this week", "kasus ditutup minggu ini", "cases"),
@@ -123,9 +123,9 @@ def template_bulletin(
         f"escalated and {closed} are closed."
     )
     text_id = (
-        f"Minggu ini di {region}, {risk} sel berisiko tinggi dan {broken} "
-        f"bendungan rusak. {opened} kasus terbuka, {escalated} dieskalasi dan "
-        f"{closed} ditutup."
+        f"Minggu ini di {region}, {risk} petak berisiko tinggi dan {broken} "
+        f"sekat kanal rusak atau jebol. {opened} kasus terbuka, {escalated} "
+        f"diteruskan ke pemadam dan {closed} ditutup."
     )
     cited = [
         CitedValue(field=field, value=getattr(summary, field))

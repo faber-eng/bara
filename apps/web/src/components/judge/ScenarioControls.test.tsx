@@ -15,7 +15,7 @@ function bar() {
 }
 
 async function openBar() {
-  renderApp("/public");
+  renderApp("/");
   await screen.findByRole("region", { name: "Judge mode" });
 }
 
@@ -96,7 +96,7 @@ describe("scenario controls", () => {
       });
       const queryClient = new QueryClient();
       const spy = vi.spyOn(queryClient, "invalidateQueries");
-      renderApp("/public", queryClient);
+      renderApp("/", queryClient);
       await screen.findByRole("region", { name: "Judge mode" });
       fireEvent.click(within(bar()).getByRole("button", { name: "Start: weekly ranking" }));
       await screen.findByRole("status");
