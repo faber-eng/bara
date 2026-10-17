@@ -17,6 +17,7 @@ from area_queries import AreaQueries
 from auth import FirebaseTokenVerifier, TokenVerifier
 from bara_agent.agent import build_tools
 from bara_agent.run import AgentService
+from bara_agent.tools.get_area_facts import GetAreaFacts
 from case_queries import CaseQueries
 from casework.assignment import TaskAssigner
 from casework.brief import BriefWriter
@@ -27,6 +28,7 @@ from casework.evidence_intake import EvidenceIntake
 from casework.evidence_reader import EvidenceReader
 from casework.inbox import InboxReader
 from casework.messenger import Messenger
+from casework.rank_explanation import RankExplainer
 from config import Settings, full_flow_region, load_settings, region_timezones
 from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
@@ -309,6 +311,16 @@ def build_area_queries(settings: Settings, adapters: Adapters) -> AreaQueries:
     )
 
 
+def build_rank_explainer(
+    settings: Settings, adapters: Adapters, gateway: ModelGateway
+) -> RankExplainer:
+    return RankExplainer(
+        model=gateway,
+        facts=GetAreaFacts(adapters.cells, adapters.dams, settings.grid_cell_m),
+        rankings=adapters.rankings,
+    )
+
+
 def create_app() -> FastAPI:
     configure_logging()
     settings = load_settings()
@@ -337,6 +349,9 @@ def create_app() -> FastAPI:
     app.state.resetter = build_resetter(settings)
     app.state.case_queries = build_case_queries(app.state.adapters)
     app.state.area_queries = build_area_queries(settings, app.state.adapters)
+    app.state.rank_explainer = build_rank_explainer(
+        settings, app.state.adapters, gateway
+    )
     app.state.tiles = EarthEngineTiles(settings.project, settings.config_dir)
     app.state.utcnow = utcnow
     return app

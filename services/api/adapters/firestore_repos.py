@@ -33,6 +33,7 @@ from contracts import (
     ProcessedEvent,
     RankedCell,
     RankedDam,
+    RankExplanation,
     Task,
     Verdict,
     VerdictCacheEntry,
@@ -488,6 +489,13 @@ class RankingRepository:
 
     def cell(self, region: str, cell_id: str) -> RankedCell | None:
         return self._cells_for(region).get(cell_id)
+
+    def set_explanation(
+        self, region: str, cell_id: str, explanation: RankExplanation
+    ) -> None:
+        self._cells_for(region).update(
+            cell_id, {"explanation": explanation.model_dump(mode="json")}
+        )
 
 
 class RankedDamRepository:

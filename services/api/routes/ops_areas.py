@@ -1,9 +1,11 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.concurrency import run_in_threadpool
 
 from area_queries import AreaQueries, NoRankings, UnknownCell
 from auth import Principal, require_role
+from casework.rank_explanation import RankExplainer
 from contracts import CellFacts, Rankings
 
 router = APIRouter(prefix="/api")
@@ -26,9 +28,17 @@ def region_rankings(
         raise HTTPException(status_code=404, detail="no_rankings") from error
 
 
+def explainer(request: Request) -> RankExplainer:
+    return request.app.state.rank_explainer
+
+
 @router.get("/cells/{cell_id}", response_model=CellFacts)
-def cell_facts(cell_id: str, request: Request, _: OpsReader) -> CellFacts:
+async def cell_facts(cell_id: str, request: Request, _: OpsReader) -> CellFacts:
     try:
-        return queries(request).cell_facts(cell_id)
+        facts = await run_in_threadpool(queries(request).cell_facts, cell_id)
     except UnknownCell as error:
         raise HTTPException(status_code=404, detail="cell_not_found") from error
+    if facts.explanation is not None:
+        return facts
+    explanation = await explainer(request).explain(cell_id)
+    return facts.model_copy(update={"explanation": explanation})

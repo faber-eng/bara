@@ -27,6 +27,7 @@ from contracts import (
     Evidence,
     RankedCell,
     RankedDam,
+    RankExplanation,
     Task,
     Verdict,
 )
@@ -69,6 +70,16 @@ class RecordingSigner:
         )
 
 
+class StubExplainer:
+    def __init__(self, result=None):
+        self.result = result
+        self.calls: list[str] = []
+
+    async def explain(self, cell_id):
+        self.calls.append(cell_id)
+        return self.result
+
+
 class World:
     def __init__(self, weekly_rows=None):
         self.cases = InMemoryCollection(Case)
@@ -79,6 +90,7 @@ class World:
         self.ranked_dams = InMemoryCollection(RankedDam)
         self.dams = InMemoryCollection(Dam)
         self.runs: dict[str, InMemoryCollection] = {}
+        self.explainer = StubExplainer()
         self.clock = Clock(
             InMemoryClockStore(ClockSettings(offset_seconds=0, updated_by="t")),
             lambda: REAL_NOW,
@@ -125,6 +137,7 @@ class World:
         app = main.build_app(settings, gateway, verifier)
         app.state.case_queries = self.case_queries
         app.state.area_queries = self.area_queries
+        app.state.rank_explainer = self.explainer
         return TestClient(app)
 
     def add_case(self, case_id="c1", status="open", **overrides):
@@ -362,6 +375,42 @@ def test_cell_facts_has_trend_nearby_dams_checks_and_the_stored_explanation(sett
     assert body["past_checks"][0]["dam_state"] == "broken"
     assert body["explanation"]["text"] == "dry"
     assert body["past_fires"] == []
+
+
+def test_a_missing_explanation_is_made_on_the_cell_route_only(settings):
+    world = World([weekly_row()])
+    world.ranked_cells.put("riau-1-1", make_ranked_cell())
+    world.explainer.result = RankExplanation(text="dry", cited={"rank": 1})
+    client = world.client(settings)
+
+    listed = client.get("/api/rankings/riau", headers=OPS)
+    detail = client.get("/api/cells/riau-1-1", headers=OPS)
+
+    assert listed.status_code == 200
+    assert world.explainer.calls == ["riau-1-1"]
+    assert detail.json()["explanation"] == {"text": "dry", "cited": {"rank": 1}}
+
+
+def test_a_stored_explanation_is_not_made_again(settings):
+    world = World([weekly_row()])
+    world.ranked_cells.put(
+        "riau-1-1",
+        make_ranked_cell(explanation={"text": "kept", "cited": {"rank": 1}}),
+    )
+
+    body = world.client(settings).get("/api/cells/riau-1-1", headers=OPS).json()
+
+    assert body["explanation"]["text"] == "kept"
+    assert world.explainer.calls == []
+
+
+def test_a_failed_explanation_leaves_the_cell_with_null(settings):
+    world = World([weekly_row()])
+
+    response = world.client(settings).get("/api/cells/riau-1-1", headers=OPS)
+
+    assert response.status_code == 200
+    assert response.json()["explanation"] is None
 
 
 def test_a_cell_without_drying_data_is_404(settings):
