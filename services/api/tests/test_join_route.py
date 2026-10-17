@@ -153,18 +153,45 @@ def test_a_repeat_join_reasserts_a_missing_claim(settings):
     assert admin.claims_by_uid["u-google"] == {"role": "volunteer"}
 
 
-def test_joining_never_downgrades_an_ops_claim(settings):
+def test_an_ops_claim_cannot_join_and_nothing_is_written(settings):
     admin = FakeClaimsAdmin({"u-google": {"role": "ops"}})
-    client, _ = make_join_app(settings, admin=admin)
+    client, collection = make_join_app(settings, admin=admin)
 
     response = join(client)
 
-    assert response.status_code == 200
+    assert response.status_code == 409
+    assert response.json() == {"detail": "already_has_role"}
     assert admin.claims_by_uid["u-google"] == {"role": "ops"}
     assert admin.writes == []
+    assert collection.get("u-google") is None
 
 
-def test_a_claim_failure_after_the_document_is_502_and_a_retry_works(settings):
+def test_brigade_and_judge_claims_cannot_join_either(settings):
+    for role in ("brigade", "judge"):
+        admin = FakeClaimsAdmin({"u-google": {"role": role}})
+        client, _ = make_join_app(settings, admin=admin)
+
+        assert join(client).status_code == 409
+
+
+def test_a_wrong_code_is_still_403_for_a_staff_claim(settings):
+    admin = FakeClaimsAdmin({"u-google": {"role": "ops"}})
+    client, _ = make_join_app(settings, admin=admin)
+
+    response = join(client, body={**BODY, "invite_code": "nope"})
+
+    assert response.status_code == 403
+
+
+def test_a_volunteer_claim_repeats_the_join_as_200(settings):
+    admin = FakeClaimsAdmin({"u-google": {"role": "volunteer"}})
+    client, _ = make_join_app(settings, admin=admin)
+
+    assert join(client).status_code == 200
+    assert join(client).status_code == 200
+
+
+def test_a_claim_failure_is_502_and_a_retry_works(settings):
     admin = FakeClaimsAdmin()
     client, volunteers = make_join_app(settings, admin=admin)
     admin.fail_with = IdentityUnavailable("down")
@@ -172,13 +199,13 @@ def test_a_claim_failure_after_the_document_is_502_and_a_retry_works(settings):
     first = join(client)
 
     assert first.status_code == 502
-    assert volunteers.get("u-google") is not None
+    assert volunteers.get("u-google") is None
     admin.fail_with = None
 
     second = join(client)
 
     assert second.status_code == 200
-    assert second.json()["created"] is False
+    assert second.json()["created"] is True
     assert admin.claims_by_uid["u-google"] == {"role": "volunteer"}
 
 

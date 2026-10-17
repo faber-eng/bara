@@ -3,6 +3,7 @@ from domain.join import (
     build_volunteer,
     claims_after_join,
     codes_match,
+    holds_staff_role,
     with_role,
 )
 
@@ -41,13 +42,22 @@ def test_join_claims_keep_other_claims():
     assert claims_after_join({"locale": "id"}) == {"locale": "id", "role": "volunteer"}
 
 
-def test_join_claims_never_downgrade_a_privileged_role():
-    for role in ("ops", "brigade", "judge"):
-        assert claims_after_join({"role": role}) == {"role": role}
+def test_join_claims_keep_an_existing_volunteer_claim():
+    assert claims_after_join({"role": "volunteer"}) == {"role": "volunteer"}
 
 
 def test_join_claims_keep_a_volunteer_equivalent_alias():
     assert claims_after_join({"role": "patrol"}) == {"role": "patrol"}
+
+
+def test_a_staff_role_cannot_join_as_a_volunteer():
+    for role in ("ops", "brigade", "judge"):
+        assert holds_staff_role({"role": role}) is True
+
+
+def test_no_role_and_volunteer_roles_are_not_staff():
+    for claims in ({}, {"role": "volunteer"}, {"role": "patrol"}, {"role": "bogus"}):
+        assert holds_staff_role(claims) is False
 
 
 def test_with_role_replaces_the_role_and_keeps_the_rest():
