@@ -17,7 +17,7 @@ from adapters.firestore_repos import (
     EvidenceRepository,
     TaskRepository,
 )
-from adapters.storage import InvalidObjectName
+from adapters.storage import InvalidObjectName, SigningUnavailable
 from casework.brief import Brief
 from casework.escalation import (
     Acknowledger,
@@ -86,6 +86,8 @@ class FakeCells:
 
 class FakeSigner:
     def signed_get_url_for(self, uri):
+        if uri.startswith("gs://broken/"):
+            raise SigningUnavailable("signBlob denied")
         if not uri.startswith("gs://b/"):
             raise InvalidObjectName(uri)
         return uri.replace("gs://", "https://signed.test/")
@@ -321,7 +323,8 @@ def test_the_inbox_lists_the_contact_escalations_newest_first_with_signed_photos
     )
     newer = make_escalation(id="x9")
     other = make_escalation(id="x5", contact_id="ct-other")
-    for item in (older, newer, other):
+    acked = make_escalation(id="x7", acknowledged_at=NOW)
+    for item in (older, newer, other, acked):
         world.escalations.put(item.id, item)
 
     inbox = world.inbox.read("ct1")
@@ -330,13 +333,92 @@ def test_the_inbox_lists_the_contact_escalations_newest_first_with_signed_photos
     assert inbox[1].pack.photos == ["https://signed.test/b/e0.jpg"]
 
 
-def test_a_photo_outside_the_bucket_is_left_out_of_the_inbox():
+def test_a_photo_that_cannot_be_signed_is_left_out_of_the_inbox():
     world = World()
     pack = EscalationPack(
-        photos=["gs://other/e0.jpg", "gs://b/e1.jpg"], map_url="", timeline=[]
+        photos=["gs://other/e0.jpg", "gs://broken/e2.jpg", "gs://b/e1.jpg"],
+        map_url="",
+        timeline=[],
     )
     world.escalations.put("x1", make_escalation(pack=pack))
 
     inbox = world.inbox.read("ct1")
 
     assert inbox[0].pack.photos == ["https://signed.test/b/e1.jpg"]
+
+
+class RacingStore:
+    def __init__(self, inner, before_commit):
+        self._inner = inner
+        self._before_commit = before_commit
+
+    def commit_escalation(self, **kwargs):
+        self._before_commit()
+        self._inner.commit_escalation(**kwargs)
+
+    def commit_ack(self, **kwargs):
+        self._before_commit()
+        self._inner.commit_ack(**kwargs)
+
+
+def store_of(world):
+    return CaseworkStore(
+        InMemoryTransactor(
+            {
+                CASES: world.cases,
+                ESCALATIONS: world.escalations,
+                MESSAGES: world.messages,
+            }
+        )
+    )
+
+
+def test_the_loser_of_an_escalation_race_returns_the_winner():
+    world = World()
+    winner = make_escalation(id="x-win")
+
+    def other_run_escalates_first():
+        world.escalations.put(winner.id, winner)
+        world.cases.update("c1", {"status": "escalated"})
+
+    world.escalator._casework = RacingStore(store_of(world), other_run_escalates_first)
+
+    assert world.escalate() == winner
+    assert world.publisher.published == []
+
+
+def test_a_race_that_leaves_no_escalation_is_rejected():
+    world = World()
+
+    def case_moves_on():
+        world.cases.update("c1", {"status": "human_review"})
+
+    world.escalator._casework = RacingStore(store_of(world), case_moves_on)
+
+    with pytest.raises(EscalationRejected):
+        world.escalate()
+
+
+def test_the_loser_of_an_ack_race_returns_the_stored_ack():
+    world = World()
+    world.escalate()
+
+    def other_ack_first():
+        world.escalations.update("x1", {"acknowledged_at": NOW})
+
+    world.acknowledger._casework = RacingStore(store_of(world), other_ack_first)
+
+    assert world.acknowledger.ack("x1", owner_id=None).acknowledged_at == NOW
+
+
+def test_an_ack_race_that_leaves_it_unacked_is_rejected():
+    world = World()
+    world.escalate()
+
+    def case_moves_on():
+        world.cases.update("c1", {"status": "monitoring"})
+
+    world.acknowledger._casework = RacingStore(store_of(world), case_moves_on)
+
+    with pytest.raises(EscalationRejected):
+        world.acknowledger.ack("x1", owner_id=None)

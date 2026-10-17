@@ -45,7 +45,8 @@ def acknowledge(
     principal: Annotated[Principal, Depends(require_role("brigade"))],
 ) -> Escalation:
     try:
-        return acknowledger(request).ack(escalation_id, claimed_owner(principal))
+        acked = acknowledger(request).ack(escalation_id, claimed_owner(principal))
     except (UnknownEscalation, NotYourEscalation, EscalationRejected) as error:
         status, detail = ACK_ERRORS[type(error)]
         raise HTTPException(status_code=status, detail=detail) from error
+    return brigade_inbox(request).signed(acked)

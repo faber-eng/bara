@@ -14,8 +14,8 @@ from adapters.firestore_repos import (
     StatusChange,
     TaskRepository,
 )
-from adapters.storage import InvalidObjectName
-from casework.brief import Brief, BriefFacts
+from adapters.storage import SIGNING_ERRORS
+from casework.brief import BRIEF_PROMPT_VERSION, Brief, BriefFacts
 from contracts import (
     Case,
     CaseEscalated,
@@ -27,6 +27,7 @@ from contracts import (
     EventType,
     GeoPoint,
     Message,
+    TimelineEntry,
 )
 from domain.case_machine import can_transition
 from domain.case_view import build_timeline
@@ -51,7 +52,7 @@ class NotYourEscalation(Exception):
     pass
 
 
-class BriefSource(Protocol):
+class Briefer(Protocol):
     async def write(self, facts: BriefFacts) -> Brief: ...
 
 
@@ -95,7 +96,7 @@ class Escalator:
         escalations: EscalationRepository,
         cells: Centroids,
         casework: CaseworkStore,
-        brief: BriefSource,
+        brief: Briefer,
         channel: Channel,
         publisher: Publisher,
         clock: Clock,
@@ -118,8 +119,8 @@ class Escalator:
 
     async def escalate(self, case_id: str, reason: str) -> Escalation:
         case = self._case(case_id)
-        existing = self._escalations.open_for_case(case_id)
-        if case.status == "escalated" and existing is not None:
+        existing = self._already_escalated(case)
+        if existing is not None:
             return existing
         if not can_transition(case.status, "escalated"):
             raise EscalationRejected(f"a {case.status} case cannot be escalated")
@@ -143,9 +144,26 @@ class Escalator:
             acknowledged_at=None,
         )
         message = self._channel.build(brigade_message(escalation, brief))
-        self._commit(case, escalation, message)
+        try:
+            self._store(case, escalation, message)
+        except CaseChanged as error:
+            return self._winner_of_race(case.id, error)
+        self._log_escalated(escalation, brief)
         self._publish(case, escalation)
         return escalation
+
+    def _already_escalated(self, case: Case) -> Escalation | None:
+        if case.status != "escalated":
+            return None
+        return self._escalations.open_for_case(case.id)
+
+    def _winner_of_race(self, case_id: str, error: CaseChanged) -> Escalation:
+        winner = self._already_escalated(self._case(case_id))
+        if winner is None:
+            raise EscalationRejected(
+                f"case {case_id} changed while escalating; read it again"
+            ) from error
+        return winner
 
     def _case(self, case_id: str) -> Case:
         case = self._cases.get(case_id)
@@ -166,7 +184,9 @@ class Escalator:
         return self._cells.centroid(case.cell_id)
 
     @staticmethod
-    def _facts(case: Case, reason: str, timeline, url: str) -> BriefFacts:
+    def _facts(
+        case: Case, reason: str, timeline: list[TimelineEntry], url: str
+    ) -> BriefFacts:
         return BriefFacts(
             case_type=case.type,
             cell_id=case.cell_id,
@@ -178,24 +198,24 @@ class Escalator:
             map_url=url,
         )
 
-    def _commit(self, case: Case, escalation: Escalation, message: Message) -> None:
-        try:
-            self._casework.commit_escalation(
-                escalation=escalation,
-                message=message,
-                case_change=StatusChange(case.id, case.status, "escalated"),
-            )
-        except CaseChanged as error:
-            raise EscalationRejected(
-                f"case {case.id} changed while escalating; read it again"
-            ) from error
+    def _store(self, case: Case, escalation: Escalation, message: Message) -> None:
+        self._casework.commit_escalation(
+            escalation=escalation,
+            message=message,
+            case_change=StatusChange(case.id, case.status, "escalated"),
+        )
+
+    @staticmethod
+    def _log_escalated(escalation: Escalation, brief: Brief) -> None:
         logger.info(
             "case escalated",
             extra=log_fields(
                 "case_escalated",
-                case.id,
+                escalation.case_id,
                 escalation_id=escalation.id,
                 contact_id=escalation.contact_id,
+                brief_source=brief.source,
+                brief_prompt_version=BRIEF_PROMPT_VERSION,
             ),
         )
 
@@ -274,13 +294,13 @@ class BrigadeInbox:
         self._signer = signer
 
     def read(self, contact_id: str) -> list[Escalation]:
-        escalations = self._escalations.for_contact(contact_id)
+        escalations = self._escalations.open_for_contact(contact_id)
         newest_first = sorted(
             escalations, key=lambda item: (item.created_at, item.id), reverse=True
         )
-        return [self._signed(item) for item in newest_first]
+        return [self.signed(item) for item in newest_first]
 
-    def _signed(self, escalation: Escalation) -> Escalation:
+    def signed(self, escalation: Escalation) -> Escalation:
         photos: list[str] = []
         for uri in escalation.pack.photos:
             url = self._signed_url(escalation, uri)
@@ -292,13 +312,14 @@ class BrigadeInbox:
     def _signed_url(self, escalation: Escalation, uri: str) -> str | None:
         try:
             return self._signer.signed_get_url_for(uri)
-        except InvalidObjectName:
+        except SIGNING_ERRORS as error:
             logger.warning(
                 "escalation photo skipped",
                 extra=log_fields(
                     "escalation_photo_skipped",
                     escalation.case_id,
                     escalation_id=escalation.id,
+                    kind=type(error).__name__,
                 ),
             )
             return None

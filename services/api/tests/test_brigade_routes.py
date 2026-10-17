@@ -26,6 +26,9 @@ class StubInbox:
         self.read_for.append(contact_id)
         return [make_escalation(id="x1", contact_id=contact_id)]
 
+    def signed(self, escalation):
+        return escalation.model_copy(update={"brief_en": "signed"})
+
 
 class StubAcknowledger:
     def __init__(self, error=None):
@@ -98,6 +101,7 @@ def test_a_claimed_contact_acks_as_its_own_owner(settings):
 
     assert response.status_code == 200
     assert response.json()["id"] == "x1"
+    assert response.json()["brief_en"] == "signed"
     assert acknowledger.calls == [("x1", "ct1")]
 
 
