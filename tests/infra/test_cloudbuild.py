@@ -108,6 +108,25 @@ def test_deploy_jobs_runs_the_weekly_job_as_bara_jobs_on_the_new_image(steps):
     assert "--allow-unauthenticated" not in text
 
 
+def test_deploy_jobs_also_runs_the_daily_reignition_job(steps):
+    text = command_text(steps["deploy-jobs"])
+    reignition = text.index("gcloud run jobs deploy bara-reignition")
+    assert "--args=jobs.daily_reignition,--region,riau" in text[reignition:]
+    assert (
+        "--service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com"
+        in text[reignition:]
+    )
+    guard = "bash ci/guard.sh jobs bara-reignition $_REGION $PROJECT_ID"
+    assert text.index(guard) < reignition
+    assert text.index("superseded-bara-reignition") < reignition
+
+
+def test_a_superseded_drying_job_does_not_skip_the_reignition_deploy(steps):
+    text = command_text(steps["deploy-jobs"])
+    drying_skip = text[: text.index("gcloud run jobs deploy bara-reignition")]
+    assert "exit 0" not in drying_skip
+
+
 def test_every_wait_for_names_a_real_step(steps):
     for step in steps.values():
         for dependency in step["waitFor"]:

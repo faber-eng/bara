@@ -1,11 +1,11 @@
 import json
 import logging
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 from adapters.bigquery import QueryResult
-from ee_lib.config import ConfigError, UnknownRegion
+from ee_lib.config import ConfigError, RegionConfig, UnknownRegion
 
 EXIT_OK = 0
 EXIT_FAILURE = 1
@@ -14,6 +14,8 @@ DATASET = "bara"
 
 logger = logging.getLogger("bara.jobs")
 
+Step = Callable[[Sequence[str] | None], int]
+
 
 class JobError(Exception):
     pass
@@ -21,6 +23,15 @@ class JobError(Exception):
 
 class UsageError(Exception):
     pass
+
+
+def full_flow_region(region: RegionConfig) -> str:
+    if not region.full_flow:
+        raise UsageError(
+            f"region {region.id!r} is not full_flow in config/regions.yaml; "
+            "the reignition model serves the full-flow region only"
+        )
+    return region.id
 
 
 def configure_logging() -> None:
@@ -80,4 +91,13 @@ def run_job(work: Callable[[], Mapping[str, object]]) -> int:
     except (JobError, ConfigError) as error:
         print(f"error: {error}", file=sys.stderr)
         return EXIT_FAILURE
+    return EXIT_OK
+
+
+def run_steps(job: str, argv: Sequence[str], steps: Sequence[tuple[str, Step]]) -> int:
+    for name, step in steps:
+        code = step(argv)
+        if code != EXIT_OK:
+            logger.error("%s: %s exited %d; later steps skipped", job, name, code)
+            return code
     return EXIT_OK

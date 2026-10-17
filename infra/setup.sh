@@ -37,8 +37,9 @@ readonly CI_PROJECT_ROLES=(
 readonly JOBS_ACCOUNT=bara-jobs
 readonly SCHEDULER_ACCOUNT=bara-scheduler
 readonly DRYING_JOB=bara-drying
+readonly REIGNITION_JOB=bara-reignition
 readonly SCHEDULE_ZONE=Asia/Jakarta
-readonly SCHEDULES=(bara-drying-weekly)
+readonly SCHEDULES=(bara-drying-weekly bara-reignition-daily)
 
 DRY_RUN=false
 PROJECT_FLAG=""
@@ -59,9 +60,9 @@ Exit codes: 0 done, 1 a gcloud call failed, 2 usage error, 3 no project, 4 tool 
 
 The Cloud Build service account bara-build and its grants, and the Pub/Sub push
 subscriptions (with their grants and the 600 s request timeout), need the deployed
-bara-api service; bara-build also needs the secrets maps-key and firebase-web-config. The scheduler job bara-drying-weekly
-is created at once; its run.invoker grant on the Cloud Run job bara-drying waits for the
-first Cloud Build deploy of that job.
+bara-api service; bara-build also needs the secrets maps-key and firebase-web-config. The scheduler jobs bara-drying-weekly
+and bara-reignition-daily are created at once; each run.invoker grant on its Cloud Run job
+(bara-drying, bara-reignition) waits for the first Cloud Build deploy of that job.
 EOF
 }
 
@@ -434,12 +435,14 @@ setup_ci() {
 schedule_cron() {
   case "$1" in
     bara-drying-weekly) echo "0 1 * * 1" ;;
+    bara-reignition-daily) echo "0 6 * * *" ;;
   esac
 }
 
 schedule_job() {
   case "$1" in
     bara-drying-weekly) echo "$DRYING_JOB" ;;
+    bara-reignition-daily) echo "$REIGNITION_JOB" ;;
   esac
 }
 

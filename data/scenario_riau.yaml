@@ -25,23 +25,26 @@ evidence_fixtures:
   - { id: voice-broken-dam, kind: audio, path: voice/voice01.ogg, expect: { transcript_contains: jebol } }
 
 fire_event:
-  event_id: fire-riau-2026-demo-01
-  source: example (placed inside the AOI; p_reignite precomputed for the scenario, not scored)
-  start_date: "2026-07-12"
+  event_id: fire-riau-20260831
+  source: FIRMS fire in bara.fire_events (started 2026-08-27, quiet 2026-08-31, all 10 cells reignited), replayed on sim day 10; top 3 cells, p_reignite and top_features from bara.reignition_v1_no_rain_after (jobs.score_reignition)
+  start_date: "2026-07-26"
   quiet_date: "2026-07-30"
   cells:
-    - cell_id: riau-182-61
-      p_reignite: 0.82
+    - cell_id: riau-177-73
+      p_reignite: 0.648
       top_features:
-        - { feature: drying_score, attribution: 0.41 }
-        - { feature: days_since_last_detection, attribution: 0.22 }
-    - cell_id: riau-183-61
-      p_reignite: 0.74
+        - { feature: mean_confidence, attribution: 0.3972 }
+        - { feature: prior_years_burned, attribution: 0.1233 }
+        - { feature: month, attribution: -0.1134 }
+    - cell_id: riau-178-75
+      p_reignite: 0.6479
       top_features:
-        - { feature: drying_score, attribution: 0.37 }
-        - { feature: canal_dist_m, attribution: 0.18 }
-    - cell_id: riau-182-60
-      p_reignite: 0.68
+        - { feature: mean_confidence, attribution: 0.3972 }
+        - { feature: prior_years_burned, attribution: 0.1441 }
+        - { feature: month, attribution: -0.1134 }
+    - cell_id: riau-177-75
+      p_reignite: 0.6458
       top_features:
-        - { feature: drying_score, attribution: 0.33 }
-        - { feature: peat_class, attribution: 0.15 }
+        - { feature: mean_confidence, attribution: 0.3972 }
+        - { feature: prior_years_burned, attribution: 0.1441 }
+        - { feature: month, attribution: -0.1134 }
