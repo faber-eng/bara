@@ -143,13 +143,23 @@ def test_a_dam_whose_case_is_closed_gets_a_new_case():
     assert len(world.all_cases()) == 2
 
 
-@pytest.mark.parametrize("example", [True, False])
-def test_the_case_copies_the_example_flag_of_the_event(example):
-    world = World([make_ranked_dam()])
+@pytest.mark.parametrize(
+    "event_example,dam_example,expected",
+    [
+        (True, True, True),
+        (True, False, True),
+        (False, True, True),
+        (False, False, False),
+    ],
+)
+def test_a_case_is_example_when_the_event_or_its_dam_is(
+    event_example, dam_example, expected
+):
+    world = World([make_ranked_dam(example=dam_example)])
 
-    world.deliver(event=make_drying_ranked_event(example=example))
+    world.deliver(event=make_drying_ranked_event(example=event_example))
 
-    assert world.all_cases()[0].example is example
+    assert world.all_cases()[0].example is expected
 
 
 def test_the_number_of_cases_is_capped_at_the_limit():

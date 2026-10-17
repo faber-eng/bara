@@ -127,7 +127,7 @@ def build_dam_case(
         closed_by=None,
         closed_at=None,
         history_flags=HistoryFlags(smoke_seen=False),
-        example=event.example,
+        example=event.example or dam.example,
     )
 
 
