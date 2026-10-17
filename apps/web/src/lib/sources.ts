@@ -22,6 +22,7 @@ function readOverrides(): Record<SourceArea, unknown> {
     cases: import.meta.env.VITE_SOURCE_CASES,
     caseDetail: import.meta.env.VITE_SOURCE_CASEDETAIL,
     escalations: import.meta.env.VITE_SOURCE_ESCALATIONS,
+    inbox: import.meta.env.VITE_SOURCE_INBOX,
     tiles: import.meta.env.VITE_SOURCE_TILES,
     clock: import.meta.env.VITE_SOURCE_CLOCK,
   };
