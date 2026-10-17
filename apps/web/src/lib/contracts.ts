@@ -378,3 +378,24 @@ export type TileLayer = {
   week: IsoWeek;
   url_template: string;
 };
+
+export type AreaRankStatus = "ranked" | "no_peat";
+
+export type AreaCell = {
+  cell_id: string;
+  centroid: GeoPoint;
+  drying_score: number;
+  rank: number;
+};
+
+export type AreaRanking = {
+  status: AreaRankStatus;
+  region: string;
+  week: IsoWeek;
+  polygon_hash: string;
+  area_km2: number;
+  peat_cells: number;
+  cells: AreaCell[];
+  tile_url_template: string | null;
+  cached: boolean;
+};

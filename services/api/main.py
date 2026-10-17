@@ -5,8 +5,11 @@ from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from google.cloud import firestore
 
+from adapters.area_limit_store import FirestoreAreaLimitStore
+from adapters.area_regions import load_area_regions
 from adapters.channels import WebChannel
 from adapters.earthengine import EarthEngineTiles
+from adapters.earthengine_area import EarthEngineAreaSource
 from adapters.factory import (
     Adapters,
     build_adapters,
@@ -22,6 +25,7 @@ from bara_agent.agent import build_tools
 from bara_agent.run import AgentService
 from bara_agent.tools.get_area_facts import GetAreaFacts
 from case_queries import CaseQueries
+from casework.area_ranking import AreaRanker
 from casework.assignment import TaskAssigner
 from casework.brief import BriefWriter
 from casework.deadline import DeadlineHandler
@@ -36,6 +40,7 @@ from casework.rank_explanation import RankExplainer
 from casework.review import ReviewDesk
 from casework.trigger_gate import TriggerGate
 from config import Settings, full_flow_region, load_settings, region_timezones
+from domain.area_cache import AreaRankingCache
 from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
 from evidence_events import EvidenceReceivedHandler
@@ -46,6 +51,7 @@ from public_queries import PublicQueries
 from push_auth import GoogleOidcVerifier
 from ratelimit import FailureLimiter, RequestLimiter
 from routes import (
+    areas,
     brigade,
     clock,
     deadline,
@@ -118,6 +124,7 @@ def build_app(
     app.include_router(deadline.router)
     app.include_router(ops_cases.router)
     app.include_router(ops_areas.router)
+    app.include_router(areas.router)
     app.include_router(volunteer.router)
     app.include_router(brigade.router)
     return app
@@ -421,6 +428,17 @@ def build_tiles(settings: Settings, adapters: Adapters) -> EarthEngineTiles:
     )
 
 
+def build_area_ranker(settings: Settings) -> AreaRanker:
+    db = firestore.Client(project=settings.project)
+    return AreaRanker(
+        source=EarthEngineAreaSource(settings.project, settings.config_dir),
+        limits=FirestoreAreaLimitStore(db),
+        regions=load_area_regions(settings.config_dir),
+        cache=AreaRankingCache(),
+        utcnow=utcnow,
+    )
+
+
 def create_app() -> FastAPI:
     configure_logging()
     settings = load_settings()
@@ -461,5 +479,6 @@ def create_app() -> FastAPI:
     )
     app.state.public_queries = build_public_queries(settings, app.state.adapters)
     app.state.tiles = build_tiles(settings, app.state.adapters)
+    app.state.area_ranker = build_area_ranker(settings)
     app.state.utcnow = utcnow
     return app

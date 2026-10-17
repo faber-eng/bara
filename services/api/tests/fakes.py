@@ -720,6 +720,7 @@ APP_BUILDER_STUBS = {
     "build_intake": "intake",
     "build_inbox": "inbox",
     "build_assigner": "assigner",
+    "build_area_ranker": "area_ranker",
 }
 
 
