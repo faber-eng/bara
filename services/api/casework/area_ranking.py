@@ -92,8 +92,7 @@ class AreaRanker:
         cached = self._cache.get(key)
         if cached is not None:
             return cached.model_copy(update={"cached": True})
-        self._admit(uid)
-        ranking = self._measure(region, polygon, week_start)
+        ranking = self._run(uid, region, polygon, week_start)
         self._cache.put(key, ranking)
         return ranking
 
@@ -109,12 +108,13 @@ class AreaRanker:
         if retry_after > 0:
             raise RateLimited(retry_after)
 
-    def _measure(
-        self, region: RegionConfig, polygon: AreaPolygon, week_start: date
+    def _run(
+        self, uid: str, region: RegionConfig, polygon: AreaPolygon, week_start: date
     ) -> AreaRanking:
         if not self._slots.acquire(blocking=False):
             raise AreaBusy()
         try:
+            self._admit(uid)
             today = local_today(self._utcnow(), region.zone)
             measure = self._source.rank(region, polygon, week_start, today)
         finally:

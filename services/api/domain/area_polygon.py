@@ -50,8 +50,21 @@ class AreaPolygon:
 
     @property
     def digest(self) -> str:
-        canonical = json.dumps(self.ring, separators=(",", ":"))
+        canonical = json.dumps(canonical_ring(self.ring), separators=(",", ":"))
         return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def signed_area(ring) -> float:
+    return sum(a[0] * b[1] - b[0] * a[1] for a, b in itertools.pairwise(ring))
+
+
+def canonical_ring(ring) -> list[tuple[float, float]]:
+    corners = list(ring[:-1])
+    if signed_area(ring) < 0:
+        corners.reverse()
+    start = corners.index(min(corners))
+    rotated = corners[start:] + corners[:start]
+    return [*rotated, rotated[0]]
 
 
 def read_position(raw: object) -> tuple[float, float]:
@@ -122,9 +135,9 @@ def parse_polygon(raw: object) -> AreaPolygon:
     ring = read_ring(raw)
     if has_self_crossing(ring):
         raise InvalidPolygon("the ring must not cross itself")
-    area = ring_area_km2(ring)
+    area = round(ring_area_km2(ring), 2)
     if area <= 0:
         raise InvalidPolygon("the polygon has no area")
     if area > MAX_AREA_KM2:
         raise PolygonTooLarge(area)
-    return AreaPolygon(tuple(ring), round(area, 2), bounding_box(ring))
+    return AreaPolygon(tuple(ring), area, bounding_box(ring))

@@ -77,3 +77,22 @@ def test_the_box_overlap_check():
 
     assert a.overlaps(b)
     assert not a.overlaps(far)
+
+
+def test_a_polygon_that_rounds_to_zero_km2_is_invalid():
+    with pytest.raises(InvalidPolygon):
+        parse_polygon(square(102.0, 0.5, 0.0004))
+
+
+def test_a_rotated_or_reversed_ring_hashes_the_same():
+    ring = square(102.0, 0.5, 0.09)["coordinates"][0]
+    rotated = ring[1:-1] + ring[:1] + ring[1:2]
+    reversed_ring = list(reversed(ring))
+
+    base = parse_polygon({"type": "Polygon", "coordinates": [ring]}).digest
+
+    assert parse_polygon({"type": "Polygon", "coordinates": [rotated]}).digest == base
+    assert (
+        parse_polygon({"type": "Polygon", "coordinates": [reversed_ring]}).digest
+        == base
+    )

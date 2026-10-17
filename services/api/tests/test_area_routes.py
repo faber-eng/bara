@@ -106,3 +106,18 @@ def test_an_earth_engine_failure_is_502(settings):
 
     assert response.status_code == 502
     assert response.json()["detail"] == "area_source_failed"
+
+
+def test_a_limit_store_failure_is_503(settings):
+    from adapters.area_limit_store import AreaLimitUnavailable
+
+    class Broken:
+        def update(self, uid, apply):
+            raise AreaLimitUnavailable("down")
+
+    client = make_client(settings, make_ranker(settings, limits=Broken()))
+
+    response = client.post("/api/areas/rank", json=RIAU_SQUARE, headers=OPS)
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "area_limit_unavailable"
