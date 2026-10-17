@@ -249,6 +249,7 @@ def build_deadlines(adapters: Adapters) -> DeadlineHandler:
         cases=adapters.cases,
         casework=adapters.casework,
         publisher=adapters.publisher,
+        scheduler=adapters.scheduler,
         clock=adapters.clock,
         new_id=new_id,
     )

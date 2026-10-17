@@ -92,14 +92,22 @@ def test_an_unknown_case_is_skipped():
     assert agent.runs == []
 
 
-def test_an_unknown_task_runs_the_agent_without_task_details():
+def test_an_unknown_task_is_skipped():
     agent = FakeAgent()
-    handler = make_handler(agent, task=make_task(id="other"))
+
+    make_handler(agent, task=make_task(id="other")).handle("m1", overdue_event())
+
+    assert agent.runs == []
+
+
+@pytest.mark.parametrize("status", ["open", "done", "reassigned", "cancelled"])
+def test_an_event_for_a_task_that_is_no_longer_overdue_is_skipped(status):
+    agent = FakeAgent()
+    handler = make_handler(agent, task=make_task(status=status))
 
     handler.handle("m1", overdue_event())
 
-    [(_, _, _, event)] = agent.runs
-    assert event == {"task_id": "t1", "case_id": "c1", "attempt": 1}
+    assert agent.runs == []
 
 
 def test_an_agent_failure_raises_so_pubsub_delivers_again():
