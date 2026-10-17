@@ -122,11 +122,15 @@ class FireQuietHandler:
 
     async def _schedule_all(self, case: Case, spots: list[QuietCell]) -> list[str]:
         patrols = self._volunteers.available("patrol")
-        retryable = []
-        for spot in spots:
-            if not await self._schedule_recheck(case, spot.cell_id, patrols):
-                retryable.append(spot.cell_id)
-        return retryable
+        first, rest = spots[0], spots[1:]
+        done = {
+            first.cell_id: await self._schedule_recheck(case, first.cell_id, patrols)
+        }
+        outcomes = await asyncio.gather(
+            *(self._schedule_recheck(case, spot.cell_id, patrols) for spot in rest)
+        )
+        done.update(zip((spot.cell_id for spot in rest), outcomes, strict=True))
+        return [cell_id for cell_id, ok in done.items() if not ok]
 
     async def _schedule_recheck(
         self, case: Case, cell_id: str, patrols: list[Volunteer]

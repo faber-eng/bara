@@ -314,3 +314,30 @@ def test_another_event_type_is_malformed():
 
     with pytest.raises(MalformedPush):
         world.handler.handle("m-1", make_drying_ranked_event())
+
+
+def test_the_cells_after_the_first_are_scheduled_together():
+    import asyncio
+    import time
+
+    class Slow(FakeAssigner):
+        active = 0
+        peak = 0
+
+        async def assign(self, request):
+            Slow.active += 1
+            Slow.peak = max(Slow.peak, Slow.active)
+            await asyncio.sleep(0.2)
+            Slow.active -= 1
+            await super().assign(request)
+
+    world = World()
+    world.handler._assigner = Slow(world.case_store, world.task_store)
+
+    started = time.perf_counter()
+    world.deliver()
+    elapsed = time.perf_counter() - started
+
+    assert Slow.peak == 2
+    assert len(world.task_store.where()) == 3
+    assert elapsed < 0.55

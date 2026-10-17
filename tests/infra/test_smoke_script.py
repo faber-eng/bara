@@ -11,6 +11,7 @@ from conftest import REPO
 SCRIPT = str(REPO / "scripts/smoke_test.sh")
 CASE = "case-1"
 SECOND = "case-2"
+FIRE = "case-fire"
 
 
 class FakeBara:
@@ -24,7 +25,14 @@ class FakeBara:
         sample=200,
         old_verdict=False,
         stale=False,
+        fire_status=202,
+        fire_tasks=3,
+        fire_hours=48,
     ):
+        self.fire_status = fire_status
+        self.fire_tasks = fire_tasks
+        self.fire_hours = fire_hours
+        self.fire_triggered = False
         self.stale = stale
         self.triggered = False
         self.real_case = real_case
@@ -45,12 +53,17 @@ class FakeBara:
         if path == "/api/judge/reset":
             return 200, {"now": "2026-07-20T01:00:00Z", "offset_seconds": 0, "judge_mode": True}
         if path == "/api/judge/trigger":
+            if b"fire.quiet" in body:
+                self.fire_triggered = True
+                return self.fire_status, {"event": "fire.quiet", "message_id": "m2"}
             self.triggered = True
             return self.trigger, {"event": "drying.ranked", "message_id": "m1"}
         if path.startswith("/api/cases?"):
             return 200, self.case_list()
         if path == f"/api/cases/{CASE}":
             return 200, self.detail()
+        if path == f"/api/cases/{FIRE}":
+            return 200, self.fire_detail()
         if path == f"/api/cases/{SECOND}":
             return 200, self.second_detail()
         if path == "/api/clock":
@@ -82,25 +95,58 @@ class FakeBara:
         if self.triggered or self.stale:
             rows = [
                 {
-                    "case": {"id": CASE, "status": "assigned", "example": True},
+                    "case": {"id": CASE, "type": "dam_risk", "status": "assigned", "example": True},
                     "task_status": "open",
                     "next_deadline_at": None,
                 },
                 {
-                    "case": {"id": SECOND, "status": status, "example": True},
+                    "case": {"id": SECOND, "type": "dam_risk", "status": status, "example": True},
                     "task_status": "open",
                     "next_deadline_at": None,
                 },
             ]
+        if self.fire_triggered:
+            rows.append(
+                {
+                    "case": {
+                        "id": FIRE,
+                        "type": "reignition",
+                        "status": "assigned",
+                        "example": True,
+                    },
+                    "task_status": "open",
+                    "next_deadline_at": None,
+                }
+            )
         if self.real_case:
             rows.append(
                 {
-                    "case": {"id": "real-1", "status": "assigned", "example": False},
+                    "case": {"id": "real-1", "type": "dam_risk", "status": "assigned", "example": False},
                     "task_status": "open",
                     "next_deadline_at": None,
                 }
             )
         return rows
+
+    def fire_detail(self):
+        tasks = [
+            {
+                "id": f"f{n}",
+                "type": "patrol_recheck",
+                "status": "open",
+                "assignee_id": f"patrol-{n}",
+                "created_at": "2026-07-20T01:00:00Z",
+                "deadline_at": f"2026-07-{20 + self.fire_hours // 24}T01:00:00Z",
+            }
+            for n in range(self.fire_tasks)
+        ]
+        return {
+            "case": {"id": FIRE, "type": "reignition", "status": "assigned"},
+            "tasks": tasks,
+            "evidence": [],
+            "agent_runs": [],
+            "timeline": [],
+        }
 
     def second_detail(self):
         status = "escalated" if self.advanced else "assigned"
@@ -180,6 +226,7 @@ def run(*args, token="fake-token"):
         "BARA_SMOKE_CASE_WAIT": "2",
         "BARA_SMOKE_VERDICT_WAIT": "2",
         "BARA_SMOKE_OUTCOME_WAIT": "2",
+        "BARA_SMOKE_FIRE_WAIT": "2",
         "BARA_SMOKE_POLL": "1",
     }
     return subprocess.run(
@@ -237,7 +284,7 @@ def test_every_step_passes_against_a_working_site(serve):
     done = run("--yes", "--url", base)
 
     assert done.returncode == 0, done.stderr
-    assert done.stdout.count("ok ") == 10
+    assert done.stdout.count("ok ") == 11
     assert "smoke test passed" in done.stdout
     roles = {path: role for _, path, role in fake.calls}
     assert roles["/api/judge/reset"] == "judge"
@@ -325,3 +372,39 @@ def test_an_older_verdict_on_other_evidence_does_not_count(serve):
 
     assert done.returncode == 1
     assert "verdict" in done.stderr
+
+
+def test_fire_quiet_makes_one_reignition_case_with_three_rechecks_due_48h_later(serve):
+    base = serve(FakeBara())
+
+    done = run("--yes", "--url", base)
+
+    assert done.returncode == 0, done.stderr
+    assert f"reignition case {FIRE} has 3 patrol_recheck tasks due 48h later" in done.stdout
+
+
+def test_two_rechecks_instead_of_three_fail_the_run(serve):
+    base = serve(FakeBara(fire_tasks=2))
+
+    done = run("--yes", "--url", base)
+
+    assert done.returncode == 1
+    assert "fire.quiet" in done.stderr
+
+
+def test_a_recheck_due_in_24_hours_fails_the_run(serve):
+    base = serve(FakeBara(fire_hours=24))
+
+    done = run("--yes", "--url", base)
+
+    assert done.returncode == 1
+    assert "48h" in done.stderr
+
+
+def test_a_rejected_fire_trigger_fails_the_run(serve):
+    base = serve(FakeBara(fire_status=403))
+
+    done = run("--yes", "--url", base)
+
+    assert done.returncode == 1
+    assert "HTTP 202, got 403" in done.stderr
