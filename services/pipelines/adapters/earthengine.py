@@ -1,4 +1,7 @@
+import time
+from collections.abc import Callable
 from datetime import UTC, date, datetime
+from functools import partial
 
 import ee
 
@@ -10,10 +13,25 @@ PAGE_SIZE = 1000
 MEASURE_SCALE_M = 100
 MEASURE_TILE_SCALE = 4
 DATES_PER_CALL = 10
+CALL_ATTEMPTS = 3
+RETRY_WAIT_S = 5.0
 
 
 class EarthEngineError(Exception):
     pass
+
+
+def with_retries[T](
+    call: Callable[[], T],
+    attempts: int = CALL_ATTEMPTS,
+    wait: Callable[[float], None] = time.sleep,
+) -> T:
+    for attempt in range(1, attempts):
+        try:
+            return call()
+        except ee.EEException:
+            wait(RETRY_WAIT_S * attempt)
+    return call()
 
 
 def compute_features(collection: ee.FeatureCollection) -> list[dict]:
@@ -23,7 +41,7 @@ def compute_features(collection: ee.FeatureCollection) -> list[dict]:
         params: dict[str, object] = {"expression": collection, "pageSize": PAGE_SIZE}
         if token is not None:
             params["pageToken"] = token
-        page = ee.data.computeFeatures(params)
+        page = with_retries(partial(ee.data.computeFeatures, params))
         features.extend(page.get("features", []))
         token = page.get("nextPageToken")
         if not token:

@@ -6,7 +6,7 @@ from datetime import UTC, date, datetime
 from typing import Protocol
 
 from adapters import tables
-from adapters.bigquery import QueryResult, Warehouse
+from adapters.bigquery import Warehouse
 from domain.drying import DryingRow, join_measurements, score_cells
 from ee_lib.config import (
     DryingConfig,
@@ -31,6 +31,7 @@ from jobs.cli import (
     UsageError,
     configure_logging,
     logger,
+    query_report,
     resolve_config_dir,
     resolve_project,
     run_job,
@@ -54,11 +55,6 @@ class DryingSource(Protocol):
 
 def utcnow() -> datetime:
     return datetime.now(UTC)
-
-
-def query_report(step: str, result: QueryResult) -> dict[str, object]:
-    logger.info("%s: %s bytes billed", step, result.bytes_billed)
-    return {"step": step, "bytes": result.bytes_billed, "estimate": result.dry_run}
 
 
 def top_cells(rows: Sequence[DryingRow]) -> list[dict[str, object]]:

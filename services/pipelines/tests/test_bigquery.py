@@ -182,6 +182,19 @@ def test_rewrite_region_since_a_day_keeps_the_older_rows():
     }
 
 
+def test_rewrite_region_with_no_rows_only_deletes_the_region():
+    warehouse, client = make_warehouse()
+
+    warehouse.rewrite_region(SPEC, "riau", [], Since("week_start", date(2026, 8, 1)))
+
+    sql, _ = client.queries[0]
+    assert (
+        "DELETE FROM cell_weekly_drying WHERE region = @region AND week_start >= @since"
+    ) in sql
+    assert "INSERT" not in sql
+    assert client.calls == ["create", "query"]
+
+
 def test_rewrite_region_refuses_an_unsafe_since_column_before_any_write():
     warehouse, client = make_warehouse()
 

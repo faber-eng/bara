@@ -23,7 +23,7 @@ EVENTS = [
         "mean_confidence": 62.5,
         "peat_class": 1,
         "canal_dist_m": 250.0,
-        "prior_years_burned": 3,
+        "burned_years": [2016, 2017, 2018],
     },
     {
         "event_id": "riau-1-2-20260920",
@@ -36,7 +36,7 @@ EVENTS = [
         "mean_confidence": 40.0,
         "peat_class": 2,
         "canal_dist_m": 900.0,
-        "prior_years_burned": 0,
+        "burned_years": [],
     },
 ]
 MEASURES = [
@@ -81,19 +81,19 @@ def run(config_dir, *, events=EVENTS, measures=MEASURES, dry_run=False):
     return summary, client, earth
 
 
-def test_reads_the_events_since_the_day_with_history_years(config_dir):
+def test_reads_the_events_since_the_day(config_dir):
     _, client, _ = run(config_dir)
 
     sql, config = client.queries[0]
     assert "FROM fire_events AS event" in sql
     params = {p.name: p.value for p in config.query_parameters}
-    assert params == {"region": "riau", "since": SINCE, "history_from_year": 2001}
+    assert params == {"region": "riau", "since": SINCE}
 
 
 def test_measures_each_quiet_date_with_its_windows(config_dir):
     _, _, earth = run(config_dir)
 
-    name, (cells_table, dates) = earth.calls[1]
+    name, (cells_table, dates) = earth.calls[2]
     assert name == "reignition_measures"
     assert cells_table == "p.bara.cells"
     first_date, first_cells, first_windows = dates[0]
@@ -148,12 +148,39 @@ def test_dry_run_writes_nothing(config_dir):
     assert summary["rows"] == 2
 
 
-def test_no_events_since_the_day_writes_nothing(config_dir):
+def test_peat_is_measured_before_the_quiet_dates(config_dir):
+    _, _, earth = run(config_dir)
+
+    assert [name for name, _ in earth.calls] == [
+        "chirps_last_day",
+        "peat_fractions",
+        "reignition_measures",
+    ]
+
+
+def test_no_events_since_the_day_clears_the_rows_since_the_day(config_dir):
     summary, client, earth = run(config_dir, events=[])
 
     assert client.loads == []
     assert earth.calls == []
+    sql, _ = client.queries[-1]
+    assert "DELETE FROM reignition_training WHERE region = @region" in sql
+    assert "AND quiet_date >= @since" in sql
+    assert "INSERT" not in sql
     assert summary["rows"] == 0
+
+
+def test_no_events_on_a_dry_run_clears_nothing(config_dir):
+    _, client, _ = run(config_dir, events=[], dry_run=True)
+
+    assert len(client.queries) == 1
+
+
+def test_a_null_quiet_date_is_a_job_error(config_dir):
+    events = [{**EVENTS[0], "quiet_date": None}]
+
+    with pytest.raises(JobError, match="quiet_date"):
+        run(config_dir, events=events)
 
 
 def test_a_missing_measure_is_a_job_error(config_dir):

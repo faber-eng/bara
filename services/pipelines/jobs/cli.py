@@ -4,6 +4,7 @@ import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
+from adapters.bigquery import QueryResult
 from ee_lib.config import ConfigError, UnknownRegion
 
 EXIT_OK = 0
@@ -63,6 +64,11 @@ def write_json_atomic(path: Path, document: object) -> None:
 
 def emit(summary: Mapping[str, object]) -> None:
     sys.stdout.write(json.dumps(summary, default=str) + "\n")
+
+
+def query_report(step: str, result: QueryResult) -> dict[str, object]:
+    logger.info("%s: %s bytes billed", step, result.bytes_billed)
+    return {"step": step, "bytes": result.bytes_billed, "estimate": result.dry_run}
 
 
 def run_job(work: Callable[[], Mapping[str, object]]) -> int:

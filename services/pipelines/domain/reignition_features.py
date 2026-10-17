@@ -2,6 +2,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+from domain.drying import optional_number
 from ee_lib.config import SplitYears
 from ee_lib.weeks import DateRange, EventWindows
 
@@ -78,10 +79,27 @@ def index_measures(
     }
 
 
-def optional_float(value: object) -> float | None:
-    if value is None:
-        return None
-    return float(value)
+def event_quiet_date(event: Mapping[str, object]) -> date:
+    quiet_date = event["quiet_date"]
+    if not isinstance(quiet_date, date):
+        raise MissingMeasurement(f"event {event['event_id']!r} has no quiet_date")
+    return quiet_date
+
+
+def prior_years_burned(
+    burned_years: Sequence[object], quiet_year: int, history_from_year: int
+) -> int:
+    years = {year for year in burned_years if isinstance(year, int)}
+    return sum(1 for year in years if history_from_year <= year < quiet_year)
+
+
+def burned_years_of(event: Mapping[str, object]) -> Sequence[object]:
+    years = event["burned_years"]
+    if years is None:
+        return []
+    if not isinstance(years, Sequence):
+        raise MissingMeasurement(f"event {event['event_id']!r} has no burned_years")
+    return years
 
 
 def training_row(
@@ -90,6 +108,7 @@ def training_row(
     measure: Mapping[str, object],
     peat_fraction: float,
     split: str,
+    history_from_year: int,
 ) -> TrainingRow:
     return TrainingRow(
         event_id=str(event["event_id"]),
@@ -101,15 +120,17 @@ def training_row(
         peat_class=int(event["peat_class"]),
         peat_fraction=peat_fraction,
         canal_dist_m=float(event["canal_dist_m"]),
-        s1_anom_db=optional_float(measure.get("s1_anom_db")),
-        rain_7d_before_mm=optional_float(measure.get("rain_7d_before_mm")),
-        rain_14d_before_mm=optional_float(measure.get("rain_14d_before_mm")),
-        rain_7d_after_mm=optional_float(measure.get("rain_7d_after_mm")),
+        s1_anom_db=optional_number(measure, "s1_anom_db"),
+        rain_7d_before_mm=optional_number(measure, "rain_7d_before_mm"),
+        rain_14d_before_mm=optional_number(measure, "rain_14d_before_mm"),
+        rain_7d_after_mm=optional_number(measure, "rain_7d_after_mm"),
         detection_days=int(event["detection_days"]),
         max_t21=float(event["max_t21"]),
         mean_confidence=float(event["mean_confidence"]),
         month=quiet_date.month,
-        prior_years_burned=int(event["prior_years_burned"]),
+        prior_years_burned=prior_years_burned(
+            burned_years_of(event), quiet_date.year, history_from_year
+        ),
     )
 
 
@@ -118,13 +139,12 @@ def training_rows(
     measures: Sequence[Mapping[str, object]],
     peat_fractions: Mapping[str, float],
     years: SplitYears,
+    history_from_year: int,
 ) -> list[TrainingRow]:
     by_key = index_measures(measures)
     rows: list[TrainingRow] = []
     for event in events:
-        quiet_date = event["quiet_date"]
-        if not isinstance(quiet_date, date):
-            raise MissingMeasurement(f"event {event['event_id']!r} has no quiet_date")
+        quiet_date = event_quiet_date(event)
         split = split_for(quiet_date.year, years)
         if split is None:
             continue
@@ -135,7 +155,14 @@ def training_rows(
         if cell_id not in peat_fractions:
             raise MissingMeasurement(f"no peat_fraction for {cell_id}")
         rows.append(
-            training_row(event, quiet_date, measure, peat_fractions[cell_id], split)
+            training_row(
+                event,
+                quiet_date,
+                measure,
+                peat_fractions[cell_id],
+                split,
+                history_from_year,
+            )
         )
     return rows
 
@@ -143,8 +170,5 @@ def training_rows(
 def cells_by_date(events: Sequence[Mapping[str, object]]) -> dict[date, list[str]]:
     dates: dict[date, list[str]] = {}
     for event in events:
-        quiet_date = event["quiet_date"]
-        if not isinstance(quiet_date, date):
-            raise MissingMeasurement(f"event {event['event_id']!r} has no quiet_date")
-        dates.setdefault(quiet_date, []).append(str(event["cell_id"]))
+        dates.setdefault(event_quiet_date(event), []).append(str(event["cell_id"]))
     return dates

@@ -12,13 +12,9 @@ MEASURE_SCALE_M = 100
 MEASURE_TILE_SCALE = 4
 
 
-def masked(name: str) -> ee.Image:
-    return ee.Image(0).selfMask().rename(name).toFloat()
-
-
 def rain_band(data: DataConfig, span: DateRange | None, name: str) -> ee.Image:
     if span is None:
-        return masked(name)
+        return drying.masked_image(name)
     return drying.rain_sum(data, span).rename(name).toFloat()
 
 
@@ -70,9 +66,9 @@ def peat_fractions(
 ) -> ee.FeatureCollection:
     peat = ee.Image(data.datasets.peat).select(PEAT_BAND)
     is_peat = peat.remap(list(PEAT_CLASSES), [1] * len(PEAT_CLASSES), 0).unmask(0)
-    measured = is_peat.rename("peat_fraction").reduceRegions(
+    measured = is_peat.reduceRegions(
         collection=cells,
-        reducer=ee.Reducer.mean(),
+        reducer=ee.Reducer.mean().setOutputs(["peat_fraction"]),
         scale=MEASURE_SCALE_M,
         tileScale=MEASURE_TILE_SCALE,
     )

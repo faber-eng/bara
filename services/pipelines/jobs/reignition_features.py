@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Protocol
 
 from adapters import reignition_tables, tables
-from adapters.bigquery import QueryResult, Warehouse
+from adapters.bigquery import Warehouse
 from domain.reignition_features import (
     MissingMeasurement,
     TrainingRow,
@@ -29,6 +29,7 @@ from jobs.cli import (
     UsageError,
     configure_logging,
     logger,
+    query_report,
     resolve_config_dir,
     resolve_project,
     run_job,
@@ -56,11 +57,6 @@ class FeatureSource(Protocol):
     ) -> list[dict]: ...
 
     def peat_fractions(self, region: RegionConfig, cells_table: str) -> list[dict]: ...
-
-
-def query_report(step: str, result: QueryResult) -> dict[str, object]:
-    logger.info("%s: %s bytes billed", step, result.bytes_billed)
-    return {"step": step, "bytes": result.bytes_billed, "estimate": result.dry_run}
 
 
 def resolve_since(rebuild_all: bool, days: int, today: date, data: DataConfig) -> date:
@@ -112,30 +108,41 @@ def reignition_features(
     warehouse: Warehouse,
     dry_run: bool,
 ) -> dict[str, object]:
-    read = reignition_tables.read_events(
-        warehouse, region.id, since, data.reignition.history_from_year
-    )
+    read = reignition_tables.read_events(warehouse, region.id, since)
     queries = [query_report("read_events", read)]
     summary: dict[str, object] = {"region": region.id, "since": since}
     if not read.rows:
         logger.info("%s: no fire events since %s", region.id, since)
+        if not dry_run:
+            cleared = reignition_tables.replace_training(
+                warehouse, region.id, since, []
+            )
+            queries.append(query_report("clear_training", cleared))
         return {**summary, "rows": 0, "dry_run": dry_run, "queries": queries}
+    try:
+        grouped = sorted(cells_by_date(read.rows).items())
+    except MissingMeasurement as error:
+        raise JobError(str(error)) from error
     chirps_last = earth.chirps_last_day(today + ONE_DAY)
     cells_table = warehouse.table_id(tables.CELLS.name)
+    fractions = peat_by_cell(earth.peat_fractions(region, cells_table))
     dates = [
         (
             quiet_date,
             cell_ids,
             event_windows(quiet_date, data.drying.s1_window_days, chirps_last),
         )
-        for quiet_date, cell_ids in sorted(cells_by_date(read.rows).items())
+        for quiet_date, cell_ids in grouped
     ]
     logger.info("%s: measuring %d quiet dates", region.id, len(dates))
     measures = earth.reignition_measures(region, aoi, cells_table, dates)
-    fractions = peat_by_cell(earth.peat_fractions(region, cells_table))
     try:
         rows = training_rows(
-            read.rows, measures, fractions, data.reignition.split_years
+            read.rows,
+            measures,
+            fractions,
+            data.reignition.split_years,
+            data.reignition.history_from_year,
         )
     except MissingMeasurement as error:
         raise JobError(str(error)) from error
