@@ -245,6 +245,8 @@ def test_only_a_full_flow_region_announces_its_ranking(config_dir):
 
     assert job.announces(load_region(config_dir, "riau")) is True
     assert job.announces(load_region(config_dir, "congo_cuvette")) is False
+
+
 def test_writes_a_run_record_with_the_exact_run_time_before_it_announces(tmp_path):
     _, _, firestore, pubsub = run(tmp_path)
 

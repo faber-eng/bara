@@ -69,6 +69,8 @@ def build_dams(warehouse: Warehouse, region: str, week_start: date, dams: list):
 
 def announces(region: RegionConfig) -> bool:
     return region.full_flow
+
+
 def run_record(
     week_start: date, ran_at: datetime, cells: int, dams: int
 ) -> dict[str, object]:
