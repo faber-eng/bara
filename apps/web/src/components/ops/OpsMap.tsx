@@ -1,18 +1,44 @@
 import { useQuery } from "@tanstack/react-query";
 import { APIProvider, Map as GoogleMap } from "@vis.gl/react-google-maps";
-import { dryingTilesQuery } from "../../lib/api/queries";
+import { useState } from "react";
+import { dryingTilesQuery, rankingsQuery } from "../../lib/api/queries";
+import { damCellId } from "../../lib/ops/cellSelection";
+import {
+  buildMapLayers,
+  DEFAULT_MAP_TYPE,
+  type LayerOpacities,
+  layerOpacity,
+  type MapTypeId,
+} from "../../lib/ops/mapLayers";
 import { OPS_MAP_CENTER, OPS_MAP_ZOOM, OPS_REGION } from "../../lib/ops/region";
-import { DryingOverlay } from "./DryingOverlay";
-import { MapLegend } from "./MapLegend";
+import { CellPanel } from "./CellPanel";
+import { CellsLayer, DamsLayer, type FocusRequest } from "./CellsLayer";
+import { MapLegend, MapTypeControl } from "./MapControls";
+import { TileOverlay } from "./TileOverlay";
 
 function readMapsKey(): string {
   const key: unknown = import.meta.env.VITE_MAPS_KEY;
   return typeof key === "string" ? key : "";
 }
 
-export function OpsMap() {
+type OpsMapProps = {
+  selectedCellId: string | undefined;
+  focus: FocusRequest | null;
+  onCellSelect: (cellId: string) => void;
+  onCellClear: () => void;
+};
+
+export function OpsMap({ selectedCellId, focus, onCellSelect, onCellClear }: OpsMapProps) {
   const tiles = useQuery(dryingTilesQuery(OPS_REGION));
+  const rankings = useQuery(rankingsQuery(OPS_REGION));
+  const [mapType, setMapType] = useState<MapTypeId>(DEFAULT_MAP_TYPE);
+  const [opacities, setOpacities] = useState<LayerOpacities>({});
   const mapsKey = readMapsKey();
+  const layers = buildMapLayers(tiles.data);
+
+  function handleOpacityChange(layerId: string, opacity: number) {
+    setOpacities((previous) => ({ ...previous, [layerId]: opacity }));
+  }
 
   if (mapsKey === "") {
     return (
@@ -30,18 +56,49 @@ export function OpsMap() {
         <GoogleMap
           defaultCenter={OPS_MAP_CENTER}
           defaultZoom={OPS_MAP_ZOOM}
+          mapTypeId={mapType}
           gestureHandling="greedy"
           disableDefaultUI
         >
-          {tiles.data && <DryingOverlay urlTemplate={tiles.data.url_template} />}
+          {layers.map((layer) => (
+            <TileOverlay
+              key={layer.id}
+              label={layer.label}
+              urlTemplate={layer.urlTemplate}
+              opacity={layerOpacity(layer, opacities)}
+            />
+          ))}
+          {rankings.data && (
+            <>
+              <CellsLayer
+                cells={rankings.data.cells}
+                selectedCellId={selectedCellId}
+                focus={focus}
+                onSelect={onCellSelect}
+              />
+              <DamsLayer
+                dams={rankings.data.dams}
+                onSelect={(dam) => onCellSelect(damCellId(dam))}
+              />
+            </>
+          )}
         </GoogleMap>
       </APIProvider>
+      <MapTypeControl value={mapType} onChange={setMapType} />
       {tiles.isError && (
         <p role="status" className="map-note">
           Drying layer is unavailable right now.
         </p>
       )}
-      <MapLegend week={tiles.data?.week} />
+      <MapLegend
+        layers={layers}
+        opacities={opacities}
+        week={tiles.data?.week}
+        onOpacityChange={handleOpacityChange}
+      />
+      {selectedCellId !== undefined && (
+        <CellPanel key={selectedCellId} cellId={selectedCellId} onClose={onCellClear} />
+      )}
     </div>
   );
 }

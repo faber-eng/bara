@@ -22,7 +22,7 @@ import {
   readString,
 } from "./parse";
 
-const DAM_STATES: readonly DamState[] = [
+export const DAM_STATES: readonly DamState[] = [
   "intact",
   "damaged",
   "broken",
@@ -31,7 +31,7 @@ const DAM_STATES: readonly DamState[] = [
   "unknown",
 ];
 
-function parsePoint(value: unknown, label: string): GeoPoint {
+export function parsePoint(value: unknown, label: string): GeoPoint {
   const record = readRecord(value, label);
   return { lat: readNumber(record, "lat", label), lon: readNumber(record, "lon", label) };
 }
@@ -42,7 +42,7 @@ function parsePeatClass(record: JsonRecord): 1 | 2 {
   throw new ResponseShapeError("components.peat_class is not 1 or 2");
 }
 
-function parseComponents(value: unknown): RankingComponents {
+export function parseComponents(value: unknown): RankingComponents {
   const record = readRecord(value, "components");
   return {
     s1_anom_db: readNullable(record, "s1_anom_db", "components", readNumber),
@@ -65,7 +65,7 @@ function parseCited(value: unknown): { [field: string]: Scalar } {
   return cited;
 }
 
-function parseExplanation(value: unknown): RankExplanation | null {
+export function parseExplanation(value: unknown): RankExplanation | null {
   if (value === null) return null;
   const record = readRecord(value, "explanation");
   return { text: readString(record, "text", "explanation"), cited: parseCited(record.cited) };
