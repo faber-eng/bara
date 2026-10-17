@@ -1,0 +1,15 @@
+.secrets/
+.git
+.githooks
+**/node_modules
+apps/
+data/
+docs/
+infra/
+scripts/
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+services/api/tests/
+services/pipelines/
