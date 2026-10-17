@@ -3,12 +3,13 @@ import { joinCopy } from "../../lib/copy/join";
 import { useCopyLanguage } from "../../lib/copy/language";
 import { type AuthState, useAuthUser } from "../../lib/useAuthUser";
 import { LanguageToggle } from "../LanguageToggle";
+import { InlineLoading } from "../LoadingPanel";
 import { JoinForm } from "./JoinForm";
 import { SignInPanel } from "./SignInPanel";
 
 function JoinBody({ auth, onJoined }: { auth: AuthState; onJoined: (id: string) => void }) {
   const copy = joinCopy(useCopyLanguage());
-  if (auth.status === "loading") return <p role="status">{copy.checkingSignIn}</p>;
+  if (auth.status === "loading") return <InlineLoading text={copy.checkingSignIn} />;
   if (auth.status === "failed") return <p role="alert">{copy.signInFailed}</p>;
   if (auth.user === null || auth.user.isAnonymous) return <SignInPanel copy={copy} />;
   return (

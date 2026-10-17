@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { LoadingPanel } from "./components/LoadingPanel";
 import { createAppRouter } from "./router";
 
 const validBody = {
@@ -85,5 +86,14 @@ describe("app routes", () => {
       await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to the start" })).toHaveAttribute("href", "/");
+  });
+});
+
+describe("router pending UI", () => {
+  it("uses the shared loading panel after a short delay", () => {
+    const router = createAppRouter();
+
+    expect(router.options.defaultPendingComponent).toBe(LoadingPanel);
+    expect(router.options.defaultPendingMs).toBeLessThan(500);
   });
 });
