@@ -1,0 +1,69 @@
+{
+  "region": "riau",
+  "week": "2026-W30",
+  "cells": [
+    {
+      "cell_id": "riau-0412",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": { "lat": 0.412, "lon": 102.153 },
+      "components": {
+        "s1_anom_db": -2.8,
+        "rain_30d_mm": 41.2,
+        "rain_deficit_pct": 0.62,
+        "canal_dist_m": 180.0,
+        "peat_class": 1
+      },
+      "drying_score": 91.4,
+      "rank": 1,
+      "rank_change": 2,
+      "stale_s1": false,
+      "explanation": {
+        "text": "This cell ranks first because its radar signal is 2.8 dB below its wet-season level and rain is 62% below normal for 30 days. A canal runs 180 m away and drains it.",
+        "cited": { "s1_anom_db": -2.8, "rain_deficit_pct": 0.62, "canal_dist_m": 180.0 }
+      }
+    },
+    {
+      "cell_id": "riau-0388",
+      "region": "riau",
+      "week_start": "2026-07-20",
+      "centroid": { "lat": 0.388, "lon": 102.171 },
+      "components": {
+        "s1_anom_db": null,
+        "rain_30d_mm": 47.9,
+        "rain_deficit_pct": 0.55,
+        "canal_dist_m": 420.0,
+        "peat_class": 2
+      },
+      "drying_score": 84.0,
+      "rank": 2,
+      "rank_change": -1,
+      "stale_s1": true,
+      "explanation": null
+    }
+  ],
+  "dams": [
+    {
+      "dam_id": "dam-riau-007",
+      "region": "riau",
+      "cell_id": "riau-0412",
+      "point": { "lat": 0.4131, "lon": 102.1548 },
+      "last_state": "broken",
+      "last_checked_at": "2026-07-20T10:42:00+07:00",
+      "drying_score": 91.4,
+      "rank": 1,
+      "example": true
+    },
+    {
+      "dam_id": "dam-riau-015",
+      "region": "riau",
+      "cell_id": "riau-0388",
+      "point": { "lat": 0.3874, "lon": 102.1702 },
+      "last_state": "unknown",
+      "last_checked_at": null,
+      "drying_score": 84.0,
+      "rank": 2,
+      "example": true
+    }
+  ]
+}

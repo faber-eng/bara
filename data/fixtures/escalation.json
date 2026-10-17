@@ -1,0 +1,19 @@
+{
+  "id": "esc-0001",
+  "case_id": "case-0002",
+  "contact_id": "contact-daops-pekanbaru",
+  "brief_id": "Patroli melihat asap tipis di lahan gambut bekas terbakar di sel riau-0533, 48 jam setelah api terlihat padam. Mohon kirim regu untuk memeriksa dan memadamkan bara di bawah permukaan.",
+  "brief_en": "A patrol saw smoke wisps on burned peat in cell riau-0533, 48 hours after the fire looked out. Please send a crew to check and put out any fire below the surface.",
+  "pack": {
+    "photos": ["gs://example-bara-evidence/ev-0007.jpg"],
+    "map_url": "https://www.google.com/maps/search/?api=1&query=0.533,102.204",
+    "timeline": [
+      { "at": "2026-07-30T08:00:00+07:00", "text": "Fire looked out in riau-0533." },
+      { "at": "2026-07-30T08:10:00+07:00", "text": "Patrol Dedi asked to recheck by 1 Aug." },
+      { "at": "2026-08-01T07:55:00+07:00", "text": "Smoke wisps reported in riau-0533." },
+      { "at": "2026-08-01T07:58:00+07:00", "text": "Escalated to the fire brigade." }
+    ]
+  },
+  "created_at": "2026-08-01T07:58:00+07:00",
+  "acknowledged_at": null
+}

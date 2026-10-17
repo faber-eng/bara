@@ -1,0 +1,15 @@
+{
+  "region": "riau",
+  "week": "2026-W30",
+  "high_risk_cells": 37,
+  "dams_broken": 2,
+  "cases_open": 4,
+  "cases_escalated": 1,
+  "cases_closed": 0,
+  "median_days_to_repair": null,
+  "tasks_on_time_pct": 75.0,
+  "data_as_of": {
+    "s1_pass_date": "2026-07-18",
+    "ranking_run_at": "2026-07-20T01:12:00+07:00"
+  }
+}
