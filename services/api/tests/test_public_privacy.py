@@ -47,8 +47,12 @@ def leaks(text: str, blocklist: list[str]) -> list[str]:
     return [value for value in blocklist if value in text]
 
 
-def forbidden_keys(node) -> set[str]:
-    return set(walk_keys(node)) & FORBIDDEN_KEYS
+BULLETIN_PUBLIC_KEYS = {"model", "prompt_version"}
+
+
+def forbidden_keys(node, route: str = "") -> set[str]:
+    allowed = BULLETIN_PUBLIC_KEYS if route == "bulletin" else set()
+    return set(walk_keys(node)) & (FORBIDDEN_KEYS - allowed)
 
 
 @pytest.mark.parametrize("name", ["summary", "cells", "dams", "record", "bulletin"])
@@ -57,7 +61,7 @@ def test_no_public_payload_carries_a_private_value_or_key(name):
     payload = payloads(world)[name]
 
     assert leaks(json.dumps(payload, ensure_ascii=False), world.blocklist()) == []
-    assert forbidden_keys(payload) == set()
+    assert forbidden_keys(payload, name) == set()
 
 
 def test_the_world_really_holds_the_private_data_the_test_hides():
@@ -108,4 +112,14 @@ def test_no_public_route_carries_a_private_value(settings, route):
 def test_no_public_route_carries_a_private_key(settings, route):
     response = PublicWorld().client(settings).get(f"/api/public/riau/{route}")
 
-    assert forbidden_keys(response.json()) == set()
+    assert forbidden_keys(response.json(), route) == set()
+
+
+def test_the_bulletin_names_its_model_and_prompt_version_and_no_other_route_does():
+    world = PublicWorld()
+    found = payloads(world)
+
+    assert found["bulletin"]["model"] == "gemini-3.5-flash"
+    assert found["bulletin"]["prompt_version"] == "bulletin-v1"
+    for name in ("summary", "cells", "dams", "record"):
+        assert forbidden_keys(found[name], name) == set()

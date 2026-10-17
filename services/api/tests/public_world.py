@@ -275,7 +275,7 @@ class PublicWorld:
                 text_en="This week 3 cells are at high risk.",
                 cited=[CitedValue(field="high_risk_cells", value=3)],
                 source="gemini",
-                model="private-model-name",
+                model="gemini-3.5-flash",
                 prompt_version="bulletin-v1",
                 created_at=at(17, 1),
             ),
@@ -308,7 +308,7 @@ class PublicWorld:
         for uid, (name, phone, home) in PEOPLE.items():
             values += [uid, name, *name.split(), phone, str(home.lat), str(home.lon)]
         values += [TRANSCRIPT, MESSAGE_TEXT, BRIEF, "gs://", "private-evidence"]
-        values += ["whatsapp", "-0.50123", "101.41456", "private-model-name"]
+        values += ["whatsapp", "-0.50123", "101.41456"]
         values += [task.assignee_id for task in self.tasks.where()]
         values += [item.sha256 for item in self.evidence.where()]
         return values
