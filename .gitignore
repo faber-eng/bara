@@ -1,0 +1,15 @@
+.secrets/
+.env
+.env.*
+
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+node_modules/
+dist/
+.firebase/
+
+.DS_Store

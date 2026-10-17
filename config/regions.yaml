@@ -1,0 +1,12 @@
+riau:
+  name: Riau, Indonesia
+  aoi: data/aoi/riau_focus.geojson     # a focus polygon on peat (e.g. parts of Pelalawan / Siak); keep it ~ 3,000-8,000 km² for speed
+  timezone: Asia/Jakarta
+  language: id
+  full_flow: true
+congo_cuvette:
+  name: Cuvette Centrale peatlands, Congo Basin
+  aoi: data/aoi/congo_cuvette_focus.geojson
+  timezone: Africa/Brazzaville
+  language: fr
+  full_flow: false                      # ranking + map only

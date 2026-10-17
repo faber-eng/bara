@@ -1,0 +1,18 @@
+grid_cell_m: 1000
+drying:
+  wet_baseline_months: [1, 2, 3]       # Jan-Mar wet-season reference
+  s1_window_days: 12
+  rain_window_days: 30
+  weights: { s1_anomaly: 0.45, rain_deficit: 0.30, canal_proximity: 0.15, peat_class: 0.10 }
+reignition:
+  quiet_days: 3                        # no detection for >= 3 days = "looks out"
+  label_window_days: [3, 30]           # new detection within this window = reignited
+  label_radius_m: 1000
+  recheck_spots_per_fire: 3
+  recheck_after_hours: 48
+tasks:
+  default_deadline_hours: { dam_check: 72, dam_repair: 168, patrol_recheck: 24 }
+  human_review_confidence: 0.7         # verdict confidence below this goes to a person
+  location_tolerance_m: 300            # evidence GPS must be within this of the task point
+languages: { default: id, supported: [id, en, ms, fr] }
+judge_mode: { enabled: true, max_resets_per_hour: 20 }

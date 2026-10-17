@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-push: gitleaks not found, push stopped." >&2
+  echo "install it from https://github.com/gitleaks/gitleaks/releases and push again" >&2
+  exit 1
+fi
+
+if ! gitleaks git --redact --no-banner --log-level warn "$(git rev-parse --show-toplevel)" >&2; then
+  echo "pre-push: gitleaks found a secret in the history, push stopped." >&2
+  echo "remove it from the commits (not only the working tree) and push again" >&2
+  exit 1
+fi
