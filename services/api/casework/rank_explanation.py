@@ -117,7 +117,7 @@ def generation_config() -> types.GenerateContentConfig:
 
 
 def read_reply(
-    response: types.GenerateContentResponse, values: dict[str, float], cell_id: str
+    response: types.GenerateContentResponse, shown: dict[str, Shown], cell_id: str
 ) -> RankExplanation:
     if response.text is None:
         raise ExplanationRejected("the model returned no text")
@@ -133,7 +133,7 @@ def read_reply(
     cited = {entry.field: entry.value for entry in output.cited}
     if len(cited) != len(output.cited):
         raise ExplanationRejected("a field is cited twice")
-    check_explanation(output.text, cited, values, cell_id)
+    check_explanation(output.text, cited, shown, cell_id)
     return RankExplanation(
         text=output.text, cited=cited, prompt_version=EXPLAIN_PROMPT_VERSION
     )
@@ -200,14 +200,13 @@ class RankExplainer:
 
     async def _generate(self, cell_id: str, facts: dict) -> RankExplanation | None:
         shown = shown_values(known_values(facts))
-        numbers = {field: value.number for field, value in shown.items()}
         contents = render_facts(cell_id, shown)
         for attempt in range(1, ATTEMPTS + 1):
             try:
                 response = await self._model.generate(
                     EXPLAIN_ROLE, contents, generation_config()
                 )
-                return read_reply(response, numbers, cell_id)
+                return read_reply(response, shown, cell_id)
             except ExplanationRejected as error:
                 log_event(
                     logging.WARNING,

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 TOP_CELLS = 200
 CONCURRENCY = 8
+START_BUDGET_SECONDS = 360
 
 
 class CellExplainer(Protocol):
@@ -25,6 +27,7 @@ class BatchResult:
     skipped: int
     done: int
     failed: int
+    unstarted: int
     seconds: float
     call_p50_seconds: float
     call_p95_seconds: float
@@ -41,12 +44,14 @@ class ExplanationPrecomputer:
     def __init__(
         self,
         *,
-        explainer: CellExplainer,
+        explainer_factory: Callable[[], CellExplainer],
         rankings: RankingRepository,
         limit: int = TOP_CELLS,
         concurrency: int = CONCURRENCY,
+        start_budget_seconds: float = START_BUDGET_SECONDS,
     ):
-        self._explainer = explainer
+        self._explainer_factory = explainer_factory
+        self._start_budget = start_budget_seconds
         self._rankings = rankings
         self._limit = limit
         self._concurrency = concurrency
@@ -57,11 +62,14 @@ class ExplanationPrecomputer:
         missing = [cell.cell_id for cell in top if not is_current(cell.explanation)]
         durations: list[float] = []
         gate = asyncio.Semaphore(self._concurrency)
+        explainer = self._explainer_factory()
 
-        async def one(cell_id: str) -> bool:
+        async def one(cell_id: str) -> bool | None:
             async with gate:
                 begun = time.perf_counter()
-                explanation = await self._explainer.explain(cell_id)
+                if begun - started > self._start_budget:
+                    return None
+                explanation = await explainer.explain(cell_id)
                 durations.append(time.perf_counter() - begun)
                 return explanation is not None
 
@@ -73,6 +81,7 @@ class ExplanationPrecomputer:
             skipped=len(top) - len(missing),
             done=outcomes.count(True),
             failed=outcomes.count(False),
+            unstarted=outcomes.count(None),
             seconds=round(time.perf_counter() - started, 2),
             call_p50_seconds=round(percentile(durations, 0.5), 2),
             call_p95_seconds=round(percentile(durations, 0.95), 2),

@@ -1,9 +1,9 @@
 # Verify these IDs in Vertex AI Model Garden in the first hour. If a preview ID 404s, fall back and log it in DECISIONS.md.
-reasoning:        # agent brain: ranking explanations, decisions, escalation briefs
+reasoning:        # agent brain: decisions, escalation briefs
   model: gemini-3.1-pro-preview
   location: global
   fallback: gemini-2.5-pro
-fast:             # evidence reading, task wording, chat replies, classification
+fast:             # evidence reading, task wording, chat replies, classification, ranking explanations
   model: gemini-3.5-flash      # verify exact ID; may carry a -preview suffix
   location: global
   fallback: gemini-2.5-flash

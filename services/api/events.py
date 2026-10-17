@@ -3,6 +3,7 @@ import base64
 import binascii
 import logging
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
@@ -23,6 +24,8 @@ from domain.clock import Clock
 logger = logging.getLogger(__name__)
 
 MAX_CONCURRENT_RUNS = 3
+FILL_HARD_LIMIT_SECONDS = 480
+EXECUTOR_THREADS = 16
 
 DispatchOutcome = Literal["processed", "duplicate"]
 
@@ -162,6 +165,8 @@ class DryingRankedHandler:
     async def _run_everything(
         self, message_id: str, event: DryingRankedEvent, cases: list[Case]
     ) -> None:
+        loop = asyncio.get_running_loop()
+        loop.set_default_executor(ThreadPoolExecutor(max_workers=EXECUTOR_THREADS))
         await asyncio.gather(
             self._run_all(message_id, event, cases),
             self._fill_explanations(event.region),
@@ -169,7 +174,9 @@ class DryingRankedHandler:
 
     async def _fill_explanations(self, region: str) -> None:
         try:
-            await self._explanations.run(region)
+            await asyncio.wait_for(
+                self._explanations.run(region), FILL_HARD_LIMIT_SECONDS
+            )
         except Exception:
             logger.exception(
                 "explanations precompute failed",

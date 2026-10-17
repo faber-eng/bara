@@ -508,6 +508,24 @@ def test_an_explanation_with_no_prompt_version_is_made_again(settings):
     assert world.explainer.calls == ["riau-1-1"]
 
 
+def test_the_rankings_list_hides_an_explanation_of_an_older_prompt_version(settings):
+    world = World([weekly_row()])
+    world.ranked_cells.put(
+        "riau-1-1",
+        make_ranked_cell(
+            explanation={
+                "text": "raw 96.84",
+                "cited": {},
+                "prompt_version": "explain-v1",
+            }
+        ),
+    )
+
+    body = world.client(settings).get("/api/rankings/riau", headers=OPS).json()
+
+    assert body["cells"][0]["explanation"] is None
+
+
 def test_a_failed_explanation_leaves_the_cell_with_null(settings):
     world = World([weekly_row()])
 
