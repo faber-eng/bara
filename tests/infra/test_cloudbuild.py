@@ -266,11 +266,19 @@ def test_verify_accepts_a_superseded_skip_as_success(steps):
     assert text.index("exit 0") < text.index("for attempt")
 
 
-def run_guard(tmp_path, live_label, started="200", args=None):
+MISSING_RESOURCE_GCLOUD = """#!/usr/bin/env bash
+if [ "$3" = describe ]; then
+  echo "ERROR: (gcloud.run.jobs.describe) Cannot find job [$4]." >&2
+  exit 1
+fi
+"""
+
+
+def run_guard(tmp_path, live_label, started="200", args=None, fake_script=None):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     fake = bin_dir / "gcloud"
-    fake.write_text(f"#!/usr/bin/env bash\nprintf '%s' '{live_label}'\n")
+    fake.write_text(fake_script or f"#!/usr/bin/env bash\nprintf '%s' '{live_label}'\n")
     fake.chmod(0o755)
     (tmp_path / "build-started").write_text(started + "\n")
     env = {
@@ -295,6 +303,18 @@ def test_guard_lets_an_equal_older_or_first_deploy_through(tmp_path, live_label)
     assert result.returncode == 0
     assert "SUPERSEDED" not in result.stdout
     assert not (tmp_path / "superseded-bara-api").exists()
+
+
+def test_guard_lets_the_first_deploy_of_a_job_that_does_not_exist_through(tmp_path):
+    result = run_guard(
+        tmp_path,
+        live_label="",
+        args=["jobs", "bara-reignition", "r", "p"],
+        fake_script=MISSING_RESOURCE_GCLOUD,
+    )
+    assert result.returncode == 0
+    assert "guard ok" in result.stdout
+    assert not (tmp_path / "superseded-bara-reignition").exists()
 
 
 def test_guard_without_arguments_is_a_usage_error(tmp_path):

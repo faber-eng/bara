@@ -13,8 +13,8 @@ fi
 dir=${GUARD_DIR:-/workspace}
 started=$(cat "$dir/build-started")
 
-live=$(gcloud run "$kind" describe "$name" --region="$region" --project="$project" \
-  --format='value(metadata.labels.build_started)')
+live=$(gcloud run "$kind" list --region="$region" --project="$project" \
+  --filter="metadata.name=$name" --format='value(metadata.labels.build_started)')
 
 if [ -n "$live" ] && [ "$live" -gt "$started" ]; then
   echo "SUPERSEDED: $name was last deployed by a build that started later ($live > $started); skipping this deploy"
