@@ -358,6 +358,7 @@ class FakeClaimsAdmin:
         self.uid_by_email = uid_by_email or {}
         self.writes: list[tuple[str, dict[str, object]]] = []
         self.fail_with: Exception | None = None
+        self.fail_set_with: Exception | None = None
 
     def get_claims(self, uid: str) -> dict[str, object]:
         self._raise_if_failing()
@@ -365,6 +366,8 @@ class FakeClaimsAdmin:
 
     def set_claims(self, uid: str, claims: dict[str, object]) -> None:
         self._raise_if_failing()
+        if self.fail_set_with is not None:
+            raise self.fail_set_with
         self.claims_by_uid[uid] = dict(claims)
         self.writes.append((uid, dict(claims)))
 

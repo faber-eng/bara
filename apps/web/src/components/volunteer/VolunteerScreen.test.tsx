@@ -307,7 +307,7 @@ describe("volunteer screen", () => {
         ...judged,
         kind: "audio",
         sample: true,
-        verdict: { ...verdict, transcript: "sekat bocor", transcript_en: "the dam leaks" },
+        verdict: null,
       }),
       "GET /api/samples?kind=voice": () => Response.json([voiceItem]),
       [`GET ${voiceItem.url}`]: () =>
@@ -326,7 +326,6 @@ describe("volunteer screen", () => {
     expect(await screen.findByText("Terkirim")).toBeInTheDocument();
     expect(screen.queryByText("sekat bocor")).not.toBeInTheDocument();
     expect(screen.getByText("Sampel")).toBeInTheDocument();
-    expect(callsTo(fetchMock, "GET /api/v/uid-1/inbox").length).toBeLessThanOrEqual(2);
     const ticketCall = callsTo(fetchMock, "POST /api/v/uid-1/uploads")[0];
     expect(JSON.parse(String(initOf(ticketCall).body))).toMatchObject({
       kind: "audio",

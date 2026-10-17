@@ -26,7 +26,7 @@ function retryInput(options: { issuedAt: number; onTicket?: () => void }) {
     contentType: "image/jpeg",
     sample: false,
     point: null,
-    ticket: { ticket: ticketBody("e1"), issuedAt: options.issuedAt },
+    ticket: { ticket: ticketBody("e1"), issuedAt: options.issuedAt, uploaded: false },
     onTicket: options.onTicket ?? (() => {}),
     onProgress: () => {},
   };
@@ -158,6 +158,52 @@ describe("uploadEvidence", () => {
     expect(result.evidenceId).toBe("e2");
     expect(putFile).toHaveBeenCalledTimes(2);
     expect(callsTo(fetchMock, "POST /api/v/uid-1/uploads")).toHaveLength(1);
+  });
+
+  it("treats a 400 on a reused ticket as expired too", async () => {
+    vi.mocked(putFile)
+      .mockRejectedValueOnce(new UploadTransferError("Upload returned 400", 400))
+      .mockResolvedValueOnce(undefined);
+    stubApi({
+      "POST /api/v/uid-1/uploads": () => Response.json(ticketBody("e2")),
+      "POST /api/v/uid-1/evidence/e2/complete": () => Response.json({ status: "ok" }),
+    });
+
+    const result = await uploadEvidence(retryInput({ issuedAt: Date.now() - 60_000 }));
+
+    expect(result.evidenceId).toBe("e2");
+  });
+
+  it("completes the same evidence without a second PUT when the file already went up", async () => {
+    vi.mocked(putFile).mockResolvedValue(undefined);
+    const fetchMock = stubApi({
+      "POST /api/v/uid-1/evidence/e1/complete": () => Response.json({ status: "ok" }),
+    });
+    const input = retryInput({ issuedAt: Date.now() - 16 * 60_000 });
+
+    const result = await uploadEvidence({
+      ...input,
+      ticket: { ...input.ticket, uploaded: true },
+    });
+
+    expect(result.evidenceId).toBe("e1");
+    expect(putFile).not.toHaveBeenCalled();
+    expect(callsTo(fetchMock, "POST /api/v/uid-1/uploads")).toHaveLength(0);
+  });
+
+  it("marks the ticket uploaded once the PUT worked, before completing", async () => {
+    vi.mocked(putFile).mockResolvedValue(undefined);
+    const onTicket = vi.fn();
+    stubApi({
+      "POST /api/v/uid-1/uploads": () => Response.json(ticketBody("e1")),
+      "POST /api/v/uid-1/evidence/e1/complete": () => new Response("down", { status: 500 }),
+    });
+
+    await expect(
+      uploadEvidence({ ...retryInput({ issuedAt: 0 }), ticket: null, onTicket }),
+    ).rejects.toThrow();
+
+    expect(onTicket).toHaveBeenLastCalledWith(expect.objectContaining({ uploaded: true }));
   });
 
   it("does not loop when a brand new ticket answers 403", async () => {
