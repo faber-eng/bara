@@ -1,9 +1,9 @@
 export type Source = "fixture" | "live";
 
 const DEFAULT_SOURCES = {
-  rankings: "fixture",
-  cases: "fixture",
-  caseDetail: "fixture",
+  rankings: "live",
+  cases: "live",
+  caseDetail: "live",
   escalations: "fixture",
   tiles: "live",
   clock: "live",

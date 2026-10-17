@@ -68,6 +68,14 @@ describe("apiRequest", () => {
     expect(roles).toEqual(["ops", "brigade"]);
   });
 
+  it("sends the judge role on judge routes whatever person is selected", async () => {
+    setJudgeMode(true);
+    selectPerson("vol-ari");
+    const fetchMock = stubFetch(Response.json({}));
+    await apiRequest("/api/judge/reset", { method: "POST" });
+    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("judge");
+  });
+
   it("posts a JSON body", async () => {
     const fetchMock = stubFetch(Response.json({}));
 

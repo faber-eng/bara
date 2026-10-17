@@ -27,6 +27,8 @@ export type RequestOptions = {
 
 const BRIGADE_PATH = "/api/brigade/";
 const BRIGADE_ROLE = "brigade";
+const JUDGE_PATH = "/api/judge/";
+const JUDGE_ROLE = "judge";
 
 function isOwnLivePath(path: string, identity: TokenIdentity): boolean {
   return (
@@ -40,7 +42,9 @@ function isOwnLivePath(path: string, identity: TokenIdentity): boolean {
 function roleForPath(path: string): string | undefined {
   const role = roleHeaderValue();
   if (role === undefined) return undefined;
-  return path.startsWith(BRIGADE_PATH) ? BRIGADE_ROLE : role;
+  if (path.startsWith(JUDGE_PATH)) return JUDGE_ROLE;
+  if (path.startsWith(BRIGADE_PATH)) return BRIGADE_ROLE;
+  return role;
 }
 
 function shouldSendRole(path: string, identity: TokenIdentity | null): boolean {
