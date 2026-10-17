@@ -162,7 +162,7 @@ has_cors() {
 set_cors() {
   local file origins
   file="$(mktemp)"
-  trap 'rm -f "$file"' RETURN
+  trap 'rm -f "$file"; trap - RETURN' RETURN
   origins="$(cors_origins)"
   origins="\"${origins// /\", \"}\""
   cat >"$file" <<EOF
