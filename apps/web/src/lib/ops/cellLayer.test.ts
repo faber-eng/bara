@@ -193,9 +193,11 @@ describe("createCellLayer", () => {
     createCellLayer(map as never, CELLS, { onSelect: vi.fn() });
     const data = FakeData.instances[0] as FakeData;
     const feature = { getProperty: () => 95 };
-    const styleOf = () => (data.style as (f: unknown) => { strokeWeight: number })(feature);
+    const styleOf = () =>
+      (data.style as (f: unknown) => { strokeWeight: number; fillOpacity: number })(feature);
 
-    expect(styleOf().strokeWeight).toBe(4);
+    expect(styleOf().strokeWeight).toBe(3);
+    expect(styleOf().fillOpacity).toBe(0.35);
     map.zoom = 12;
     map.listeners.get("zoom_changed")?.({});
     expect(data.styles).toHaveLength(1);
@@ -205,7 +207,7 @@ describe("createCellLayer", () => {
     expect(data.styles).toHaveLength(1);
     map.zoom = 9;
     map.listeners.get("zoom_changed")?.({});
-    expect(styleOf().strokeWeight).toBe(4);
+    expect(styleOf().strokeWeight).toBe(3);
   });
 
   it("builds a 3,769 cell layer and answers clicks", () => {

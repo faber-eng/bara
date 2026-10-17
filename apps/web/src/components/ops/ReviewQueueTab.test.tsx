@@ -47,7 +47,7 @@ function renderTab(region = "riau", onCaseSelect = vi.fn()) {
 function liveCases(extra: Parameters<typeof stubApi>[0] = {}) {
   vi.stubEnv("VITE_SOURCE_CASES", "live");
   vi.stubEnv("VITE_SOURCE_CASEDETAIL", "live");
-  return stubApi({ "GET /api/cases?region=riau": () => Response.json(QUEUE), ...extra });
+  return stubApi({ "GET /api/cases?region=riau&limit=200": () => Response.json(QUEUE), ...extra });
 }
 
 async function openForm() {
@@ -70,7 +70,7 @@ describe("ReviewQueueTab", () => {
   });
 
   it("says nothing waits when no case is in human review", async () => {
-    liveCases({ "GET /api/cases?region=riau": () => Response.json([QUEUE[1]]) });
+    liveCases({ "GET /api/cases?region=riau&limit=200": () => Response.json([QUEUE[1]]) });
     renderTab();
 
     expect(await screen.findByText("Nothing waits for human review.")).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe("ReviewQueueTab", () => {
   it("refreshes the queue after a save and closes the form", async () => {
     let status = "human_review";
     const fetchMock = liveCases({
-      "GET /api/cases?region=riau": () =>
+      "GET /api/cases?region=riau&limit=200": () =>
         Response.json([summary("case-human", "riau-0277", status)]),
       [REVIEW_KEY]: () => {
         status = "closed";
@@ -133,7 +133,7 @@ describe("ReviewQueueTab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save review" }));
 
     expect(await screen.findByText("Nothing waits for human review.")).toBeInTheDocument();
-    expect(callsTo(fetchMock, "GET /api/cases?region=riau")).toHaveLength(2);
+    expect(callsTo(fetchMock, "GET /api/cases?region=riau&limit=200")).toHaveLength(2);
   });
 
   it("says when another reviewer got there first", async () => {
@@ -153,6 +153,6 @@ describe("ReviewQueueTab", () => {
 
     expect(screen.getByText(/Congo shows rankings and map layers only/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Review" })).not.toBeInTheDocument();
-    expect(callsTo(fetchMock, "GET /api/cases?region=congo_cuvette")).toHaveLength(0);
+    expect(callsTo(fetchMock, "GET /api/cases?region=congo_cuvette&limit=200")).toHaveLength(0);
   });
 });
