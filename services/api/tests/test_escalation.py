@@ -41,6 +41,7 @@ from contracts import (
     Task,
 )
 from domain.clock import Clock
+from domain.escalation import FieldSigns, OverdueTask
 from tests.fakes import (
     InMemoryClockStore,
     InMemoryCollection,
@@ -201,15 +202,45 @@ def test_a_case_without_a_dam_maps_the_cell_centroid():
     assert pack.map_url.endswith("query=0.4,101.0")
 
 
-def test_the_brief_gets_the_case_facts_and_the_reason():
+def test_the_brief_gets_the_case_facts_not_the_agent_reason():
     world = World()
 
     world.escalate("Overdue twice.")
 
     facts = world.brief.facts[0]
-    assert facts.reason == "Overdue twice."
     assert facts.cell_id == "riau-0412"
     assert facts.dam_id == "d1"
+    assert facts.drying_score == 80.0
+    assert facts.smoke_seen_before is False
+    assert facts.field_signs is None
+    assert facts.overdue_task is None
+    assert facts.photo_count == 1
+    assert "Overdue twice." not in repr(facts)
+
+
+def test_the_brief_gets_the_overdue_task_and_the_fire_signs():
+    world = World()
+    world.tasks.put(
+        "t2",
+        make_task(id="t2", case_id="c1", status="overdue", attempt=2, created_at=NOW),
+    )
+    world.evidence.put(
+        "e2",
+        make_evidence(
+            id="e2",
+            gcs_uri="gs://b/e2.jpg",
+            verdict=make_verdict(smoke="wisps", open_flame="yes"),
+        ),
+    )
+
+    world.escalate()
+
+    facts = world.brief.facts[0]
+    assert facts.overdue_task == OverdueTask(task_type="dam_check", attempt=2)
+    assert facts.field_signs == FieldSigns(
+        smoke="wisps", open_flame=True, hot_ground=False
+    )
+    assert facts.photo_count == 2
 
 
 def test_the_brigade_gets_a_web_message_in_its_thread():

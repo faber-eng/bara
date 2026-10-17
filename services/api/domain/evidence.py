@@ -3,6 +3,7 @@ from types import MappingProxyType
 
 from contracts import CaseStatus, DamState, EvidenceKind, GeoPoint, TaskType, Verdict
 from domain.case_machine import transition
+from domain.escalation import shows_fire
 from domain.geo import haversine_m
 
 EXTENSIONS: MappingProxyType[EvidenceKind, MappingProxyType[str, str]] = (
@@ -47,12 +48,7 @@ def needs_human(verdict: Verdict, threshold: float) -> bool:
 
 
 def needs_action(verdict: Verdict) -> bool:
-    return (
-        verdict.dam_state in ACTION_DAM_STATES
-        or verdict.smoke in ("wisps", "plume")
-        or verdict.open_flame == "yes"
-        or verdict.hot_ground_signs == "clear"
-    )
+    return verdict.dam_state in ACTION_DAM_STATES or shows_fire(verdict)
 
 
 def case_status_after_verdict(

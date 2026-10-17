@@ -15,7 +15,7 @@ from adapters.firestore_repos import (
     TaskRepository,
 )
 from adapters.storage import SIGNING_ERRORS
-from casework.brief import BRIEF_PROMPT_VERSION, Brief, BriefFacts
+from casework.brief import BRIEF_PROMPT_VERSION, Brief
 from contracts import (
     Case,
     CaseEscalated,
@@ -25,15 +25,24 @@ from contracts import (
     EscalationPack,
     Event,
     EventType,
+    Evidence,
     GeoPoint,
     Message,
-    TimelineEntry,
+    Task,
 )
+from domain.brief import BriefFacts
 from domain.case_machine import can_transition
 from domain.case_view import build_timeline
 from domain.channels import Channel, OutboundMessage
 from domain.clock import Clock
-from domain.escalation import map_url, pack_photos, pick_contact
+from domain.escalation import (
+    field_signs,
+    map_url,
+    overdue_task,
+    pack_photos,
+    photo_count,
+    pick_contact,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +141,7 @@ class Escalator:
             case, tasks, evidence, self._runs.for_case(case_id), []
         )
         url = map_url(point) if point is not None else ""
-        brief = await self._brief.write(self._facts(case, reason, timeline, url))
+        brief = await self._brief.write(self._facts(case, tasks, evidence))
         escalation = Escalation(
             id=self._new_id(),
             case_id=case_id,
@@ -150,7 +159,7 @@ class Escalator:
             self._store(case, escalation, message)
         except CaseChanged as error:
             return self._winner_of_race(case.id, error)
-        self._log_escalated(escalation, brief)
+        self._log_escalated(escalation, brief, reason)
         self._publish(case, escalation)
         return escalation
 
@@ -186,18 +195,17 @@ class Escalator:
         return self._cells.centroid(case.cell_id)
 
     @staticmethod
-    def _facts(
-        case: Case, reason: str, timeline: list[TimelineEntry], url: str
-    ) -> BriefFacts:
+    def _facts(case: Case, tasks: list[Task], evidence: list[Evidence]) -> BriefFacts:
         return BriefFacts(
             case_type=case.type,
             cell_id=case.cell_id,
             dam_id=case.dam_id,
             drying_score=case.risk.drying_score,
             p_reignite=case.risk.p_reignite,
-            reason=reason,
-            timeline=timeline,
-            map_url=url,
+            smoke_seen_before=case.history_flags.smoke_seen,
+            field_signs=field_signs(evidence),
+            overdue_task=overdue_task(tasks),
+            photo_count=photo_count(evidence),
         )
 
     def _store(self, case: Case, escalation: Escalation, message: Message) -> None:
@@ -208,7 +216,7 @@ class Escalator:
         )
 
     @staticmethod
-    def _log_escalated(escalation: Escalation, brief: Brief) -> None:
+    def _log_escalated(escalation: Escalation, brief: Brief, reason: str) -> None:
         logger.info(
             "case escalated",
             extra=log_fields(
@@ -218,6 +226,7 @@ class Escalator:
                 contact_id=escalation.contact_id,
                 brief_source=brief.source,
                 brief_prompt_version=BRIEF_PROMPT_VERSION,
+                reason=reason,
             ),
         )
 
