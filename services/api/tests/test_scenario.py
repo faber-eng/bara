@@ -116,7 +116,7 @@ def test_a_broken_dam_file_is_a_scenario_error(tmp_path):
         load_scenario(directory)
 
 
-def test_the_fire_event_has_three_high_risk_example_cells_quiet_on_sim_day_ten(
+def test_the_fire_event_has_three_model_scored_cells_quiet_on_sim_day_ten(
     scenario,
 ):
     fire = scenario.spec.fire_event
@@ -124,7 +124,7 @@ def test_the_fire_event_has_three_high_risk_example_cells_quiet_on_sim_day_ten(
     assert len(fire.cells) == 3
     assert all(cell.p_reignite >= 0.6 for cell in fire.cells)
     assert (fire.quiet_date - scenario.spec.sim_start.date()).days == 10
-    assert "example" in fire.source
+    assert "reignition_v1_no_rain_after" in fire.source
 
 
 def test_a_fire_quiet_date_off_sim_day_ten_is_refused(tmp_path):
@@ -168,9 +168,9 @@ def test_the_fire_quiet_event_is_built_from_the_scenario(scenario):
     assert isinstance(event, FireQuietEvent)
     assert event.example is True
     assert event.region == "riau"
-    assert event.payload.event_id == "fire-riau-2026-demo-01"
+    assert event.payload.event_id == "fire-riau-20260831"
     assert [c.cell_id for c in event.payload.cells] == [
-        "riau-182-61",
-        "riau-183-61",
-        "riau-182-60",
+        "riau-177-73",
+        "riau-178-75",
+        "riau-177-75",
     ]

@@ -5,7 +5,7 @@ import pytest
 from adapters.bigquery import Warehouse
 from ee_lib.config import load_region
 from jobs import train_reignition as job
-from jobs.cli import JobError, UsageError
+from jobs.cli import JobError, UsageError, full_flow_region
 from tests.fakes import RecordingBigQueryClient
 
 NOW = datetime(2026, 10, 18, 1, 0, tzinfo=UTC)
@@ -156,6 +156,6 @@ def test_bytes_billed_counts_only_real_queries():
 def test_a_region_off_the_full_flow_is_a_usage_error(config_dir):
     riau = load_region(config_dir, "riau")
 
-    assert job.full_flow_region(riau) == "riau"
+    assert full_flow_region(riau) == "riau"
     with pytest.raises(UsageError, match="full_flow"):
-        job.full_flow_region(riau.model_copy(update={"full_flow": False}))
+        full_flow_region(riau.model_copy(update={"full_flow": False}))

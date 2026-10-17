@@ -16,12 +16,12 @@ from domain.reignition_eval import (
     empty_eval_splits,
     model_record,
 )
-from ee_lib.config import RegionConfig, load_region
+from ee_lib.config import load_region
 from jobs.cli import (
     DATASET,
     JobError,
-    UsageError,
     configure_logging,
+    full_flow_region,
     logger,
     query_report,
     resolve_config_dir,
@@ -34,15 +34,6 @@ def first_row(rows: Sequence[Mapping[str, object]], step: str) -> Mapping[str, o
     if not rows:
         raise JobError(f"{step} returned no row")
     return rows[0]
-
-
-def full_flow_region(region: RegionConfig) -> str:
-    if not region.full_flow:
-        raise UsageError(
-            f"region {region.id!r} is not full_flow in config/regions.yaml; "
-            "bara.reignition_v1 is trained for the full-flow region only"
-        )
-    return region.id
 
 
 def require_labeled_eval_splits(

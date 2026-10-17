@@ -199,7 +199,7 @@ def test_fire_quiet_publishes_the_scenario_fire_event_and_returns_202(settings):
     topic, event = publisher.published[0]
     assert topic == "fire.quiet"
     assert event.example is True
-    assert event.payload.event_id == "fire-riau-2026-demo-01"
+    assert event.payload.event_id == "fire-riau-20260831"
     assert len(event.payload.cells) == 3
 
 

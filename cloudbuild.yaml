@@ -107,23 +107,39 @@ steps:
       - |
         set -euo pipefail
         bash ci/guard.sh jobs bara-drying $_REGION $PROJECT_ID
-        if [ -e /workspace/superseded-bara-drying ]; then
-          exit 0
+        if [ ! -e /workspace/superseded-bara-drying ]; then
+          gcloud run jobs deploy bara-drying \
+            --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA \
+            --region=$_REGION \
+            --project=$PROJECT_ID \
+            --service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com \
+            --cpu=1 \
+            --memory=512Mi \
+            --tasks=1 \
+            --max-retries=0 \
+            --task-timeout=1800s \
+            --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID \
+            --update-labels=build_started=$$(cat /workspace/build-started) \
+            --args=jobs.weekly_rankings,--region,riau \
+            --quiet
         fi
-        gcloud run jobs deploy bara-drying \
-          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA \
-          --region=$_REGION \
-          --project=$PROJECT_ID \
-          --service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com \
-          --cpu=1 \
-          --memory=512Mi \
-          --tasks=1 \
-          --max-retries=0 \
-          --task-timeout=1800s \
-          --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID \
-          --update-labels=build_started=$$(cat /workspace/build-started) \
-          --args=jobs.weekly_rankings,--region,riau \
-          --quiet
+        bash ci/guard.sh jobs bara-reignition $_REGION $PROJECT_ID
+        if [ ! -e /workspace/superseded-bara-reignition ]; then
+          gcloud run jobs deploy bara-reignition \
+            --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA \
+            --region=$_REGION \
+            --project=$PROJECT_ID \
+            --service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com \
+            --cpu=1 \
+            --memory=512Mi \
+            --tasks=1 \
+            --max-retries=0 \
+            --task-timeout=1800s \
+            --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID \
+            --update-labels=build_started=$$(cat /workspace/build-started) \
+            --args=jobs.daily_reignition,--region,riau \
+            --quiet
+        fi
 
   - id: deploy-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
