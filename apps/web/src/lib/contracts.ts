@@ -130,6 +130,8 @@ export type AgentDecision = {
   next_check_at: IsoDateTime | null;
 };
 
+export type AgentRunStatus = "running" | "done" | "failed";
+
 export type AgentRun = {
   id: string;
   trigger: string;
@@ -139,6 +141,7 @@ export type AgentRun = {
   prompt_version: string;
   started_at: IsoDateTime;
   ms: number;
+  status: AgentRunStatus;
 };
 
 export type Message = {
