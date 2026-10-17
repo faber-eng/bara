@@ -14,8 +14,12 @@ from google.cloud import (
 from adapters.bigquery import DATASET, Warehouse
 from adapters.cells import CellRepository
 from adapters.firestore_repos import (
+    CASES,
+    MESSAGES,
+    TASKS,
     AgentRunRepository,
     CaseRepository,
+    CaseworkStore,
     DamRepository,
     EventLog,
     FirestoreClockStore,
@@ -30,7 +34,7 @@ from adapters.identity import ClaimsAdmin, FirebaseClaimsAdmin
 from adapters.pubsub import EventPublisher
 from adapters.secrets import SecretManagerReader, SecretReader
 from adapters.storage import AdcSigningAuth, EvidenceStorage
-from adapters.store import FirestoreCollection
+from adapters.store import FirestoreCollection, FirestoreTransactor
 from adapters.tasks import DeadlineScheduler
 from config import Settings
 from contracts import (
@@ -60,6 +64,7 @@ class Adapters:
     clock: Clock
     tasks: TaskRepository
     cases: CaseRepository
+    casework: CaseworkStore
     events: EventLog
     warehouse: Warehouse
     storage: EvidenceStorage
@@ -106,10 +111,10 @@ def build_scenario_resetter(
         volunteers=FirestoreCollection(db, "volunteers", Volunteer),
         contacts=FirestoreCollection(db, "contacts", Contact),
         dams=FirestoreCollection(db, "dams", Dam),
-        cases=FirestoreCollection(db, "cases", Case),
-        tasks=FirestoreCollection(db, "tasks", Task),
+        cases=FirestoreCollection(db, CASES, Case),
+        tasks=FirestoreCollection(db, TASKS, Task),
         evidence=FirestoreCollection(db, "evidence", Evidence),
-        messages=FirestoreCollection(db, "messages", Message),
+        messages=FirestoreCollection(db, MESSAGES, Message),
         escalations=FirestoreCollection(db, "escalations", Escalation),
         agent_runs_for=lambda case_id: FirestoreCollection(
             db, f"cases/{case_id}/agent_runs", AgentRun
@@ -132,8 +137,9 @@ def build_adapters(settings: Settings) -> Adapters:
     agent_repos = build_agent_repositories(db)
     return Adapters(
         clock=Clock(clock_store, utcnow),
-        tasks=TaskRepository(FirestoreCollection(db, "tasks", Task)),
-        cases=CaseRepository(FirestoreCollection(db, "cases", Case)),
+        tasks=TaskRepository(FirestoreCollection(db, TASKS, Task)),
+        cases=CaseRepository(FirestoreCollection(db, CASES, Case)),
+        casework=CaseworkStore(FirestoreTransactor(db)),
         events=EventLog(FirestoreCollection(db, "events", ProcessedEvent), utcnow),
         warehouse=warehouse,
         storage=EvidenceStorage(bucket, AdcSigningAuth),

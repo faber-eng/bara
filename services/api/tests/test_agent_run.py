@@ -19,6 +19,7 @@ from adapters.gemini import compose_agent_model
 from bara_agent.agent import build_tools
 from bara_agent.prompts import INSTRUCTION, PROMPT_VERSION
 from bara_agent.run import AgentOutputInvalid, AgentService, CaseNotFound
+from casework.assignment import Assignment
 from contracts import (
     AgentDecision,
     AgentRun,
@@ -39,7 +40,9 @@ from tests.fakes import (
     make_case,
     make_dam,
     make_fake_llm,
+    make_message,
     make_ranked_cell,
+    make_task,
     make_volunteer,
     weekly_row,
 )
@@ -47,7 +50,13 @@ from tests.fakes import (
 REAL_NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
 SIM_NOW = REAL_NOW + timedelta(hours=1)
 CENTER = {"lat": 0.5, "lon": 101.4}
-ALL_TOOLS = ["rank_areas", "get_area_facts", "find_people"]
+ALL_TOOLS = ["rank_areas", "get_area_facts", "find_people", "assign_task"]
+ASSIGN_ARGS = {
+    "case_id": "c1",
+    "assignee_id": "v1",
+    "task_type": "dam_check",
+    "instructions_hint": "Check the dam wall.",
+}
 
 
 def answer(**overrides) -> str:
@@ -65,8 +74,21 @@ def happy_script(final: str | None = None) -> list:
         function_call("rank_areas", {"region": "riau", "limit": 10}, "fc1"),
         function_call("get_area_facts", {"cell_id": "cell-1"}, "fc2"),
         function_call("find_people", {"cell_id": "cell-1", "role": "volunteer"}, "fc3"),
+        function_call("assign_task", ASSIGN_ARGS, "fc4"),
         final_answer(final or answer()),
     ]
+
+
+class StubAssigner:
+    def __init__(self):
+        self.requests = []
+
+    async def assign(self, request):
+        self.requests.append(request)
+        return Assignment(
+            task=make_task(id="task-1", deadline_at=SIM_NOW + timedelta(hours=72)),
+            message=make_message(text="Cek sekat."),
+        )
 
 
 class RaisingWarehouse:
@@ -108,6 +130,7 @@ class World:
             {WEEKLY_SQL: [weekly_row(cell_id="cell-1")], CENTROID_SQL: [CENTER]}
         )
         self.llm = model or make_fake_llm("fake-reasoning", list(script))
+        self.assigner = StubAssigner()
         clock_store = InMemoryClockStore(
             ClockSettings(offset_seconds=3600, updated_by="test")
         )
@@ -118,6 +141,7 @@ class World:
                 cells=CellRepository(warehouse),
                 dams=dams,
                 volunteers=VolunteerRepository(volunteers),
+                assigner=self.assigner,
                 radius_m=1_000,
             ),
             cases=CaseRepository(self.cases),
@@ -148,6 +172,9 @@ def test_a_run_stores_its_ordered_timed_calls_and_validated_final_json():
     assert run.tool_calls[1].args == {"cell_id": "cell-1"}
     assert all(isinstance(call.ms, int) and call.ms >= 0 for call in run.tool_calls)
     assert run.tool_calls[0].result_summary == "1 cell, top cell-1 at 90.0"
+    deadline = (SIM_NOW + timedelta(hours=72)).isoformat()
+    assert run.tool_calls[3].result_summary == f"task task-1 due {deadline}"
+    assert world.assigner.requests[0].assignee_id == "v1"
     assert run.final_json == AgentDecision(
         decision="send a dam check",
         reason="Cell cell-1 scores 90.5 and ranks 1 in riau this week.",
@@ -162,7 +189,7 @@ def test_a_run_stores_its_ordered_timed_calls_and_validated_final_json():
     assert isinstance(run.ms, int) and run.ms >= 0
 
 
-def test_the_model_gets_the_instruction_the_schema_and_exactly_the_three_tools():
+def test_the_model_gets_the_instruction_the_schema_and_exactly_the_four_tools():
     world = World(happy_script())
 
     world.run()
@@ -210,7 +237,7 @@ def test_evidence_naming_an_uncalled_tool_is_stored_with_a_warning(caplog):
     [record] = [r for r in caplog.records if hasattr(r, "fields")]
     assert record.levelno == logging.WARNING
     assert record.fields["event"] == "agent_evidence_mismatch"
-    assert record.fields["uncalled"] == ["find_people", "get_area_facts"]
+    assert record.fields["uncalled"] == ["assign_task", "find_people", "get_area_facts"]
     assert record.fields["case_id"] == "c1"
     assert record.fields["run_id"] == "r1"
 
@@ -303,7 +330,7 @@ def test_a_run_that_loops_past_max_llm_calls_is_stopped_and_stored_as_null():
 
 @pytest.mark.parametrize("code", [404, 429])
 def test_404_or_429_on_the_primary_falls_back_and_names_the_fallback(code):
-    primary = make_fake_llm("primary", [api_error(code)] * 4)
+    primary = make_fake_llm("primary", [api_error(code)] * 5)
     backup = make_fake_llm("backup", happy_script())
     world = World(model=compose_agent_model(primary, backup))
 
@@ -311,7 +338,7 @@ def test_404_or_429_on_the_primary_falls_back_and_names_the_fallback(code):
 
     assert run.model == "backup"
     assert run.final_json is not None
-    assert len(primary.contents) == 4
+    assert len(primary.contents) == 5
 
 
 def test_a_500_on_the_primary_does_not_fall_back():

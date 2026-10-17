@@ -3,12 +3,13 @@ from datetime import datetime
 from typing import get_args
 
 from bara_agent.output import ToolName
-from contracts import Case, CaseType, Dam, VolunteerRole
+from contracts import Case, CaseType, Dam, TaskType, VolunteerRole
 
-PROMPT_VERSION = "agent-v1"
+PROMPT_VERSION = "agent-v2"
 AGENT_NAME = "bara_coordinator"
 CASE_TYPE: CaseType = "dam_risk"
 PEOPLE_ROLE: VolunteerRole = "volunteer"
+TASK_TYPE: TaskType = "dam_check"
 
 TOOL_NAMES = ", ".join(get_args(ToolName))
 
@@ -24,6 +25,10 @@ started this run, the case, the case's dam (or null) and "now", the current time
 1. Call rank_areas with the case region.
 2. Call get_area_facts with the case cell_id.
 3. Call find_people with the case cell_id and role "{PEOPLE_ROLE}".
+4. Call assign_task once, with the case id, the id of the first person in the \
+find_people result, task_type "{TASK_TYPE}" and an instructions_hint from the \
+facts above. Leave deadline_hours out. If find_people returns no people, do not \
+call assign_task and say so in decision.
 Then decide what should happen next for the case.
 
 ## Rules
@@ -45,6 +50,7 @@ normal; a negative value means more rain than normal.
 - canal_dist_m and distance_m: metres.
 - peat_class: 1 or 2. Class 1 weighs more in the drying score than class 2.
 - example: true for a sample person or dam, false for a real one.
+- deadline_at: when the assigned task is due, ISO 8601 with a UTC offset.
 
 ## Final output
 Reply with one JSON object with exactly these fields:

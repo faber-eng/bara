@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from config import ConfigError, load_settings
+from config import ConfigError, load_settings, region_timezones
 
 REPO_CONFIG_DIR = Path(__file__).resolve().parents[3] / "config"
 BASE_ENV = {"GOOGLE_CLOUD_PROJECT": "example-project"}
@@ -22,6 +22,10 @@ fast:
 VALID_APP_YAML = """
 grid_cell_m: 1000
 languages: { default: id }
+tasks:
+  default_deadline_hours: { dam_check: 72, dam_repair: 168, patrol_recheck: 24 }
+  human_review_confidence: 0.7
+  location_tolerance_m: 300
 judge_mode: { enabled: false, max_resets_per_hour: 5 }
 agent: { max_llm_calls: 12, max_cases_per_trigger: 3 }
 """
@@ -280,3 +284,67 @@ def test_scenario_dir_defaults_to_repo_data_and_follows_the_variable():
     assert resolve_scenario_dir({"BARA_SCENARIO_DIR": "/app/scenario"}) == Path(
         "/app/scenario"
     )
+
+
+def test_task_settings_come_from_the_repo_app_yaml():
+    settings = load_settings(BASE_ENV, REPO_CONFIG_DIR)
+
+    assert settings.tasks.default_deadline_hours == {
+        "dam_check": 72,
+        "dam_repair": 168,
+        "patrol_recheck": 24,
+    }
+    assert settings.tasks.human_review_confidence == 0.7
+    assert settings.tasks.location_tolerance_m == 300
+    assert settings.default_language == "id"
+
+
+def test_a_task_type_without_a_default_deadline_is_an_error(tmp_path):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+    (tmp_path / "app.yaml").write_text(
+        VALID_APP_YAML.replace(", patrol_recheck: 24", "")
+    )
+
+    with pytest.raises(ConfigError, match="app.yaml"):
+        load_settings(BASE_ENV, config_dir=tmp_path)
+
+
+def test_a_zero_default_deadline_is_an_error(tmp_path):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+    (tmp_path / "app.yaml").write_text(
+        VALID_APP_YAML.replace("dam_check: 72", "dam_check: 0")
+    )
+
+    with pytest.raises(ConfigError, match="app.yaml"):
+        load_settings(BASE_ENV, config_dir=tmp_path)
+
+
+def test_region_timezones_come_from_regions_yaml():
+    assert region_timezones(REPO_CONFIG_DIR) == {
+        "riau": "Asia/Jakarta",
+        "congo_cuvette": "Africa/Brazzaville",
+    }
+
+
+def test_a_region_without_a_timezone_is_a_config_error(tmp_path):
+    (tmp_path / "regions.yaml").write_text("riau: { name: Riau }\n")
+
+    with pytest.raises(ConfigError, match="timezone"):
+        region_timezones(tmp_path)
+
+
+def test_an_unknown_timezone_is_a_config_error(tmp_path):
+    (tmp_path / "regions.yaml").write_text("riau: { timezone: Mars/Base }\n")
+
+    with pytest.raises(ConfigError, match="timezone"):
+        region_timezones(tmp_path)
+
+
+def test_a_default_deadline_past_the_cloud_tasks_limit_is_an_error(tmp_path):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+    (tmp_path / "app.yaml").write_text(
+        VALID_APP_YAML.replace("dam_repair: 168", "dam_repair: 721")
+    )
+
+    with pytest.raises(ConfigError, match="app.yaml"):
+        load_settings(BASE_ENV, config_dir=tmp_path)

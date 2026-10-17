@@ -1,10 +1,19 @@
 import asyncio
 import logging
+import os
+import threading
+from types import SimpleNamespace
 
 import pytest
 from google.genai import types
 
-from adapters.gemini import ModelGateway, build_http_options
+from adapters.gemini import (
+    ModelGateway,
+    ThreadedModels,
+    build_http_options,
+    build_vertex_clients,
+)
+from config import load_settings
 from tests.fakes import FakeModels, api_error
 
 RESPONSE = types.GenerateContentResponse()
@@ -103,3 +112,38 @@ def test_retry_options_cover_5xx_and_leave_404_and_429_to_the_fallback():
 
 def test_model_calls_time_out_after_60_seconds():
     assert build_http_options().timeout == 60_000
+
+
+class RecordingSyncModels:
+    def __init__(self):
+        self.calls = []
+        self.threads = []
+
+    def generate_content(self, *, model, contents, config=None):
+        self.calls.append((model, contents, config))
+        self.threads.append(threading.get_ident())
+        return RESPONSE
+
+
+def test_threaded_models_run_the_sync_client_off_the_event_loop_each_run():
+    sync = RecordingSyncModels()
+    models = ThreadedModels(SimpleNamespace(models=sync))
+
+    for _ in range(2):
+        result = asyncio.run(
+            models.generate_content(model="m", contents="ping", config=None)
+        )
+        assert result is RESPONSE
+
+    assert sync.calls == [("m", "ping", None), ("m", "ping", None)]
+    assert threading.get_ident() not in sync.threads
+
+
+@pytest.mark.live
+def test_live_gateway_answers_in_two_event_loops():
+    settings = load_settings(os.environ)
+    gateway = ModelGateway(settings.models, build_vertex_clients(settings))
+
+    for _ in range(2):
+        response = asyncio.run(gateway.generate("fast", "Reply with the word ok."))
+        assert response.text is not None

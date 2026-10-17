@@ -4,8 +4,16 @@ from google.auth.credentials import AnonymousCredentials
 
 import main
 from adapters.factory import build_adapters
+from adapters.gemini import ModelGateway
 from bara_agent.run import AgentService
 from config import ConfigError
+from tests.fakes import FakeModels
+
+
+def offline_gateway(settings) -> ModelGateway:
+    return ModelGateway(
+        settings.models, {"reasoning": FakeModels([]), "fast": FakeModels([])}
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -34,7 +42,9 @@ def test_without_an_api_url_the_scheduler_is_none(settings):
 def test_build_agent_service_wires_the_coordinator_offline(settings, monkeypatch):
     monkeypatch.setenv("GOOGLE_GENAI_USE_ENTERPRISE", "True")
 
-    service = main.build_agent_service(settings, build_adapters(settings))
+    service = main.build_agent_service(
+        settings, build_adapters(settings), offline_gateway(settings)
+    )
 
     assert isinstance(service, AgentService)
 
@@ -45,7 +55,9 @@ def test_build_agent_service_without_enterprise_mode_fails_at_boot(
     monkeypatch.delenv("GOOGLE_GENAI_USE_ENTERPRISE", raising=False)
 
     with pytest.raises(ConfigError, match="GOOGLE_GENAI_USE_ENTERPRISE"):
-        main.build_agent_service(settings, build_adapters(settings))
+        main.build_agent_service(
+            settings, build_adapters(settings), offline_gateway(settings)
+        )
 
 
 def test_build_dispatcher_handles_drying_ranked_and_trigger_wires_offline(
@@ -53,7 +65,7 @@ def test_build_dispatcher_handles_drying_ranked_and_trigger_wires_offline(
 ):
     monkeypatch.setenv("GOOGLE_GENAI_USE_ENTERPRISE", "True")
     adapters = build_adapters(settings)
-    agent = main.build_agent_service(settings, adapters)
+    agent = main.build_agent_service(settings, adapters, offline_gateway(settings))
 
     dispatcher = main.build_dispatcher(settings, adapters, agent)
     trigger = main.build_trigger(settings, adapters)
