@@ -110,11 +110,29 @@ steps:
       - -c
       - |
         set -u
+        HEALTH=https://$PROJECT_ID.web.app/api/health
+        IMAGES=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-api
+        live_sha() {
+          curl -fsS --max-time 10 $$HEALTH | sed -n 's/.*"git_sha":"\([0-9a-f]*\)".*/\1/p'
+        }
+        pushed_at() {
+          gcloud artifacts docker images list $$IMAGES --include-tags --project=$PROJECT_ID \
+            --format='csv[no-heading](tags,createTime.date("%s"))' \
+            | awk -F, -v tag="$$1" '$$1 == tag { print int($$2) }'
+        }
+        live_is_this_build_or_newer() {
+          live=$$(live_sha)
+          [ -n "$$live" ] || return 1
+          [ "$$live" = "$SHORT_SHA" ] && return 0
+          live_at=$$(pushed_at "$$live")
+          this_at=$$(pushed_at "$SHORT_SHA")
+          [ -n "$$live_at" ] && [ -n "$$this_at" ] && [ "$$live_at" -gt "$$this_at" ]
+        }
         for attempt in 1 2 3 4 5; do
-          if curl -fsS --max-time 10 https://$PROJECT_ID.web.app/api/health | grep -q '"git_sha":"$SHORT_SHA"'; then
+          if live_is_this_build_or_newer; then
             exit 0
           fi
           sleep $$((attempt * 5))
         done
-        echo "https://$PROJECT_ID.web.app/api/health never reported git_sha $SHORT_SHA" >&2
+        echo "$$HEALTH never reported git_sha $SHORT_SHA or a build pushed after it" >&2
         exit 1
