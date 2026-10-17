@@ -669,3 +669,39 @@ def push_body(event, message_id: str = "m-1") -> dict:
         "message": {"data": data, "messageId": message_id, "attributes": {}},
         "subscription": "projects/p/subscriptions/s",
     }
+
+
+APP_BUILDER_STUBS = {
+    "build_adapters": "adapters",
+    "build_agent_service": "agent",
+    "build_dispatcher": "dispatcher",
+    "build_trigger": "trigger",
+    "build_resetter": "resetter",
+    "build_case_queries": "cases",
+    "build_area_queries": "areas",
+    "build_checker": "checker",
+    "build_escalator": "escalator",
+    "build_acknowledger": "acknowledger",
+    "build_brigade_inbox": "brigade_inbox",
+    "build_intake": "intake",
+    "build_inbox": "inbox",
+}
+
+
+def returns(value):
+    def build(*args):
+        return value
+
+    return build
+
+
+def stub_app_builders(monkeypatch, main_module, verifier) -> None:
+    monkeypatch.setattr(main_module, "configure_logging", lambda: None)
+    monkeypatch.setattr(main_module, "build_token_verifier", returns(verifier))
+    for name, value in APP_BUILDER_STUBS.items():
+        monkeypatch.setattr(main_module, name, returns(value))
+    monkeypatch.setattr(
+        main_module,
+        "build_vertex_clients",
+        returns({"reasoning": FakeModels([]), "fast": FakeModels([])}),
+    )

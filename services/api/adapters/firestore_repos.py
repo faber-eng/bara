@@ -51,6 +51,8 @@ EVIDENCE = "evidence"
 UPLOADS = "uploads"
 DAMS = "dams"
 VERDICT_CACHE = "verdict_cache"
+ESCALATIONS = "escalations"
+CONTACTS = "contacts"
 IN_QUERY_LIMIT = 30
 
 
@@ -246,6 +248,40 @@ class CaseworkStore:
             f"evidence {evidence_id} or its case changed",
         )
 
+    def commit_escalation(
+        self, *, escalation: Escalation, message: Message, case_change: StatusChange
+    ) -> None:
+        guards, case_writes = status_writes(case_change)
+        writes: list[Write] = [
+            Put(ESCALATIONS, escalation.id, escalation),
+            Put(MESSAGES, message.id, message),
+            *case_writes,
+        ]
+        self._commit(
+            guards,
+            writes,
+            f"case {case_change.case_id} is no longer {case_change.expected}",
+        )
+
+    def commit_ack(
+        self,
+        *,
+        escalation_id: str,
+        acknowledged_at: datetime,
+        case_change: StatusChange | None,
+    ) -> None:
+        unacked = Guard(ESCALATIONS, escalation_id, "acknowledged_at", None)
+        case_guards, case_writes = status_writes(case_change)
+        writes: list[Write] = [
+            Update(ESCALATIONS, escalation_id, {"acknowledged_at": acknowledged_at}),
+            *case_writes,
+        ]
+        self._commit(
+            [unacked, *case_guards],
+            writes,
+            f"escalation {escalation_id} or its case changed",
+        )
+
     def _commit(
         self, guards: Sequence[Precondition], writes: Sequence[Write], reason: str
     ) -> None:
@@ -253,6 +289,32 @@ class CaseworkStore:
             self._transactor.commit(guards, writes)
         except GuardFailed as error:
             raise CaseChanged(reason) from error
+
+
+class EscalationRepository:
+    def __init__(self, escalations: Collection[Escalation]):
+        self._escalations = escalations
+
+    def get(self, escalation_id: str) -> Escalation | None:
+        return self._escalations.get(escalation_id)
+
+    def for_contact(self, contact_id: str) -> list[Escalation]:
+        return self._escalations.where(Filter("contact_id", "==", contact_id))
+
+    def open_for_case(self, case_id: str) -> Escalation | None:
+        found = self._escalations.where(Filter("case_id", "==", case_id))
+        for escalation in found:
+            if escalation.acknowledged_at is None:
+                return escalation
+        return None
+
+
+class ContactRepository:
+    def __init__(self, contacts: Collection[Contact]):
+        self._contacts = contacts
+
+    def for_region(self, region: str) -> list[Contact]:
+        return self._contacts.where(Filter("region", "==", region))
 
 
 class MessageRepository:

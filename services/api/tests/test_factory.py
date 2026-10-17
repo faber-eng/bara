@@ -49,7 +49,11 @@ def test_build_agent_service_wires_the_coordinator_offline(settings, monkeypatch
     gateway = offline_gateway(settings)
 
     service = main.build_agent_service(
-        settings, adapters, gateway, main.build_checker(settings, adapters, gateway)
+        settings,
+        adapters,
+        gateway,
+        main.build_checker(settings, adapters, gateway),
+        main.build_escalator(adapters, gateway),
     )
 
     assert isinstance(service, AgentService)
@@ -65,7 +69,11 @@ def test_build_agent_service_without_enterprise_mode_fails_at_boot(
 
     with pytest.raises(ConfigError, match="GOOGLE_GENAI_USE_ENTERPRISE"):
         main.build_agent_service(
-            settings, adapters, gateway, main.build_checker(settings, adapters, gateway)
+            settings,
+            adapters,
+            gateway,
+            main.build_checker(settings, adapters, gateway),
+            main.build_escalator(adapters, gateway),
         )
 
 
@@ -76,7 +84,8 @@ def test_build_dispatcher_handles_both_topics_and_trigger_wires_offline(
     adapters = build_adapters(settings)
     gateway = offline_gateway(settings)
     checker = main.build_checker(settings, adapters, gateway)
-    agent = main.build_agent_service(settings, adapters, gateway, checker)
+    escalator = main.build_escalator(adapters, gateway)
+    agent = main.build_agent_service(settings, adapters, gateway, checker, escalator)
 
     dispatcher = main.build_dispatcher(settings, adapters, agent, checker)
     trigger = main.build_trigger(settings, adapters)

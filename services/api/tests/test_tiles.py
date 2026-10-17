@@ -8,7 +8,7 @@ import main
 from adapters.earthengine import EarthEngineTiles, TileSourceError
 from adapters.gemini import ModelGateway
 from contracts import TileLayer
-from tests.fakes import FakeModels, FakeVerifier
+from tests.fakes import FakeModels, FakeVerifier, stub_app_builders
 
 URL = "https://earthengine.googleapis.com/v1/projects/p/maps/abc/tiles/{z}/{x}/{y}"
 SATURDAY_JAKARTA = datetime(2026, 10, 17, 4, 0, tzinfo=UTC)
@@ -121,23 +121,7 @@ def test_an_earth_engine_error_is_502_and_logged(settings, caplog):
 def test_create_app_wires_earth_engine_tiles_without_a_network_call(monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "example-project")
     monkeypatch.delenv("BARA_CONFIG_DIR", raising=False)
-    monkeypatch.setattr(main, "configure_logging", lambda: None)
-    monkeypatch.setattr(main, "build_token_verifier", lambda settings: FakeVerifier({}))
-    monkeypatch.setattr(main, "build_adapters", lambda settings: "adapters")
-    monkeypatch.setattr(main, "build_agent_service", lambda *args: "agent")
-    monkeypatch.setattr(main, "build_dispatcher", lambda *args: "dispatcher")
-    monkeypatch.setattr(main, "build_trigger", lambda *args: "trigger")
-    monkeypatch.setattr(main, "build_resetter", lambda *args: "resetter")
-    monkeypatch.setattr(main, "build_case_queries", lambda *args: "cases")
-    monkeypatch.setattr(main, "build_area_queries", lambda *args: "areas")
-    monkeypatch.setattr(main, "build_checker", lambda *args: "checker")
-    monkeypatch.setattr(main, "build_intake", lambda *args: "intake")
-    monkeypatch.setattr(main, "build_inbox", lambda *args: "inbox")
-    monkeypatch.setattr(
-        main,
-        "build_vertex_clients",
-        lambda settings: {"reasoning": FakeModels([]), "fast": FakeModels([])},
-    )
+    stub_app_builders(monkeypatch, main, FakeVerifier({}))
 
     app = main.create_app()
 

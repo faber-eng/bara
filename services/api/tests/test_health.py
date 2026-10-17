@@ -5,7 +5,7 @@ from google.genai import types
 
 import main
 from adapters.gemini import ModelGateway
-from tests.fakes import FakeModels, FakeVerifier, api_error
+from tests.fakes import FakeModels, FakeVerifier, api_error, stub_app_builders
 
 
 def make_client(settings, reasoning_outcomes=()):
@@ -58,23 +58,7 @@ def test_create_app_wires_the_repo_config(monkeypatch):
     monkeypatch.delenv("REASONING_MODEL", raising=False)
     monkeypatch.delenv("FAST_MODEL", raising=False)
     monkeypatch.delenv("BARA_CONFIG_DIR", raising=False)
-    monkeypatch.setattr(main, "configure_logging", lambda: None)
-    monkeypatch.setattr(main, "build_token_verifier", lambda settings: FakeVerifier({}))
-    monkeypatch.setattr(main, "build_adapters", lambda settings: "adapters")
-    monkeypatch.setattr(main, "build_agent_service", lambda *args: "agent")
-    monkeypatch.setattr(main, "build_dispatcher", lambda *args: "dispatcher")
-    monkeypatch.setattr(main, "build_trigger", lambda *args: "trigger")
-    monkeypatch.setattr(main, "build_resetter", lambda *args: "resetter")
-    monkeypatch.setattr(main, "build_case_queries", lambda *args: "cases")
-    monkeypatch.setattr(main, "build_area_queries", lambda *args: "areas")
-    monkeypatch.setattr(main, "build_checker", lambda *args: "checker")
-    monkeypatch.setattr(main, "build_intake", lambda *args: "intake")
-    monkeypatch.setattr(main, "build_inbox", lambda *args: "inbox")
-    monkeypatch.setattr(
-        main,
-        "build_vertex_clients",
-        lambda settings: {"reasoning": FakeModels([]), "fast": FakeModels([])},
-    )
+    stub_app_builders(monkeypatch, main, FakeVerifier({}))
 
     body = TestClient(main.create_app()).get("/api/health").json()
 
@@ -88,23 +72,7 @@ def test_create_app_wires_the_repo_config(monkeypatch):
 def test_create_app_puts_the_verifier_and_adapters_on_app_state(monkeypatch):
     verifier = FakeVerifier({})
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "example-project")
-    monkeypatch.setattr(main, "configure_logging", lambda: None)
-    monkeypatch.setattr(main, "build_token_verifier", lambda settings: verifier)
-    monkeypatch.setattr(main, "build_adapters", lambda settings: "adapters")
-    monkeypatch.setattr(main, "build_agent_service", lambda *args: "agent")
-    monkeypatch.setattr(main, "build_dispatcher", lambda *args: "dispatcher")
-    monkeypatch.setattr(main, "build_trigger", lambda *args: "trigger")
-    monkeypatch.setattr(main, "build_resetter", lambda *args: "resetter")
-    monkeypatch.setattr(main, "build_case_queries", lambda *args: "cases")
-    monkeypatch.setattr(main, "build_area_queries", lambda *args: "areas")
-    monkeypatch.setattr(main, "build_checker", lambda *args: "checker")
-    monkeypatch.setattr(main, "build_intake", lambda *args: "intake")
-    monkeypatch.setattr(main, "build_inbox", lambda *args: "inbox")
-    monkeypatch.setattr(
-        main,
-        "build_vertex_clients",
-        lambda settings: {"reasoning": FakeModels([]), "fast": FakeModels([])},
-    )
+    stub_app_builders(monkeypatch, main, verifier)
 
     app = main.create_app()
 

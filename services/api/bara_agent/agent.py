@@ -15,6 +15,7 @@ from bara_agent.prompts import AGENT_NAME, INSTRUCTION
 from bara_agent.recorder import Summarizer
 from bara_agent.tools.assign_task import Assigner, AssignTask
 from bara_agent.tools.check_evidence import Checker, CheckEvidence
+from bara_agent.tools.escalate import Escalate, EscalationSource
 from bara_agent.tools.find_people import FindPeople
 from bara_agent.tools.get_area_facts import GetAreaFacts
 from bara_agent.tools.rank_areas import RankAreas
@@ -54,6 +55,7 @@ def build_tools(
     volunteers: VolunteerRepository,
     assigner: Assigner,
     checker: Checker,
+    escalator: EscalationSource,
     radius_m: float,
 ) -> list[AgentTool]:
     return [
@@ -62,4 +64,5 @@ def build_tools(
         FindPeople(cells, volunteers),
         AssignTask(assigner),
         CheckEvidence(checker),
+        Escalate(escalator),
     ]
