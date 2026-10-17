@@ -8,7 +8,7 @@ import { readBoolean, readNumber, readRecord, readString } from "./parse";
 const CLOCK_PATH = "/api/clock";
 const ADVANCE_PATH = "/api/judge/advance";
 const RESET_PATH = "/api/judge/reset";
-const CLOCK_TIMEOUT_MS = 5_000;
+const CLOCK_TIMEOUT_MS = 15_000;
 const SECONDS_PER_HOUR = 3_600;
 const MS_PER_SECOND = 1_000;
 

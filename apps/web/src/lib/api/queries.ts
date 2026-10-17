@@ -8,6 +8,8 @@ import { fetchRankings } from "./rankings";
 import { fetchDryingTiles } from "./tiles";
 
 const CLOCK_REFRESH_MS = 60_000;
+const CLOCK_RETRIES = 2;
+const CLOCK_RETRY_DELAY_MS = 1_000;
 const OPS_STALE_MS = 30_000;
 const TILES_STALE_MS = 5 * 60_000;
 
@@ -16,7 +18,8 @@ export const clockQuery = queryOptions({
   queryFn: ({ signal }) => fetchClock(signal),
   staleTime: CLOCK_REFRESH_MS,
   refetchInterval: CLOCK_REFRESH_MS,
-  retry: false,
+  retry: CLOCK_RETRIES,
+  retryDelay: CLOCK_RETRY_DELAY_MS,
 });
 
 export function rankingsQuery(region: string) {
