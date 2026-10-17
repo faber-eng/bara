@@ -323,8 +323,10 @@ describe("volunteer screen", () => {
     );
     fireEvent.click(await screen.findByRole("button", { name: /Damaged dam, leaking/ }));
 
-    expect(await screen.findByText("sekat bocor")).toBeInTheDocument();
+    expect(await screen.findByText("Terkirim")).toBeInTheDocument();
+    expect(screen.queryByText("sekat bocor")).not.toBeInTheDocument();
     expect(screen.getByText("Sampel")).toBeInTheDocument();
+    expect(callsTo(fetchMock, "GET /api/v/uid-1/inbox").length).toBeLessThanOrEqual(2);
     const ticketCall = callsTo(fetchMock, "POST /api/v/uid-1/uploads")[0];
     expect(JSON.parse(String(initOf(ticketCall).body))).toMatchObject({
       kind: "audio",

@@ -13,6 +13,7 @@ describe("classifyJoinError", () => {
       "too_many_attempts",
     );
     expect(classifyJoinError(new ApiError("x", 503, "join_unavailable"))).toBe("unavailable");
+    expect(classifyJoinError(new ApiError("x", 409, "already_has_role"))).toBe("already_has_role");
     expect(classifyJoinError(new ApiError("x", 500, null))).toBe("unknown");
   });
 

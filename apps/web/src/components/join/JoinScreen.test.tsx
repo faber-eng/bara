@@ -101,6 +101,23 @@ describe("join screen", () => {
     expect(auth.refreshIdToken).not.toHaveBeenCalled();
   });
 
+  it("tells a staff account that it cannot join as a volunteer", async () => {
+    auth.user = googleUser;
+    stubGps();
+    stubApi({
+      "POST /api/join": () => Response.json({ detail: "already_has_role" }, { status: 409 }),
+    });
+    renderApp("/join");
+    await screen.findByLabelText("Kode undangan");
+    fillForm("BENAR");
+    await chooseGps();
+
+    fireEvent.click(screen.getByRole("button", { name: "Gabung" }));
+
+    expect(await screen.findByText(/sudah punya peran/)).toBeInTheDocument();
+    expect(auth.refreshIdToken).not.toHaveBeenCalled();
+  });
+
   it("says when there are too many tries", async () => {
     auth.user = googleUser;
     stubGps();

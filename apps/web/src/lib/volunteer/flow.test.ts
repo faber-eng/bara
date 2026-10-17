@@ -33,6 +33,18 @@ describe("flowReducer", () => {
     });
   });
 
+  it("moves a voice note from uploading to stored without reading", () => {
+    const state = run([
+      { type: "upload_started", kind: "audio", sample: true },
+      { type: "stored" },
+    ]);
+    expect(state).toEqual({ step: "stored", sample: true });
+  });
+
+  it("ignores stored outside an upload", () => {
+    expect(flowReducer(IDLE, { type: "stored" })).toBe(IDLE);
+  });
+
   it("ignores progress outside an upload", () => {
     expect(flowReducer(IDLE, { type: "progress", progress: 0.4 })).toBe(IDLE);
   });

@@ -1,6 +1,10 @@
 import { completeUpload, requestUpload } from "../api/volunteer";
 import type { Evidence, EvidenceKind, GeoPoint, UploadTicket } from "../contracts";
-import { putFile } from "./putFile";
+import { putFile, UploadTransferError } from "./putFile";
+
+export const TICKET_LIFE_MS = 14 * 60_000;
+
+export type IssuedTicket = { ticket: UploadTicket; issuedAt: number };
 
 export type UploadInput = {
   volunteerId: string;
@@ -10,15 +14,18 @@ export type UploadInput = {
   contentType: string;
   sample: boolean;
   point: GeoPoint | null;
-  ticket: UploadTicket | null;
-  onTicket: (ticket: UploadTicket) => void;
+  ticket: IssuedTicket | null;
+  onTicket: (issued: IssuedTicket) => void;
   onProgress: (fraction: number) => void;
 };
 
 export type UploadResult = { evidenceId: string; evidence: Evidence | null };
 
-async function ticketFor(input: UploadInput): Promise<UploadTicket> {
-  if (input.ticket !== null) return input.ticket;
+function isFresh(issued: IssuedTicket): boolean {
+  return Date.now() - issued.issuedAt < TICKET_LIFE_MS;
+}
+
+async function issueTicket(input: UploadInput): Promise<IssuedTicket> {
   const ticket = await requestUpload(input.volunteerId, {
     task_id: input.taskId,
     kind: input.kind,
@@ -26,18 +33,44 @@ async function ticketFor(input: UploadInput): Promise<UploadTicket> {
     size_bytes: input.blob.size,
     sample: input.sample,
   });
-  input.onTicket(ticket);
-  return ticket;
+  const issued = { ticket, issuedAt: Date.now() };
+  input.onTicket(issued);
+  return issued;
 }
 
-export async function uploadEvidence(input: UploadInput): Promise<UploadResult> {
-  const ticket = await ticketFor(input);
-  await putFile({
+function isExpiredAnswer(error: unknown): boolean {
+  return error instanceof UploadTransferError && error.status === 403;
+}
+
+function putWith(input: UploadInput, ticket: UploadTicket): Promise<void> {
+  return putFile({
     url: ticket.upload_url,
     blob: input.blob,
     headers: ticket.headers,
     onProgress: input.onProgress,
   });
+}
+
+async function putReusingWhenFresh(input: UploadInput): Promise<UploadTicket> {
+  const reused = input.ticket !== null && isFresh(input.ticket) ? input.ticket : null;
+  if (reused === null) {
+    const issued = await issueTicket(input);
+    await putWith(input, issued.ticket);
+    return issued.ticket;
+  }
+  try {
+    await putWith(input, reused.ticket);
+    return reused.ticket;
+  } catch (error) {
+    if (!isExpiredAnswer(error)) throw error;
+  }
+  const renewed = await issueTicket(input);
+  await putWith(input, renewed.ticket);
+  return renewed.ticket;
+}
+
+export async function uploadEvidence(input: UploadInput): Promise<UploadResult> {
+  const ticket = await putReusingWhenFresh(input);
   const evidence = await completeUpload(input.volunteerId, ticket.evidence_id, {
     point: input.point,
     captured_at: new Date().toISOString(),

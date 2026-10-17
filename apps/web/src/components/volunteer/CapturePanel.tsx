@@ -6,6 +6,7 @@ import {
   FailurePanel,
   PhotoPreview,
   ReadingPanel,
+  StoredPanel,
   UnreadPanel,
   UploadingPanel,
 } from "./FlowPanels";
@@ -61,6 +62,9 @@ export function CapturePanel({ copy, language, volunteerId, taskId, locked }: Ca
     return (
       <VerdictCard copy={copy} language={language} evidence={state.evidence} onDone={flow.reset} />
     );
+  }
+  if (state.step === "stored") {
+    return <StoredPanel copy={copy} sample={state.sample} onDone={flow.reset} />;
   }
   if (state.step === "unread") return <UnreadPanel copy={copy} onDone={flow.reset} />;
   if (state.step === "failed") {

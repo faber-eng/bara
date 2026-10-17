@@ -71,6 +71,23 @@ export function ReadingPanel({ copy, sample }: CopyProps & { sample: boolean }) 
   );
 }
 
+export function StoredPanel({
+  copy,
+  sample,
+  onDone,
+}: CopyProps & { sample: boolean; onDone: () => void }) {
+  return (
+    <div className="flow-panel" role="status">
+      {sample && <SampleBadge copy={copy} />}
+      <strong>{copy.storedTitle}</strong>
+      <p className="proto-note">{copy.storedNote}</p>
+      <button type="button" className="btn btn-secondary btn-block" onClick={onDone}>
+        {copy.sendAnother}
+      </button>
+    </div>
+  );
+}
+
 export function UnreadPanel({ copy, onDone }: CopyProps & { onDone: () => void }) {
   return (
     <div className="flow-panel" role="status">

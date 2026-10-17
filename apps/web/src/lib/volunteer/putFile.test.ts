@@ -90,6 +90,7 @@ describe("putFile", () => {
     xhr.onload?.();
 
     await expect(done).rejects.toBeInstanceOf(UploadTransferError);
+    await expect(done).rejects.toMatchObject({ status: 403 });
   });
 
   it("rejects on a network error", async () => {
