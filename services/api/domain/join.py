@@ -15,6 +15,13 @@ def with_role(claims: Mapping[str, object], role: Role) -> dict[str, object]:
     return {**claims, "role": role}
 
 
+STAFF_ROLES: frozenset[Role] = frozenset({"ops", "brigade", "judge"})
+
+
+def holds_staff_role(claims: Mapping[str, object]) -> bool:
+    return role_from_claim(claims) in STAFF_ROLES
+
+
 def claims_after_join(claims: Mapping[str, object]) -> dict[str, object]:
     if role_from_claim(claims) is not None:
         return dict(claims)

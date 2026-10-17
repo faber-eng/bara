@@ -8,7 +8,12 @@ from adapters.secrets import SecretUnavailable
 from auth import Principal, require_signed_in_user
 from config import Settings, full_flow_region
 from contracts import JoinRequest, JoinResponse
-from domain.join import build_volunteer, claims_after_join, codes_match
+from domain.join import (
+    build_volunteer,
+    claims_after_join,
+    codes_match,
+    holds_staff_role,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +52,21 @@ def assert_code(request: Request, uid: str, supplied: str) -> None:
     raise HTTPException(status_code=403, detail="invalid_invite_code")
 
 
+def assert_not_staff(request: Request, uid: str) -> None:
+    try:
+        current = request.app.state.adapters.claims.get_claims(uid)
+    except IdentityUnavailable as error:
+        logger.error(
+            "join claim failed", extra={"fields": {"uid": uid, "kind": str(error)}}
+        )
+        raise HTTPException(status_code=502, detail="role_update_failed") from error
+    if holds_staff_role(current):
+        logger.warning(
+            "join rejected", extra={"fields": {"uid": uid, "reason": "has_role"}}
+        )
+        raise HTTPException(status_code=409, detail="already_has_role")
+
+
 def assert_claim(request: Request, uid: str) -> None:
     admin = request.app.state.adapters.claims
     try:
@@ -70,6 +90,7 @@ def join(
     settings: Settings = request.app.state.settings
     reject_when_limited(request, principal.uid)
     assert_code(request, principal.uid, body.invite_code)
+    assert_not_staff(request, principal.uid)
     volunteer = build_volunteer(
         principal.uid, body, full_flow_region(settings.config_dir)
     )
