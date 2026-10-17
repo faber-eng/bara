@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from contracts import (
     AgentRun,
     Case,
@@ -11,6 +13,28 @@ from contracts import (
 )
 
 LISTED_TASK_STATUSES = frozenset({"open", "overdue"})
+WIB = timezone(timedelta(hours=7))
+WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+MONTHS = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
+
+
+def format_wib(moment: datetime) -> str:
+    local = moment.astimezone(WIB)
+    day = f"{WEEKDAYS[local.weekday()]} {local.day} {MONTHS[local.month - 1]}"
+    return f"{day}, {local:%H:%M} WIB"
 
 
 def summarize_case(case: Case, tasks: list[Task]) -> CaseSummary:
@@ -40,7 +64,10 @@ def task_entries(task: Task) -> list[TimelineEntry]:
     entries = [
         TimelineEntry(
             at=task.created_at,
-            text=f"Task {task.type} given to {task.assignee_id}, due {task.deadline_at.isoformat()}",
+            text=(
+                f"Task {task.type} given to {task.assignee_id}, "
+                f"due {format_wib(task.deadline_at)}"
+            ),
         )
     ]
     if task.done_at is not None:

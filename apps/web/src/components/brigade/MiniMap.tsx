@@ -1,17 +1,46 @@
+import { APIProvider, Map as GoogleMap, Marker } from "@vis.gl/react-google-maps";
+import { useState } from "react";
 import { isSafeMapUrl, mapPoint } from "../../lib/brigade/pack";
+import type { GeoPoint } from "../../lib/contracts";
+import { readMapsKey } from "../join/HomeMap";
 
 const COORD_DIGITS = 4;
+const MINI_MAP_ZOOM = 13;
+
+function MapUnavailable() {
+  return (
+    <div className="mini-map-box mini-map-empty" role="img" aria-label="Map not available">
+      Map not available
+    </div>
+  );
+}
+
+function PointMap({ point, onError }: { point: GeoPoint; onError: () => void }) {
+  const position = { lat: point.lat, lng: point.lon };
+  return (
+    <div className="mini-map-box">
+      <APIProvider apiKey={readMapsKey()} onError={onError}>
+        <GoogleMap
+          defaultCenter={position}
+          defaultZoom={MINI_MAP_ZOOM}
+          mapTypeId="hybrid"
+          gestureHandling="cooperative"
+          disableDefaultUI
+        >
+          <Marker position={position} />
+        </GoogleMap>
+      </APIProvider>
+    </div>
+  );
+}
 
 export function MiniMap({ mapUrl }: { mapUrl: string }) {
   const point = mapPoint(mapUrl);
+  const [failed, setFailed] = useState(false);
+  const canDraw = point !== null && !failed && readMapsKey() !== "";
   return (
     <div className="mini-map">
-      <svg viewBox="0 0 300 180" role="img" aria-label="Mini map of the escalation location">
-        <rect width="300" height="180" className="m-land" />
-        <path d="M0 130 C 80 110, 160 150, 300 120" className="m-river" />
-        <path d="M0 30 L 300 50" className="m-canal" />
-        <circle cx="150" cy="90" r="14" className="m-sel" />
-      </svg>
+      {canDraw ? <PointMap point={point} onError={() => setFailed(true)} /> : <MapUnavailable />}
       {point !== null && (
         <p className="ops-meta">
           {point.lat.toFixed(COORD_DIGITS)}, {point.lon.toFixed(COORD_DIGITS)}

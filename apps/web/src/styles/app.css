@@ -690,10 +690,18 @@ fieldset.join-fieldset {
   gap: 16px;
   align-content: start;
 }
-.mini-map svg {
+.mini-map-box {
   width: 100%;
-  height: auto;
+  height: 180px;
   border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.mini-map-empty {
+  display: grid;
+  place-items: center;
+  background: #e8e8e4;
+  color: #4a4a46;
+  font-size: 0.875rem;
 }
 @media (max-width: 900px) {
   .brigade-card {
