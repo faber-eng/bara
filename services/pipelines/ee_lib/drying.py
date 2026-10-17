@@ -46,8 +46,14 @@ def s1_collection(
     )
 
 
+def masked_band() -> ee.ImageCollection:
+    empty = ee.Image(0).selfMask().rename(S1_BAND).toFloat()
+    return ee.ImageCollection([empty])
+
+
 def smoothed_median(collection: ee.ImageCollection, span: DateRange) -> ee.Image:
-    return collection.filterDate(iso(span.start), iso(span.end)).map(smooth).median()
+    passes = collection.filterDate(iso(span.start), iso(span.end)).map(smooth)
+    return passes.merge(masked_band()).median()
 
 
 def wet_baseline(
