@@ -81,7 +81,7 @@ export function PublicScreen({ regionId, week, onRegionChange, onWeekChange }: P
   const region = findPublicRegion(regionId);
   const query = { region: region.id, week };
   const summary = useQuery(publicSummaryQuery(query));
-  const latest = useQuery({ ...publicSummaryQuery({ region: region.id, week: undefined }) });
+  const latest = useQuery(publicSummaryQuery({ region: region.id, week: undefined }));
   const cells = useQuery(publicCellsQuery(query));
   const shownWeek = summary.data?.week ?? week;
 
@@ -123,9 +123,9 @@ export function PublicScreen({ regionId, week, onRegionChange, onWeekChange }: P
       </div>
       {region.rankingOnly && <p className="banner banner-info">{copy.rankingOnly}</p>}
       {summary.isPending && <InlineLoading text={copy.loading} />}
-      {missing && shownWeek !== undefined && (
+      {missing && (
         <p role="status" className="ops-state">
-          {copy.noRanking(shownWeek)}
+          {shownWeek === undefined ? copy.noRankingYet : copy.noRanking(shownWeek)}
         </p>
       )}
       {summary.isError && !missing && (

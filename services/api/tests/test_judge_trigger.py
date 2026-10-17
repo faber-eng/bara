@@ -126,19 +126,11 @@ def test_an_ops_user_with_a_claim_gets_202_and_the_event_is_published(settings):
     assert [ref.dam_id for ref in event.payload.top_dams] == ["d1"]
 
 
-def test_an_accepted_trigger_writes_the_bulletin_in_the_background(settings):
+def test_a_trigger_leaves_the_bulletin_to_the_drying_ranked_handler(settings):
     JOBS.clear()
     client, _ = make_client(settings, judge=False)
 
     assert trigger(client).status_code == 202
-    assert JOBS == ["bulletin"]
-
-
-def test_a_refused_trigger_writes_no_bulletin(settings):
-    JOBS.clear()
-    client, _ = make_client(settings, judge=False)
-
-    assert trigger(client, "volunteer").status_code == 403
     assert JOBS == []
 
 

@@ -89,3 +89,8 @@ def test_the_template_passes_its_own_check_for_any_summary():
     ):
         text_id, text_en, cited = template_bulletin(summary)
         check_bulletin(text_id, text_en, cited, summary)
+
+
+def test_a_number_after_a_hyphen_is_still_checked():
+    with pytest.raises(BulletinRejected, match="1[05]"):
+        check(text_en=TEXT_EN + " Expect 10-15 more.")

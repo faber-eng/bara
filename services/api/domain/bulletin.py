@@ -8,7 +8,7 @@ BULLETIN_PROMPT_VERSION = "bulletin-v1"
 TEMPLATE_PROMPT_VERSION = "bulletin-template-v1"
 MAX_SENTENCES = 4
 EXACT_TOLERANCE = 1e-9
-NUMBER = re.compile(r"(?<![\w.-])-?\d+(?:[.,]\d+)?(?![\w])")
+NUMBER = re.compile(r"(?<![\w.])-?\d+(?:[.,]\d+)?(?![\w])")
 
 FIELDS = (
     "high_risk_cells",
@@ -113,7 +113,7 @@ def check_bulletin(
 def template_bulletin(
     summary: PublicSummary,
 ) -> tuple[str, str, list[CitedValue]]:
-    region = summary.region.title()
+    region = summary.region.replace("_", " ").title()
     risk, broken = summary.high_risk_cells, summary.dams_broken
     opened, escalated = summary.cases_open, summary.cases_escalated
     closed = summary.cases_closed
@@ -125,7 +125,7 @@ def template_bulletin(
     text_id = (
         f"Minggu ini di {region}, {risk} petak berisiko tinggi dan {broken} "
         f"sekat kanal rusak atau jebol. {opened} kasus terbuka, {escalated} "
-        f"diteruskan ke pemadam dan {closed} ditutup."
+        f"dieskalasi dan {closed} ditutup."
     )
     cited = [
         CitedValue(field=field, value=getattr(summary, field))

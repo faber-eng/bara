@@ -262,4 +262,13 @@ describe("apiRequest without sign-in", () => {
     expect(sentHeaders(fetchMock).has("Authorization")).toBe(false);
     expect(sentHeaders(fetchMock).has("X-Bara-Role")).toBe(false);
   });
+
+  it("still sends the JSON content type for a body", async () => {
+    const fetchMock = stubFetch(Response.json({}));
+
+    await apiRequest("/api/public/x", { method: "POST", body: { a: 1 }, anonymous: true });
+
+    expect(sentHeaders(fetchMock).get("Content-Type")).toBe("application/json");
+    expect(sentHeaders(fetchMock).has("Authorization")).toBe(false);
+  });
 });
