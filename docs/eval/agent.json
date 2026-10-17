@@ -1,0 +1,41 @@
+{
+  "run_at": "2026-10-17T21:18:07Z",
+  "model": "gemini-3.1-pro-preview",
+  "cases": 8,
+  "passed": 8,
+  "pass_rate": 1.0,
+  "results": [
+    {
+      "case": "dam_broken_assigns_repair",
+      "passed": true
+    },
+    {
+      "case": "dam_intact_left_for_a_person",
+      "passed": true
+    },
+    {
+      "case": "low_confidence_goes_to_review",
+      "passed": true
+    },
+    {
+      "case": "overdue_high_risk_escalates",
+      "passed": true
+    },
+    {
+      "case": "overdue_low_risk_reassigns",
+      "passed": true
+    },
+    {
+      "case": "second_overdue_escalates",
+      "passed": true
+    },
+    {
+      "case": "recheck_smoke_escalates",
+      "passed": true
+    },
+    {
+      "case": "location_mismatch_goes_to_review",
+      "passed": true
+    }
+  ]
+}

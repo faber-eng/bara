@@ -1,0 +1,25 @@
+{
+  "run_at": "2026-10-17T17:21:49.270439+00:00",
+  "region": "riau",
+  "split": "test",
+  "events": 118,
+  "positives": 13,
+  "model": {
+    "name": "reignition_v1",
+    "auc": 0.6622710622710622,
+    "precision_top10": 0.25,
+    "recall_top10": 0.23076923076923078
+  },
+  "served": {
+    "name": "reignition_v1_no_rain_after",
+    "auc": 0.6373626373626373,
+    "precision_top10": 0.0,
+    "recall_top10": 0.0
+  },
+  "baseline": {
+    "name": "detection_days_baseline",
+    "auc": 0.7076923076923077,
+    "precision_top10": 0.27586206896551724,
+    "recall_top10": 0.2546419098143236
+  }
+}

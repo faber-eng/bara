@@ -1,0 +1,10 @@
+{
+  "paths": [
+    {"path": "Voice note: file to verdict (ffmpeg, then Gemini)", "p50_ms": 6500, "p95_ms": null, "max_ms": 7900, "n": 5, "where": "local, real Vertex (gemini-3.5-flash)", "source": "docs/DECISIONS.md, 2026-10-18, check_evidence reads voice notes and video"},
+    {"path": "Video: file to verdict (ffmpeg, then Gemini)", "p50_ms": 6500, "p95_ms": null, "max_ms": 18100, "n": null, "where": "local, real Vertex (gemini-3.5-flash)", "source": "docs/DECISIONS.md, 2026-10-18, check_evidence reads voice notes and video"},
+    {"path": "GET /api/tiles/{layer}, map id cached", "p50_ms": 15, "p95_ms": null, "max_ms": null, "n": 20, "where": "local, Earth Engine fake at 500 ms (before the cache: p50 504 ms, p95 561 ms)", "source": "docs/DECISIONS.md, 2026-10-18, tile map ids are cached"},
+    {"path": "GET /api/cells?region=, cold cache", "p50_ms": 40, "p95_ms": 118, "max_ms": null, "n": null, "where": "local, fake warehouse with 3,769 rows (BigQuery time not included)", "source": "docs/DECISIONS.md, 2026-10-17, GET /api/cells"},
+    {"path": "GET /api/cells?region=, cached", "p50_ms": 7.8, "p95_ms": 9.1, "max_ms": null, "n": null, "where": "local, fake warehouse with 3,769 rows", "source": "docs/DECISIONS.md, 2026-10-17, GET /api/cells"},
+    {"path": "POST /api/judge/trigger", "p50_ms": 2.3, "p95_ms": 3.1, "max_ms": null, "n": 500, "where": "local test client, in-memory store (the live Firestore transaction is not in it)", "source": "docs/DECISIONS.md, 2026-10-17, judge trigger limit"}
+  ]
+}
