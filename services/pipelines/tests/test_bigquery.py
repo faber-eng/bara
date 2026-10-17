@@ -139,3 +139,24 @@ def test_unsafe_table_names_are_rejected(name):
 
     with pytest.raises(InvalidTableName):
         warehouse.table_id(name)
+
+
+def test_rewrite_region_loads_staging_then_swaps_the_region_in_one_transaction():
+    warehouse, client = make_warehouse()
+
+    warehouse.rewrite_region(SPEC, "riau", [{"cell_id": "riau-1-1"}])
+
+    destination, rows, config = client.loads[0]
+    assert destination == "p.bara.cell_weekly_drying_staging"
+    assert rows == [{"cell_id": "riau-1-1"}]
+    assert config.write_disposition == "WRITE_TRUNCATE"
+    sql, query_config = client.queries[0]
+    assert "BEGIN TRANSACTION;" in sql
+    assert "DELETE FROM cell_weekly_drying WHERE region = @region;" in sql
+    assert (
+        "INSERT INTO cell_weekly_drying SELECT * FROM cell_weekly_drying_staging" in sql
+    )
+    assert {p.name: p.value for p in query_config.query_parameters} == {
+        "region": "riau"
+    }
+    assert client.calls == ["create", "load", "query"]

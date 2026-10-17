@@ -17,6 +17,14 @@ WRITE_DISPOSITIONS: dict[WriteMode, str] = {
 }
 
 
+REWRITE_REGION_SQL = """
+BEGIN TRANSACTION;
+DELETE FROM {table} WHERE region = @region;
+INSERT INTO {table} SELECT * FROM {staging} WHERE region = @region;
+COMMIT TRANSACTION;
+"""
+
+
 class InvalidTableName(Exception):
     pass
 
@@ -50,6 +58,15 @@ def bigquery_type(value: object) -> str:
     if isinstance(value, date):
         return "DATE"
     raise TypeError(f"unsupported query parameter type: {type(value).__name__}")
+
+
+def staging_spec(spec: TableSpec) -> TableSpec:
+    return TableSpec(
+        name=f"{spec.name}_staging",
+        schema=spec.schema,
+        partition_field=None,
+        clustering=(),
+    )
 
 
 def build_parameters(
@@ -122,3 +139,14 @@ class Warehouse:
         if spec.clustering:
             table.clustering_fields = list(spec.clustering)
         self._client.create_table(table, exists_ok=True)
+
+    def rewrite_region(
+        self, spec: TableSpec, region: str, rows: Sequence[Mapping[str, object]]
+    ) -> QueryResult:
+        staging = staging_spec(spec)
+        self.table_id(spec.name)
+        self.table_id(staging.name)
+        self.ensure_table(spec)
+        self.load_rows(staging, rows, write="truncate")
+        sql = REWRITE_REGION_SQL.format(table=spec.name, staging=staging.name)
+        return self.query(sql, {"region": region})
