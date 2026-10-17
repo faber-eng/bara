@@ -7,7 +7,7 @@ import { triggerScenario } from "../../lib/api/trigger";
 import { scenarioCopy } from "../../lib/copy/scenario";
 import { invalidateWorld } from "../../lib/judge/invalidate";
 import { moveTourTo } from "../../lib/tour/enterStep";
-import { LAST_STEP, TOUR_STEPS, type TourAction } from "../../lib/tour/steps";
+import { FIRST_STEP, LAST_STEP, TOUR_STEPS, type TourAction } from "../../lib/tour/steps";
 import { finishTour, getTourSnapshot, skipTour, subscribeTour } from "../../lib/tour/store";
 import { failureMessage } from "../judge/ScenarioControls";
 
@@ -32,7 +32,7 @@ export function TourDock() {
   if (!open || current === undefined) return null;
 
   const deps = { history: router.history, queryClient };
-  const isFirst = step === 0;
+  const isFirst = step === FIRST_STEP;
   const isLast = step === LAST_STEP;
   const action = current.action;
 
@@ -60,7 +60,9 @@ export function TourDock() {
       )}
       {run.isSuccess && (
         <p role="status" className="tour-note">
-          Done. Wait about 30 seconds for the result, then press Next.
+          {action?.kind === "advance"
+            ? "Done. The clock moved."
+            : "Done. Wait about 30 seconds for the result, then press Next."}
         </p>
       )}
       {run.isError && (
@@ -78,7 +80,9 @@ export function TourDock() {
           </button>
         )}
         {isLast ? (
-          <TourFinish onFinish={finishTour} />
+          <button type="button" className="btn btn-primary btn-sm" onClick={finishTour}>
+            Finish
+          </button>
         ) : (
           <button type="button" className="btn btn-primary btn-sm" onClick={() => move(step + 1)}>
             Next
@@ -86,13 +90,5 @@ export function TourDock() {
         )}
       </div>
     </aside>
-  );
-}
-
-function TourFinish({ onFinish }: { onFinish: () => void }) {
-  return (
-    <button type="button" className="btn btn-primary btn-sm" onClick={onFinish}>
-      Finish
-    </button>
   );
 }

@@ -71,7 +71,3 @@ export function skipTour(): void {
 export function finishTour(): void {
   publish({ open: false, step: FIRST_STEP });
 }
-
-export function rehydrateTour(): void {
-  snapshot = readStored();
-}

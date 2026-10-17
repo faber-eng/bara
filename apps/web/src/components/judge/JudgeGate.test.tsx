@@ -48,7 +48,7 @@ describe("judge gate", () => {
     pending.resolve(Response.json(clockOff));
 
     expect(
-      await screen.findByRole("heading", { level: 1 }),
+      await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Loading Bara…")).not.toBeInTheDocument();
   });
@@ -58,7 +58,7 @@ describe("judge gate", () => {
     const { container } = renderApp("/nope");
 
     expect(
-      await screen.findByRole("heading", { level: 1 }),
+      await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Loading Bara…")).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
@@ -84,7 +84,11 @@ describe("judge gate", () => {
     renderApp("/nope");
 
     expect(
-      await screen.findByRole("heading", { level: 1 }, { timeout: 4000 }),
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: "This page does not exist." },
+        { timeout: 4000 },
+      ),
     ).toBeInTheDocument();
     expect(callsTo(fetchMock, "GET /api/clock")).toHaveLength(3);
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
