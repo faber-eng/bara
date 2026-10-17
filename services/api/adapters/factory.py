@@ -22,6 +22,7 @@ from adapters.firestore_repos import (
     CaseworkStore,
     DamRepository,
     EventLog,
+    EvidenceRepository,
     FirestoreClockStore,
     RankedDamRepository,
     RankingRepository,
@@ -73,6 +74,7 @@ class Adapters:
     cells: CellRepository
     rankings: RankingRepository
     ranked_dams: RankedDamRepository
+    evidence: EvidenceRepository
     volunteers: VolunteerRepository
     dams: DamRepository
     agent_runs: AgentRunRepository
@@ -148,6 +150,7 @@ def build_adapters(settings: Settings) -> Adapters:
         cells=CellRepository(warehouse),
         rankings=agent_repos.rankings,
         ranked_dams=agent_repos.ranked_dams,
+        evidence=agent_repos.evidence,
         volunteers=agent_repos.volunteers,
         dams=agent_repos.dams,
         agent_runs=agent_repos.agent_runs,

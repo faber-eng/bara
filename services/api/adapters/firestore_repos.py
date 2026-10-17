@@ -64,6 +64,17 @@ class TaskRepository:
         open_tasks = self._tasks.where(Filter("status", "==", "open"))
         return [task for task in open_tasks if is_due(task.deadline_at, now)]
 
+    def for_cases(self, case_ids: list[str]) -> list[Task]:
+        return children(self._tasks, case_ids)
+
+
+class EvidenceRepository:
+    def __init__(self, evidence: Collection[Evidence]):
+        self._evidence = evidence
+
+    def for_cases(self, case_ids: list[str]) -> list[Evidence]:
+        return children(self._evidence, case_ids)
+
 
 class CaseRepository:
     def __init__(self, cases: Collection[Case]):
@@ -78,6 +89,24 @@ class CaseRepository:
 
     def get(self, case_id: str) -> Case | None:
         return self._cases.get(case_id)
+
+    def search(self, region: str | None, status: str | None) -> list[Case]:
+        filters = []
+        if region is not None:
+            filters.append(Filter("region", "==", region))
+        if status is not None:
+            filters.append(Filter("status", "==", status))
+        found = self._cases.where(*filters)
+        return sorted(found, key=lambda case: (case.opened_at, case.id), reverse=True)
+
+    def in_cell(self, cell_id: str) -> list[Case]:
+        return self._cases.where(Filter("cell_id", "==", cell_id))
+
+    def mark_closed(self, case_id: str, closed_by: str, closed_at: datetime) -> None:
+        self._cases.update(
+            case_id,
+            {"status": "closed", "closed_by": closed_by, "closed_at": closed_at},
+        )
 
     def create(self, case: Case) -> bool:
         return self._cases.create_if_absent(case.id, case)
@@ -236,6 +265,9 @@ class RankingRepository:
     def top(self, region: str, limit: int) -> list[RankedCell]:
         return self._cells_for(region).where(Filter("rank", "<=", limit))
 
+    def cell(self, region: str, cell_id: str) -> RankedCell | None:
+        return self._cells_for(region).get(cell_id)
+
 
 class RankedDamRepository:
     def __init__(self, dams_for: Callable[[str], Collection[RankedDam]]):
@@ -264,11 +296,16 @@ class AgentRunRepository:
     def save(self, case_id: str, run: AgentRun) -> None:
         self._runs_for(case_id).put(run.id, run)
 
+    def for_case(self, case_id: str) -> list[AgentRun]:
+        runs = self._runs_for(case_id).where()
+        return sorted(runs, key=lambda run: (run.started_at, run.id))
+
 
 @dataclass(frozen=True)
 class AgentRepositories:
     rankings: RankingRepository
     ranked_dams: RankedDamRepository
+    evidence: EvidenceRepository
     volunteers: VolunteerRepository
     dams: DamRepository
     agent_runs: AgentRunRepository
@@ -281,6 +318,7 @@ def build_agent_repositories(db: firestore.Client) -> AgentRepositories:
                 db, f"rankings/{region}/cells", RankedCell
             )
         ),
+        evidence=EvidenceRepository(FirestoreCollection(db, "evidence", Evidence)),
         ranked_dams=RankedDamRepository(
             lambda region: FirestoreCollection(db, f"rankings/{region}/dams", RankedDam)
         ),

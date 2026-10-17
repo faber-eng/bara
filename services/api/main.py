@@ -13,9 +13,11 @@ from adapters.factory import (
     utcnow,
 )
 from adapters.gemini import ModelGateway, build_agent_model, build_vertex_clients
+from area_queries import AreaQueries
 from auth import FirebaseTokenVerifier, TokenVerifier
 from bara_agent.agent import build_tools
 from bara_agent.run import AgentService
+from case_queries import CaseQueries
 from casework.assignment import TaskAssigner
 from casework.messenger import Messenger
 from config import Settings, full_flow_region, load_settings, region_timezones
@@ -32,6 +34,8 @@ from routes import (
     judge_probe,
     judge_reset,
     judge_trigger,
+    ops_areas,
+    ops_cases,
     samples,
     tiles,
 )
@@ -63,6 +67,8 @@ def build_app(
     app.include_router(events.router)
     app.include_router(judge_trigger.router)
     app.include_router(judge_reset.router)
+    app.include_router(ops_cases.router)
+    app.include_router(ops_areas.router)
     return app
 
 
@@ -145,6 +151,28 @@ def build_resetter(settings: Settings) -> ScenarioResetter:
     return build_scenario_resetter(db, load_scenario(settings.scenario_dir))
 
 
+def build_case_queries(adapters: Adapters) -> CaseQueries:
+    return CaseQueries(
+        cases=adapters.cases,
+        tasks=adapters.tasks,
+        evidence=adapters.evidence,
+        runs=adapters.agent_runs,
+        clock=adapters.clock,
+    )
+
+
+def build_area_queries(settings: Settings, adapters: Adapters) -> AreaQueries:
+    return AreaQueries(
+        rankings=adapters.rankings,
+        ranked_dams=adapters.ranked_dams,
+        cells=adapters.cells,
+        dams=adapters.dams,
+        cases=adapters.cases,
+        evidence=adapters.evidence,
+        radius_m=settings.grid_cell_m,
+    )
+
+
 def create_app() -> FastAPI:
     configure_logging()
     settings = load_settings()
@@ -158,6 +186,8 @@ def create_app() -> FastAPI:
     app.state.trigger = build_trigger(settings, app.state.adapters)
     app.state.push_verifier = GoogleOidcVerifier()
     app.state.resetter = build_resetter(settings)
+    app.state.case_queries = build_case_queries(app.state.adapters)
+    app.state.area_queries = build_area_queries(settings, app.state.adapters)
     app.state.tiles = EarthEngineTiles(settings.project, settings.config_dir)
     app.state.utcnow = utcnow
     return app
