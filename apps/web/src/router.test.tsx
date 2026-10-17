@@ -43,13 +43,13 @@ describe("app routes", () => {
     expect(await screen.findByText("API ok")).toBeInTheDocument();
   });
 
-  it("shows the volunteer id from the URL", async () => {
+  it("opens the volunteer screen for the id in the URL", async () => {
     renderAt("/v/demo");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Volunteer PWA" }),
+      await screen.findByRole("heading", { level: 1, name: "Tugas Anda" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("/v/demo")).toBeInTheDocument();
+    expect(await screen.findByRole("article", { name: "Cek sekat kanal" })).toBeInTheDocument();
   });
 
   it("marks the active screen in the app bar", async () => {

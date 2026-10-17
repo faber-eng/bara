@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { EmptyScreen } from "../components/EmptyScreen";
+import { VolunteerScreen } from "../components/volunteer/VolunteerScreen";
 
-function VolunteerScreen() {
+function VolunteerRoute() {
   const { volunteerId } = Route.useParams();
-  return <EmptyScreen title="Volunteer PWA" path={`/v/${volunteerId}`} />;
+  return <VolunteerScreen volunteerId={volunteerId} />;
 }
 
-export const Route = createFileRoute("/v/$volunteerId")({ component: VolunteerScreen });
+export const Route = createFileRoute("/v/$volunteerId")({ component: VolunteerRoute });

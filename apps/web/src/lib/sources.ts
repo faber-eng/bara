@@ -6,6 +6,7 @@ const DEFAULT_SOURCES = {
   caseDetail: "fixture",
   tiles: "live",
   clock: "live",
+  inbox: "live",
 } as const satisfies Record<string, Source>;
 
 export type SourceArea = keyof typeof DEFAULT_SOURCES;

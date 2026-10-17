@@ -1,0 +1,32 @@
+{
+  "tasks": [
+    {
+      "id": "task-0001",
+      "case_id": "case-0001",
+      "type": "dam_check",
+      "assignee_id": "vol-ari",
+      "target": { "lat": 0.4131, "lon": 102.1548 },
+      "deadline_at": "2026-07-23T17:00:00+07:00",
+      "status": "open",
+      "cloud_task_name": null,
+      "attempt": 1,
+      "created_at": "2026-07-20T08:05:00+07:00",
+      "done_at": null
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-0001",
+      "thread": "volunteer",
+      "to_id": "vol-ari",
+      "case_id": "case-0001",
+      "lang": "id",
+      "text": "Halo Ari, sekat kanal di dekat titik ini perlu dicek. Kirim satu foto sekat dan satu pesan suara sebelum Kamis, 17.00 WIB.",
+      "text_en": "Hi Ari, a canal dam near this point needs a check. Send one photo of the dam and one voice note before Thursday, 17:00 WIB.",
+      "channel": "web",
+      "created_at": "2026-07-20T08:05:00+07:00",
+      "delivered": true
+    }
+  ],
+  "evidence": []
+}

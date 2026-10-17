@@ -436,3 +436,147 @@ fieldset.join-fieldset {
 .run-decision {
   font-size: 13px;
 }
+
+.volunteer {
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+.volunteer > *,
+.flow-panel > * {
+  margin: 0;
+}
+.chat-thread {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.flow-panel {
+  display: grid;
+  gap: var(--space-3);
+}
+.task-title {
+  font-size: 20px;
+  margin: 0;
+}
+.verdict-headline {
+  margin: 0;
+}
+.verdict-rows {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+.verdict-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.verdict-row dd {
+  margin: 0;
+  font-weight: 500;
+  text-align: right;
+}
+.upload-photo {
+  width: 100%;
+  border-radius: var(--radius-inner);
+}
+
+.proto-note {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  margin: 0;
+}
+.proto-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.proto-row--between {
+  justify-content: space-between;
+}
+.capture {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.task-card {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+.task-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--text-2);
+  margin: 0;
+}
+.msg {
+  background: var(--surface);
+  border-radius: 18px 18px 18px 6px;
+  padding: 12px 14px;
+  font-size: 14px;
+  max-width: 88%;
+}
+.msg-me {
+  background: var(--sage-card);
+  border-radius: 18px 18px 6px 18px;
+  justify-self: end;
+}
+.msg-from {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+.reply-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.reply-bar .field-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.empty-box {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 24px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.empty-box h2 {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.2;
+  margin: 0;
+}
+.empty-box p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.timer {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: 56px;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
