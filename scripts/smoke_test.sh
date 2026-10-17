@@ -6,6 +6,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/project.sh"
 readonly EXIT_STEP_FAILED=1
 readonly CASE_WAIT_SECONDS="${BARA_SMOKE_CASE_WAIT:-240}"
 readonly VERDICT_WAIT_SECONDS="${BARA_SMOKE_VERDICT_WAIT:-150}"
+readonly FIRE_WAIT_SECONDS="${BARA_SMOKE_FIRE_WAIT:-120}"
 readonly POLL_SECONDS="${BARA_SMOKE_POLL:-4}"
 readonly OUTCOME_WAIT_SECONDS="${BARA_SMOKE_OUTCOME_WAIT:-90}"
 readonly SAMPLE_ID=broken-dam-1
@@ -27,7 +28,8 @@ Usage: scripts/smoke_test.sh --yes [--url <base>] [--project <id>]
 Runs the Bara demo path against a live deployment with the judge header:
 reset, trigger drying.ranked, wait for the cases, upload the broken-dam sample
 photo, wait for the verdict, advance the clock past the deadline of a second case,
-check that case is overdue or escalated.
+check that case is overdue or escalated, then trigger fire.quiet and check the
+reignition case and its three patrol_recheck tasks.
 
 It resets the scenario, so it needs --yes. Reset only touches example data.
 
@@ -40,7 +42,7 @@ It resets the scenario, so it needs --yes. Reset only touches example data.
 Environment: BARA_SMOKE_TOKEN is a Firebase ID token to use instead of signing in
 anonymously. FIREBASE_API_KEY is the web API key for the anonymous sign-in
 (default: read from the deployed site). BARA_SMOKE_CASE_WAIT, BARA_SMOKE_VERDICT_WAIT,
-BARA_SMOKE_OUTCOME_WAIT and BARA_SMOKE_POLL change the waits, in seconds.
+BARA_SMOKE_OUTCOME_WAIT, BARA_SMOKE_FIRE_WAIT and BARA_SMOKE_POLL change the waits, in seconds.
 
 stdout: one "ok" or "FAIL" line per step. stderr: the reason for a failure.
 Exit codes: 0 every step passed, 1 a step failed,
@@ -314,6 +316,50 @@ step_outcome() {
   pass "$OTHER_ID is $CASE_STATUS after +${ADVANCE_HOURS}h"
 }
 
+reignition_case() {
+  call GET "/api/cases?region=riau" ops
+  [[ "$CALL_STATUS" == 200 ]] || return 1
+  FIRE_CASE_ID="$(BEFORE="$BEFORE_IDS" python3 -c '
+import json, os, sys
+before = set(os.environ["BEFORE"].split())
+for r in json.load(sys.stdin):
+    case = r["case"]
+    if case["type"] == "reignition" and case["example"] and case["id"] not in before:
+        print(case["id"])
+        break
+' <<<"$CALL_BODY")"
+  [[ -n "$FIRE_CASE_ID" ]] || return 1
+  call GET "/api/cases/$FIRE_CASE_ID" ops
+  [[ "$CALL_STATUS" == 200 ]] || return 1
+  FIRE_TASKS="$(python3 -c '
+import json, sys
+tasks = json.load(sys.stdin)["tasks"]
+print(sum(1 for t in tasks if t["type"] == "patrol_recheck"))
+' <<<"$CALL_BODY")"
+  [[ "$FIRE_TASKS" -ge 3 ]]
+}
+
+step_fire_quiet() {
+  call POST /api/judge/trigger judge '{"event":"fire.quiet"}'
+  expect_status 202 "trigger fire.quiet"
+  poll "$FIRE_WAIT_SECONDS" reignition_case || fail "fire.quiet" "no reignition case with 3 patrol_recheck tasks within ${FIRE_WAIT_SECONDS}s; check the fire.quiet.push subscription"
+  local summary
+  summary="$(python3 -c '
+import json, sys
+from datetime import datetime
+detail = json.load(sys.stdin)
+tasks = [t for t in detail["tasks"] if t["type"] == "patrol_recheck"]
+hours = {
+    round((datetime.fromisoformat(t["deadline_at"]) - datetime.fromisoformat(t["created_at"])).total_seconds() / 3600)
+    for t in tasks
+}
+people = sorted({t["assignee_id"] for t in tasks})
+print(len(tasks), sorted(hours), ",".join(people))
+' <<<"$CALL_BODY")" || fail "fire.quiet" "unreadable case: ${CALL_BODY:0:300}"
+  [[ "$summary" == "3 [48] "* ]] || fail "fire.quiet" "wanted 3 patrol_recheck tasks due 48h after creation, got: $summary"
+  pass "reignition case $FIRE_CASE_ID has 3 patrol_recheck tasks due 48h later, patrols ${summary##* }"
+}
+
 print_plan() {
   cat <<EOF
 would run against $URL:
@@ -327,6 +373,7 @@ would run against $URL:
   8 read the deadline of a second assigned case
   9 POST /api/judge/advance past that deadline
   10 expect that case overdue or escalated
+  11 POST /api/judge/trigger {"event":"fire.quiet"}, expect one reignition case with 3 patrol_recheck tasks due 48h later
 EOF
 }
 
@@ -360,6 +407,7 @@ main() {
   step_deadline
   step_advance
   step_outcome
+  step_fire_quiet
   finish
 }
 
