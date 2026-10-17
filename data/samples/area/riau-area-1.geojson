@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Riau area 1",
+        "credit": "Faber Fathers, CC BY 4.0, team-made"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              102.1,
+              0.55
+            ],
+            [
+              102.18,
+              0.55
+            ],
+            [
+              102.18,
+              0.62
+            ],
+            [
+              102.1,
+              0.62
+            ],
+            [
+              102.1,
+              0.55
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
