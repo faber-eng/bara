@@ -9,7 +9,7 @@ import type {
 import { sourceFor } from "../sources";
 import { apiRequest } from "./client";
 import { fixtureClockNowMs } from "./clock";
-import { applyFixtureClosure } from "./fixtureClosures";
+import { applyFixtureOverrides } from "./fixtureOverrides";
 import {
   type JsonRecord,
   readArray,
@@ -85,7 +85,7 @@ function isPastDeadline(deadline: IsoDateTime | null, nowMs: number): boolean {
 }
 
 function sweepFixtureCase(source: CaseSummary, nowMs: number): CaseSummary {
-  const summary = { ...source, case: applyFixtureClosure(source.case) };
+  const summary = { ...source, case: applyFixtureOverrides(source.case) };
   const dueAndOpen =
     summary.task_status === "open" && isPastDeadline(summary.next_deadline_at, nowMs);
   if (!dueAndOpen || summary.case.status !== "assigned") return summary;

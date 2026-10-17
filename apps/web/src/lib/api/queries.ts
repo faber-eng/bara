@@ -1,7 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
+import { brigadeContactId } from "../brigade/contact";
 import { fetchCaseDetail } from "./caseDetail";
 import { fetchCases } from "./cases";
 import { fetchClock } from "./clock";
+import { fetchBrigadeInbox } from "./escalations";
 import { fetchRankings } from "./rankings";
 import { fetchDryingTiles } from "./tiles";
 
@@ -48,6 +50,15 @@ export function caseDetailQuery(caseId: string) {
   return queryOptions({
     queryKey: ["cases", "detail", caseId],
     queryFn: ({ signal }) => fetchCaseDetail(caseId, signal),
+    staleTime: OPS_STALE_MS,
+    retry: false,
+  });
+}
+
+export function brigadeInboxQuery(judgeMode: boolean) {
+  return queryOptions({
+    queryKey: ["brigade", "inbox", judgeMode],
+    queryFn: async ({ signal }) => fetchBrigadeInbox(await brigadeContactId(), signal),
     staleTime: OPS_STALE_MS,
     retry: false,
   });

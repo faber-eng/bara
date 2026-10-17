@@ -5,7 +5,7 @@ import { closeCase, fetchCaseDetail, parseCaseDetail } from "./caseDetail";
 import { fetchCases } from "./cases";
 import { ApiError } from "./client";
 import { resetClock } from "./clock";
-import { clearFixtureClosures } from "./fixtureClosures";
+import { clearFixtureOverrides } from "./fixtureOverrides";
 
 vi.mock("../auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
 
@@ -66,7 +66,7 @@ describe("parseCaseDetail", () => {
 
 describe("fetchCaseDetail", () => {
   beforeEach(async () => {
-    clearFixtureClosures();
+    clearFixtureOverrides();
     await resetClock();
   });
 
@@ -107,7 +107,7 @@ describe("fetchCaseDetail", () => {
 
 describe("closeCase", () => {
   beforeEach(async () => {
-    clearFixtureClosures();
+    clearFixtureOverrides();
     await resetClock();
   });
 

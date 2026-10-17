@@ -61,6 +61,12 @@ export async function getIdToken(): Promise<string> {
   return auth.currentUser.getIdToken();
 }
 
+export async function getUid(): Promise<string> {
+  const auth = await ensureSignedIn();
+  if (auth.currentUser === null) throw new Error("Firebase has no signed-in user");
+  return auth.currentUser.uid;
+}
+
 export type AuthUser = { uid: string; isAnonymous: boolean; displayName: string | null };
 
 function toAuthUser(user: User | null): AuthUser | null {
