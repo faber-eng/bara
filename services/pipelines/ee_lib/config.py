@@ -113,6 +113,7 @@ class RegionConfig(Config):
     name: str
     aoi: str
     timezone: str
+    full_flow: bool
     s1_relative_orbit: PositiveInt
     s1_pass: Literal["ASCENDING", "DESCENDING"]
     grid_crs: str

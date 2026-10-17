@@ -8,6 +8,8 @@ from domain.reignition_eval import (
     EmptyRanking,
     Scored,
     baseline_record,
+    empty_eval_splits,
+    feature_exclusions,
     model_record,
     rank_auc,
     ranking_metrics,
@@ -64,14 +66,30 @@ def test_precision_and_recall_at_the_top_ten_percent():
     assert metrics.recall_top10 == pytest.approx(1 / 3)
 
 
-def test_ties_at_the_cut_break_by_event_id():
+def test_ties_at_the_cut_share_the_remaining_slots():
     items = [Scored("b", 1.0, 0), Scored("a", 1.0, 1)] + scored(*[(0.0, 0)] * 8)
 
-    assert ranking_metrics(items).precision_top10 == 1.0
+    metrics = ranking_metrics(items)
+
+    assert metrics.precision_top10 == 0.5
+    assert metrics.recall_top10 == 0.5
 
 
-def test_recall_is_zero_without_positives():
-    assert ranking_metrics(scored((0.9, 0), (0.1, 0))).recall_top10 == 0.0
+def test_tie_sharing_does_not_depend_on_event_ids():
+    first = [Scored("a", 1.0, 0), Scored("b", 1.0, 1)] + scored(*[(0.0, 0)] * 8)
+    second = [Scored("a", 1.0, 1), Scored("b", 1.0, 0)] + scored(*[(0.0, 0)] * 8)
+
+    assert ranking_metrics(first) == ranking_metrics(second)
+
+
+def test_recall_is_none_without_positives():
+    assert ranking_metrics(scored((0.9, 0), (0.1, 0))).recall_top10 is None
+
+
+def test_auc_with_ties_matches_the_pairwise_count():
+    items = scored((0.9, 1), (0.5, 1), (0.5, 0), (0.5, 0), (0.1, 1), (0.1, 0))
+
+    assert rank_auc(items) == pytest.approx(5.5 / 9)
 
 
 def test_no_events_is_an_error():
@@ -102,7 +120,30 @@ def test_both_variants_register_to_vertex_and_one_drops_rain_after():
     assert without_after.vertex_model_id == "bara_reignition_no_rain_after"
 
 
-def test_a_model_record_takes_auc_from_ml_evaluate_and_ranks_by_p_reignite():
+def test_only_the_full_variant_writes_the_baseline():
+    full, without_after = VARIANTS
+
+    assert full.with_baseline is True
+    assert without_after.with_baseline is False
+
+
+def test_keys_and_dropped_columns_are_never_features():
+    assert feature_exclusions(VARIANTS[1]) == (
+        "event_id",
+        "cell_id",
+        "region",
+        "quiet_date",
+        "split",
+        "rain_7d_after_mm",
+    )
+
+
+def test_empty_eval_splits_names_each_split_without_labeled_events():
+    assert empty_eval_splits({"valid": 117, "test": 0}) == ["test"]
+    assert empty_eval_splits({"valid": 117, "test": 118}) == []
+
+
+def test_a_model_record_ranks_by_p_reignite_and_keeps_the_ml_evaluate_auc():
     record = model_record(
         variant=VARIANTS[0],
         region="riau",
@@ -117,8 +158,8 @@ def test_a_model_record_takes_auc_from_ml_evaluate_and_ranks_by_p_reignite():
     )
 
     assert record.model == "reignition_v1"
-    assert record.auc == 0.71
-    assert record.auc_source == "ml_evaluate"
+    assert record.auc == 1.0
+    assert record.ml_evaluate_auc == 0.71
     assert record.log_loss == 0.55
     assert record.events == 3
     assert record.positives == 1
@@ -133,6 +174,6 @@ def test_the_baseline_record_ranks_by_detection_days():
 
     assert record.model == BASELINE_MODEL
     assert record.auc == 1.0
-    assert record.auc_source == "rank"
+    assert record.ml_evaluate_auc is None
     assert record.log_loss is None
     assert record.global_explain == ()

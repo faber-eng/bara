@@ -3,8 +3,9 @@ from datetime import UTC, datetime
 import pytest
 
 from adapters.bigquery import Warehouse
+from ee_lib.config import load_region
 from jobs import train_reignition as job
-from jobs.cli import JobError
+from jobs.cli import JobError, UsageError
 from tests.fakes import RecordingBigQueryClient
 
 NOW = datetime(2026, 10, 18, 1, 0, tzinfo=UTC)
@@ -13,6 +14,7 @@ PREDICTIONS = [
     {"event_id": "b", "reignited": 0, "detection_days": 1, "p_reignite": 0.2},
 ]
 RESPONSES = {
+    "COUNTIF(split": [{"valid": 2, "test": 2}],
     "ML.EVALUATE": [{"roc_auc": 0.7, "log_loss": 0.6}],
     "ML.PREDICT": PREDICTIONS,
     "ML.GLOBAL_EXPLAIN": [{"feature": "detection_days", "attribution": 0.3}],
@@ -93,13 +95,14 @@ def test_writes_model_and_baseline_rows_for_valid_and_test():
         ("reignition_v1_no_rain_after", "valid"),
         ("reignition_v1_no_rain_after", "test"),
     ]
-    assert rows[0]["auc"] == 0.7
+    assert rows[0]["auc"] == 1.0
+    assert rows[0]["ml_evaluate_auc"] == 0.7
     assert rows[0]["global_explain"] == [
         {"feature": "detection_days", "attribution": 0.3}
     ]
     assert rows[0]["evaluated_at"] == NOW.isoformat()
     assert rows[1]["auc"] == 1.0
-    assert summary["bytes_billed"] == 10_485_760 * 12
+    assert summary["bytes_billed"] == 10_485_760 * 13
 
 
 def test_the_evaluation_sets_are_the_labeled_rows_of_the_split():
@@ -121,3 +124,38 @@ def test_no_labeled_events_in_a_split_is_a_job_error():
 def test_ml_evaluate_without_a_row_is_a_job_error():
     with pytest.raises(JobError, match="ML.EVALUATE"):
         run(responses={**RESPONSES, "ML.EVALUATE": []})
+
+
+def test_an_eval_split_without_labeled_events_stops_before_training():
+    with pytest.raises(JobError, match="test"):
+        run(responses={**RESPONSES, "COUNTIF(split": [{"valid": 2, "test": 0}]})
+
+
+def test_nothing_is_trained_when_an_eval_split_is_empty():
+    client = RecordingBigQueryClient(
+        responses={**RESPONSES, "COUNTIF(split": [{"valid": 0, "test": 2}]}
+    )
+    with pytest.raises(JobError):
+        job.train_reignition(
+            region_id="riau",
+            warehouse=Warehouse(client, project="p", dataset="bara"),
+            evaluated_at=NOW,
+            dry_run=False,
+        )
+
+    assert not any("CREATE" in sql for sql in client.sql_sent())
+
+
+def test_bytes_billed_counts_only_real_queries():
+    summary, _ = run()
+
+    billed = [query for query in summary["queries"] if not query["estimate"]]
+    assert summary["bytes_billed"] == sum(query["bytes"] for query in billed)
+
+
+def test_a_region_off_the_full_flow_is_a_usage_error(config_dir):
+    riau = load_region(config_dir, "riau")
+
+    assert job.full_flow_region(riau) == "riau"
+    with pytest.raises(UsageError, match="full_flow"):
+        job.full_flow_region(riau.model_copy(update={"full_flow": False}))

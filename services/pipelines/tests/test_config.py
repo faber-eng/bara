@@ -146,6 +146,7 @@ def test_loads_the_riau_region(config_dir):
 
     assert region.id == "riau"
     assert region.timezone == "Asia/Jakarta"
+    assert region.full_flow is True
     assert region.s1_relative_orbit == 91
     assert region.s1_pass == "DESCENDING"
     assert region.grid_crs == "EPSG:32648"
@@ -170,6 +171,7 @@ riau:
   name: Riau
   aoi: data/aoi/riau_focus.geojson
   timezone: Mars/Olympus
+  full_flow: true
   s1_relative_orbit: 91
   s1_pass: DESCENDING
   grid_crs: EPSG:32648
