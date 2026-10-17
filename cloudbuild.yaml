@@ -29,6 +29,21 @@ steps:
         uv run ruff format --check .
         uv run pytest
 
+  - id: pipelines-gate
+    name: python:3.12-slim
+    dir: services/pipelines
+    waitFor: ["-"]
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        pip install --quiet uv==0.13.1
+        uv sync --frozen
+        uv run ruff check .
+        uv run ruff format --check .
+        uv run pytest
+
   - id: web-gate
     name: oven/bun:1.4.0
     dir: apps/web
@@ -49,7 +64,7 @@ steps:
 
   - id: image
     name: gcr.io/cloud-builders/docker
-    waitFor: [api-gate]
+    waitFor: [api-gate, pipelines-gate]
     entrypoint: bash
     args:
       - -c

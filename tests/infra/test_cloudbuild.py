@@ -5,7 +5,15 @@ import yaml
 from conftest import REPO
 
 CONFIG_PATH = REPO / "cloudbuild.yaml"
-STEP_IDS = ["api-gate", "web-gate", "image", "deploy-api", "deploy-hosting", "verify"]
+STEP_IDS = [
+    "api-gate",
+    "pipelines-gate",
+    "web-gate",
+    "image",
+    "deploy-api",
+    "deploy-hosting",
+    "verify",
+]
 
 
 @pytest.fixture(scope="module")
@@ -28,11 +36,12 @@ def test_steps_exist_in_order(config):
 
 def test_gates_start_in_parallel(steps):
     assert steps["api-gate"]["waitFor"] == ["-"]
+    assert steps["pipelines-gate"]["waitFor"] == ["-"]
     assert steps["web-gate"]["waitFor"] == ["-"]
 
 
 def test_dependency_graph(steps):
-    assert steps["image"]["waitFor"] == ["api-gate"]
+    assert sorted(steps["image"]["waitFor"]) == ["api-gate", "pipelines-gate"]
     assert sorted(steps["deploy-api"]["waitFor"]) == ["image", "web-gate"]
     assert steps["deploy-hosting"]["waitFor"] == ["deploy-api"]
     assert steps["verify"]["waitFor"] == ["deploy-hosting"]
@@ -49,6 +58,13 @@ def test_api_gate_runs_lint_format_and_tests_frozen(steps):
     for part in ("uv sync --frozen", "ruff check", "ruff format --check", "pytest"):
         assert part in text
     assert steps["api-gate"]["dir"] == "services/api"
+
+
+def test_pipelines_gate_runs_lint_format_and_tests_frozen(steps):
+    text = command_text(steps["pipelines-gate"])
+    for part in ("uv sync --frozen", "ruff check", "ruff format --check", "pytest"):
+        assert part in text
+    assert steps["pipelines-gate"]["dir"] == "services/pipelines"
 
 
 def test_web_gate_runs_every_check_then_builds(steps):

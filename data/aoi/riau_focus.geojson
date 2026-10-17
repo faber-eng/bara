@@ -1,0 +1,13 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "riau_focus" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[101.95, 0.35], [102.55, 0.35], [102.55, 0.85], [101.95, 0.85], [101.95, 0.35]]]
+      }
+    }
+  ]
+}
