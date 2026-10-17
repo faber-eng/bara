@@ -119,7 +119,7 @@ steps:
             --max-retries=0 \
             --task-timeout=1800s \
             --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID \
-            --update-labels=build_started=$$(cat /workspace/build-started) \
+            --labels=build_started=$$(cat /workspace/build-started) \
             --args=jobs.weekly_rankings,--region,riau \
             --quiet
         fi
@@ -136,7 +136,7 @@ steps:
             --max-retries=0 \
             --task-timeout=1800s \
             --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID \
-            --update-labels=build_started=$$(cat /workspace/build-started) \
+            --labels=build_started=$$(cat /workspace/build-started) \
             --args=jobs.daily_reignition,--region,riau \
             --quiet
         fi
