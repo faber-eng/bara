@@ -11,6 +11,7 @@ import { weekChoices } from "../../lib/public/weeks";
 import { LanguageToggle } from "../LanguageToggle";
 import { InlineLoading } from "../LoadingPanel";
 import { BulletinBlock } from "./BulletinBlock";
+import { EvalPanel } from "./EvalPanel";
 import { OpenDataBlock } from "./OpenDataBlock";
 import { PublicMap } from "./PublicMap";
 import { ResponseRecord } from "./ResponseRecord";
@@ -188,6 +189,7 @@ export function PublicScreen({ regionId, week, onRegionChange, onWeekChange }: P
           </div>
         </>
       )}
+      <EvalPanel />
     </div>
   );
 }

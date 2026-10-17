@@ -24,3 +24,18 @@ export function formatMoment(iso: string, language: CopyLanguage, timeZone: stri
 export function formatNumber(value: number, language: CopyLanguage): string {
   return new Intl.NumberFormat(LOCALES[language], { maximumFractionDigits: 1 }).format(value);
 }
+
+export function formatFixed(value: number, digits: number, language: CopyLanguage): string {
+  return new Intl.NumberFormat(LOCALES[language], {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+export function formatPercent(rate: number, language: CopyLanguage): string {
+  return `${formatNumber(rate * 100, language)}%`;
+}
+
+export function isoDay(iso: string): string {
+  return iso.slice(0, 10);
+}

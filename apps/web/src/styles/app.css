@@ -1310,4 +1310,35 @@ fieldset.join-fieldset {
   flex-wrap: wrap;
   gap: var(--space-2);
   justify-content: flex-end;
+||||||| parent of 6754344 (feat(web): EVAL panel on /public reads eval.json)
+.pub-eval {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+.pub-eval p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.pub-eval .pub-license {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.pub-eval-part {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.pub-eval-h {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 18px;
+  margin: 0;
+}
+.pub-eval-caption {
+  text-align: left;
+  font-size: 13px;
+  color: var(--text-2);
+  padding: 6px 0;
 }
