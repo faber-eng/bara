@@ -22,3 +22,7 @@ def configure_logging(level: int = logging.INFO) -> None:
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(level)
+
+
+def log_extra(event: str, **fields: object) -> dict[str, dict[str, object]]:
+    return {"fields": {"event": event, **fields}}

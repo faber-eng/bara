@@ -1,7 +1,7 @@
 import hashlib
 from types import MappingProxyType
 
-from contracts import CaseStatus, DamState, EvidenceKind, GeoPoint, Verdict
+from contracts import CaseStatus, DamState, EvidenceKind, GeoPoint, TaskType, Verdict
 from domain.case_machine import transition
 from domain.geo import haversine_m
 
@@ -24,6 +24,7 @@ EXTENSIONS: MappingProxyType[EvidenceKind, MappingProxyType[str, str]] = (
 ACTION_DAM_STATES: frozenset[DamState] = frozenset({"damaged", "broken", "overtopped"})
 UNSEEN_DAM_STATES: frozenset[DamState] = frozenset({"unknown", "not_applicable"})
 LOCATION_MISMATCH = "location mismatch"
+NO_LOCATION = "no location"
 MAX_REASONS = 4
 
 
@@ -66,8 +67,9 @@ def case_status_after_verdict(
     return transition(status, "resolved_pending_human")
 
 
-def verdict_cache_key(sha256: str, prompt_version: str) -> str:
-    return hashlib.sha256(f"{sha256}:{prompt_version}".encode()).hexdigest()
+def verdict_cache_key(sha256: str, prompt_version: str, task_type: TaskType) -> str:
+    key = f"{sha256}:{prompt_version}:{task_type}"
+    return hashlib.sha256(key.encode()).hexdigest()
 
 
 def readable_dam_state(verdict: Verdict) -> DamState | None:
@@ -84,15 +86,26 @@ def location_ok(
     return haversine_m(target, point) <= tolerance_m
 
 
-def with_mismatch_reason(reasons: list[str]) -> list[str]:
+def with_reason(reasons: list[str], reason: str) -> list[str]:
     kept = reasons[: MAX_REASONS - 1]
-    return [*kept, LOCATION_MISMATCH]
+    return [*kept, reason]
 
 
-def final_verdict(read: Verdict, threshold: float, location: bool | None) -> Verdict:
+def location_problem(location: bool | None, sample: bool) -> str | None:
     if location is False:
+        return LOCATION_MISMATCH
+    if location is None and not sample:
+        return NO_LOCATION
+    return None
+
+
+def final_verdict(
+    read: Verdict, threshold: float, location: bool | None, sample: bool
+) -> Verdict:
+    problem = location_problem(location, sample)
+    if problem is not None:
         return read.model_copy(
-            update={"needs_human": True, "reasons": with_mismatch_reason(read.reasons)}
+            update={"needs_human": True, "reasons": with_reason(read.reasons, problem)}
         )
     if needs_human(read, threshold):
         return read.model_copy(update={"needs_human": True})

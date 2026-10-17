@@ -49,8 +49,8 @@ def degrees(parts: tuple, ref: str) -> float:
 
 def exif_point(data: bytes) -> GeoPoint | None:
     try:
-        gps = open_image(data).getexif().get_ifd(GPS_IFD)
-    except UnreadablePhoto:
+        gps = Image.open(io.BytesIO(data)).getexif().get_ifd(GPS_IFD)
+    except (UnidentifiedImageError, OSError):
         return None
     if not all(key in gps for key in (LAT_REF, LAT, LON_REF, LON)):
         return None

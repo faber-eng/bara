@@ -153,7 +153,7 @@ class FirestoreTransactor:
 
 @firestore.transactional
 def guarded_commit(
-    transaction, client, guards: Sequence[Guard], writes: Sequence[Write]
+    transaction, client, guards: Sequence[Precondition], writes: Sequence[Write]
 ):
     for guard in guards:
         check_guard(transaction, client, guard)

@@ -133,6 +133,8 @@ def test_a_broken_dam_verdict_is_stored_and_the_case_stays_for_the_agent():
 
     assert checked.verdict.dam_state == "broken"
     assert checked.location_ok is True
+    assert checked.stored is True
+    assert checked.from_cache is False
     stored = world.evidence.get("e1")
     assert stored.verdict == checked.verdict
     assert stored.location_ok is True
@@ -164,7 +166,9 @@ def test_a_fresh_verdict_goes_into_the_cache():
 
     world.check()
 
-    entry = world.cache.get(verdict_cache_key("0" * 64, EVIDENCE_PROMPT_VERSION))
+    entry = world.cache.get(
+        verdict_cache_key("0" * 64, EVIDENCE_PROMPT_VERSION, "dam_check")
+    )
     assert entry.verdict.dam_state == "broken"
     assert entry.model == "gemini-flash"
     assert entry.prompt_version == EVIDENCE_PROMPT_VERSION
@@ -172,7 +176,7 @@ def test_a_fresh_verdict_goes_into_the_cache():
 
 def test_a_cached_verdict_skips_the_model():
     world = World()
-    key = verdict_cache_key("0" * 64, EVIDENCE_PROMPT_VERSION)
+    key = verdict_cache_key("0" * 64, EVIDENCE_PROMPT_VERSION, "dam_check")
     world.cache.put(
         key,
         VerdictCacheEntry(
@@ -187,7 +191,8 @@ def test_a_cached_verdict_skips_the_model():
 
     assert world.reader.calls == []
     assert checked.verdict.dam_state == "intact"
-    assert checked.cached is True
+    assert checked.from_cache is True
+    assert checked.stored is True
 
 
 def test_an_intact_dam_resolves_the_case_pending_a_person():
@@ -244,6 +249,7 @@ def test_a_stored_verdict_is_returned_without_a_model_call():
     checked = world.check()
 
     assert checked.verdict == make_verdict()
+    assert checked.stored is False
     assert world.reader.calls == []
 
 
@@ -276,3 +282,49 @@ def test_a_case_no_longer_reviewing_keeps_its_status():
 
     assert world.cases.get("c1").status == "closed"
     assert world.evidence.get("e1").verdict is not None
+
+
+def test_a_real_photo_without_any_point_needs_a_person():
+    blind = make_evidence(gcs_uri=f"gs://bucket-test/{OBJECT}", point=None)
+    world = World(evidence=blind)
+
+    checked = world.check()
+
+    assert checked.verdict.needs_human is True
+    assert "no location" in checked.verdict.reasons
+    assert world.cases.get("c1").status == "human_review"
+
+
+def test_a_cached_verdict_of_another_task_type_is_not_used():
+    world = World()
+    key = verdict_cache_key("0" * 64, EVIDENCE_PROMPT_VERSION, "patrol_recheck")
+    world.cache.put(
+        key,
+        VerdictCacheEntry(
+            id=key,
+            verdict=make_verdict(dam_state="intact"),
+            model="gemini-flash",
+            prompt_version=EVIDENCE_PROMPT_VERSION,
+        ),
+    )
+
+    checked = world.check()
+
+    assert len(world.reader.calls) == 1
+    assert checked.verdict.dam_state == "broken"
+
+
+def test_an_unresolved_reviewing_case_goes_to_a_person():
+    world = World()
+
+    world.checker.flag_for_person("c1")
+
+    assert world.cases.get("c1").status == "human_review"
+
+
+def test_a_case_that_moved_on_is_not_flagged():
+    world = World(case=make_case(id="c1", status="assigned", dam_id="d1"))
+
+    world.checker.flag_for_person("c1")
+
+    assert world.cases.get("c1").status == "assigned"
