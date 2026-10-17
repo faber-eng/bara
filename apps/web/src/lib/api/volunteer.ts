@@ -45,7 +45,7 @@ export function parseUploadTicket(body: unknown): UploadTicket {
 }
 
 async function fetchFixtureInbox(): Promise<Inbox> {
-  return parseInbox((await import("@fixtures/inbox.json")).default);
+  return parseInbox((await import("./inboxFixture.json")).default);
 }
 
 export async function fetchInbox(volunteerId: string, signal?: AbortSignal): Promise<Inbox> {
