@@ -27,6 +27,7 @@ export function AppBar() {
         <Link to="/ops">Ops</Link>
         <Link to="/brigade">Brigade</Link>
         <Link to="/area/new">Draw an area</Link>
+        <Link to="/join">Join</Link>
       </nav>
     </header>
   );

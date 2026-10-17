@@ -1,5 +1,7 @@
 import { getIdToken } from "../auth";
 import { roleHeaderValue } from "../judge/store";
+import { isRealUser, readTokenIdentity, type TokenIdentity } from "../tokenIdentity";
+import { readRecord } from "./parse";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const ROLE_HEADER = "X-Bara-Role";
@@ -7,10 +9,12 @@ const ROLE_HEADER = "X-Bara-Role";
 export class ApiError extends Error {
   override name = "ApiError";
   readonly status: number;
+  readonly detail: string | null;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, detail: string | null = null) {
     super(message);
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -21,10 +25,22 @@ export type RequestOptions = {
   timeoutMs?: number;
 };
 
-async function buildHeaders(hasBody: boolean): Promise<Headers> {
-  const headers = new Headers({ Authorization: `Bearer ${await getIdToken()}` });
+function isOwnLivePath(path: string, identity: TokenIdentity): boolean {
+  return path === "/api/join" || path.startsWith(`/api/v/${identity.uid}/`);
+}
+
+function shouldSendRole(path: string, identity: TokenIdentity | null): boolean {
+  if (!isRealUser(identity)) return true;
+  return !isOwnLivePath(path, identity);
+}
+
+async function buildHeaders(path: string, hasBody: boolean): Promise<Headers> {
+  const token = await getIdToken();
+  const headers = new Headers({ Authorization: `Bearer ${token}` });
   const role = roleHeaderValue();
-  if (role !== undefined) headers.set(ROLE_HEADER, role);
+  if (role !== undefined && shouldSendRole(path, readTokenIdentity(token))) {
+    headers.set(ROLE_HEADER, role);
+  }
   if (hasBody) headers.set("Content-Type", "application/json");
   return headers;
 }
@@ -33,10 +49,24 @@ async function send(path: string, options: RequestOptions, signal: AbortSignal):
   const hasBody = options.body !== undefined;
   return fetch(path, {
     method: options.method ?? "GET",
-    headers: await buildHeaders(hasBody),
+    headers: await buildHeaders(path, hasBody),
     body: hasBody ? JSON.stringify(options.body) : undefined,
     signal,
   });
+}
+
+async function readDetail(response: Response): Promise<string | null> {
+  try {
+    const detail = readRecord(await response.json(), "error").detail;
+    return typeof detail === "string" ? detail : null;
+  } catch {
+    return null;
+  }
+}
+
+async function failureFrom(response: Response, path: string, method: string): Promise<ApiError> {
+  const detail = await readDetail(response);
+  return new ApiError(`${method} ${path} returned ${response.status}`, response.status, detail);
 }
 
 export async function apiRequest(path: string, options: RequestOptions = {}): Promise<unknown> {
@@ -47,10 +77,7 @@ export async function apiRequest(path: string, options: RequestOptions = {}): Pr
   options.signal?.addEventListener("abort", abort, { once: true });
   try {
     const response = await send(path, options, controller.signal);
-    if (!response.ok) {
-      const method = options.method ?? "GET";
-      throw new ApiError(`${method} ${path} returned ${response.status}`, response.status);
-    }
+    if (!response.ok) throw await failureFrom(response, path, options.method ?? "GET");
     return await response.json();
   } finally {
     clearTimeout(timer);
