@@ -1,5 +1,7 @@
 from google.genai import errors, types
 
+from contracts import ClockSettings
+
 
 def api_error(code: int) -> errors.APIError:
     return errors.APIError(code, {"error": {"code": code, "message": f"status {code}"}})
@@ -22,3 +24,14 @@ class FakeModels:
         if isinstance(outcome, Exception):
             raise outcome
         return outcome
+
+
+class InMemoryClockStore:
+    def __init__(self, settings: ClockSettings | None):
+        self._settings = settings
+
+    def get(self) -> ClockSettings | None:
+        return self._settings
+
+    def put(self, settings: ClockSettings) -> None:
+        self._settings = settings
