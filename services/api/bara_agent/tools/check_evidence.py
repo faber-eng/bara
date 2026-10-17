@@ -4,7 +4,7 @@ from typing import Any, Protocol
 from bara_agent.tools.result import ToolResult, tool_error
 from casework.evidence_check import CheckedEvidence, CheckError
 from casework.evidence_reader import ReaderFailed
-from casework.photo import UnreadablePhoto
+from casework.media import UnreadableMedia
 
 LOCATION_LABELS: dict[object, str] = {
     True: "location ok",
@@ -36,7 +36,7 @@ class CheckEvidence:
         """
         try:
             checked = await self._checker.check(task_id, evidence_id)
-        except (CheckError, ReaderFailed, UnreadablePhoto) as error:
+        except (CheckError, ReaderFailed, UnreadableMedia) as error:
             return tool_error(str(error))
         return {
             "evidence_id": checked.evidence_id,

@@ -33,16 +33,25 @@ describe("flowReducer", () => {
     });
   });
 
-  it("moves a voice note from uploading to stored without reading", () => {
+  it("moves an upload that could not leave the phone to queued", () => {
     const state = run([
-      { type: "upload_started", kind: "audio", sample: true },
-      { type: "stored" },
+      { type: "upload_started", kind: "video", sample: false },
+      { type: "queued" },
     ]);
-    expect(state).toEqual({ step: "stored", sample: true });
+    expect(state).toEqual({ step: "queued", sample: false });
   });
 
-  it("ignores stored outside an upload", () => {
-    expect(flowReducer(IDLE, { type: "stored" })).toBe(IDLE);
+  it("ignores queued outside an upload", () => {
+    expect(flowReducer(IDLE, { type: "queued" })).toBe(IDLE);
+  });
+
+  it("reads a voice note like a photo", () => {
+    const state = run([
+      { type: "upload_started", kind: "audio", sample: false },
+      { type: "uploaded" },
+      { type: "judged", evidence },
+    ]);
+    expect(state).toEqual({ step: "done", evidence });
   });
 
   it("ignores progress outside an upload", () => {

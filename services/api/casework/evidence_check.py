@@ -13,12 +13,14 @@ from adapters.firestore_repos import (
     TaskRepository,
     VerdictCache,
 )
-from casework.evidence_reader import EVIDENCE_PROMPT_VERSION
-from casework.photo import PreparedPhoto, exif_point, prepare_photo
+from casework.evidence_reader import PROMPT_VERSIONS
+from casework.media import PreparedMedia, prepare_audio, prepare_video
+from casework.photo import exif_point, prepare_photo
 from contracts import (
     Case,
     CaseStatus,
     Evidence,
+    EvidenceKind,
     Task,
     TaskType,
     Verdict,
@@ -30,6 +32,7 @@ from domain.evidence import (
     case_status_after_verdict,
     final_verdict,
     location_ok,
+    location_waived,
     readable_dam_state,
     verdict_cache_key,
 )
@@ -46,10 +49,6 @@ class UnknownEvidence(CheckError):
     pass
 
 
-class UnsupportedEvidence(CheckError):
-    pass
-
-
 class EvidenceMissing(CheckError):
     pass
 
@@ -59,7 +58,21 @@ class MediaStorage(Protocol):
 
 
 class Reader(Protocol):
-    async def read(self, photo: PreparedPhoto, task_type: TaskType) -> Verdict: ...
+    async def read(self, media: PreparedMedia, task_type: TaskType) -> Verdict: ...
+
+
+async def prepare_media(kind: EvidenceKind, data: bytes) -> PreparedMedia:
+    if kind == "audio":
+        return await prepare_audio(data)
+    if kind == "video":
+        return await prepare_video(data)
+    return await asyncio.to_thread(prepare_photo, data)
+
+
+def device_point(evidence: Evidence, data: bytes):
+    if evidence.kind != "photo":
+        return evidence.point
+    return exif_point(data) or evidence.point
 
 
 @dataclass(frozen=True)
@@ -70,6 +83,7 @@ class CheckedEvidence:
     stored: bool
     from_cache: bool
     awaits_agent: bool
+    advisory: bool = False
 
 
 @dataclass(frozen=True)
@@ -145,19 +159,21 @@ class EvidenceChecker:
                 from_cache=False,
                 awaits_agent=False,
             )
-        if evidence.kind != "photo":
-            raise UnsupportedEvidence(f"{evidence.kind} evidence is not checked yet")
         task = self._task(task_id)
         return LoadedPhoto(evidence, task, self._media(evidence))
 
     def _finish(self, loaded: LoadedPhoto, read: ModelVerdict) -> CheckedEvidence:
         evidence, task, data = loaded.evidence, loaded.task, loaded.data
         location = location_ok(
-            task.target, exif_point(data) or evidence.point, self._tolerance_m
+            task.target, device_point(evidence, data), self._tolerance_m
         )
         verdict = final_verdict(
-            read.verdict, self._threshold, location, evidence.sample
+            read.verdict,
+            self._threshold,
+            location,
+            location_waived(evidence.kind, evidence.sample),
         )
+        advisory = evidence.kind == "audio"
         status = self._store(evidence, verdict, location)
         return CheckedEvidence(
             evidence.id,
@@ -165,7 +181,8 @@ class EvidenceChecker:
             location,
             stored=status is not None,
             from_cache=read.cached,
-            awaits_agent=status == "reviewing",
+            awaits_agent=not advisory and status == "reviewing",
+            advisory=advisory,
         )
 
     def flag_for_person(self, case_id: str) -> None:
@@ -208,19 +225,20 @@ class EvidenceChecker:
     async def _model_verdict(
         self, evidence: Evidence, data: bytes, task_type: TaskType
     ) -> ModelVerdict:
-        key = verdict_cache_key(evidence.sha256, EVIDENCE_PROMPT_VERSION, task_type)
+        version = PROMPT_VERSIONS[evidence.kind]
+        key = verdict_cache_key(evidence.sha256, version, task_type)
         entry = await asyncio.to_thread(self._cache.get, key)
         if entry is not None:
             return ModelVerdict(entry.verdict, cached=True)
-        photo = await asyncio.to_thread(prepare_photo, data)
-        verdict = await self._reader.read(photo, task_type)
+        media = await prepare_media(evidence.kind, data)
+        verdict = await self._reader.read(media, task_type)
         await asyncio.to_thread(
             self._cache.put,
             VerdictCacheEntry(
                 id=key,
                 verdict=verdict,
                 model=self._model,
-                prompt_version=EVIDENCE_PROMPT_VERSION,
+                prompt_version=version,
             ),
         )
         return ModelVerdict(verdict, cached=False)
@@ -239,6 +257,8 @@ class EvidenceChecker:
         self, evidence: Evidence, verdict: Verdict, location: bool | None
     ) -> CaseStatus:
         case = self._case(evidence.case_id)
+        if evidence.kind == "audio":
+            return self._commit_advisory(case, evidence, verdict, location)
         change = case_change_for(case, verdict)
         self._casework.commit_verdict(
             evidence_id=evidence.id,
@@ -251,6 +271,19 @@ class EvidenceChecker:
         if change is None:
             return case.status
         return change.next
+
+    def _commit_advisory(
+        self, case: Case, evidence: Evidence, verdict: Verdict, location: bool | None
+    ) -> CaseStatus:
+        self._casework.commit_verdict(
+            evidence_id=evidence.id,
+            verdict=verdict,
+            location_ok=location,
+            case_change=None,
+            dam_check=None,
+            smoke_case_id=None,
+        )
+        return case.status
 
     def _has_verdict(self, evidence_id: str) -> bool:
         stored = self._evidence.get(evidence_id)

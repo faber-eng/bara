@@ -1,6 +1,13 @@
 import type { Evidence, EvidenceKind } from "../contracts";
 
-export type FailureReason = "prepare" | "upload" | "read" | "mic";
+export type FailureReason =
+  | "prepare"
+  | "upload"
+  | "read"
+  | "mic"
+  | "video_long"
+  | "video_big"
+  | "video_type";
 
 export type FlowState =
   | { step: "idle" }
@@ -10,7 +17,7 @@ export type FlowState =
   | { step: "uploading"; kind: EvidenceKind; progress: number; sample: boolean }
   | { step: "reading"; kind: EvidenceKind; sample: boolean }
   | { step: "done"; evidence: Evidence }
-  | { step: "stored"; sample: boolean }
+  | { step: "queued"; sample: boolean }
   | { step: "unread"; sample: boolean }
   | { step: "failed"; reason: FailureReason };
 
@@ -21,7 +28,7 @@ export type FlowAction =
   | { type: "upload_started"; kind: EvidenceKind; sample: boolean }
   | { type: "progress"; progress: number }
   | { type: "uploaded" }
-  | { type: "stored" }
+  | { type: "queued" }
   | { type: "judged"; evidence: Evidence }
   | { type: "unread" }
   | { type: "failed"; reason: FailureReason }
@@ -44,9 +51,9 @@ function onUploaded(state: FlowState): FlowState {
   return { step: "reading", kind: state.kind, sample: state.sample };
 }
 
-function onStored(state: FlowState): FlowState {
+function onQueued(state: FlowState): FlowState {
   if (state.step !== "uploading") return state;
-  return { step: "stored", sample: state.sample };
+  return { step: "queued", sample: state.sample };
 }
 
 function onUnread(state: FlowState): FlowState {
@@ -68,8 +75,8 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
       return onProgress(state, action.progress);
     case "uploaded":
       return onUploaded(state);
-    case "stored":
-      return onStored(state);
+    case "queued":
+      return onQueued(state);
     case "judged":
       return { step: "done", evidence: action.evidence };
     case "unread":

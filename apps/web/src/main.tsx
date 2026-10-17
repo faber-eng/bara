@@ -5,6 +5,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createAppRouter } from "./router";
+import { registerServiceWorker } from "./sw/register";
 
 const queryClient = new QueryClient();
 const router = createAppRouter();
@@ -19,3 +20,5 @@ createRoot(rootElement).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+registerServiceWorker();

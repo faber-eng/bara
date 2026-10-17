@@ -14,10 +14,13 @@ BROKEN = make_verdict(dam_state="broken")
 
 
 class FakeChecker:
-    def __init__(self, verdict=BROKEN, stored=True, awaits_agent=True, error=None):
+    def __init__(
+        self, verdict=BROKEN, stored=True, awaits_agent=True, error=None, advisory=False
+    ):
         self.verdict = verdict
         self.stored = stored
         self.awaits_agent = awaits_agent
+        self.advisory = advisory
         self.error = error
         self.calls = []
         self.flagged = []
@@ -33,6 +36,7 @@ class FakeChecker:
             stored=self.stored,
             from_cache=False,
             awaits_agent=self.awaits_agent,
+            advisory=self.advisory,
         )
 
     def flag_for_person(self, case_id):
@@ -143,3 +147,13 @@ def test_another_event_type_is_malformed():
 
     with pytest.raises(MalformedPush):
         handler.handle("m1", make_drying_ranked_event())
+
+
+def test_an_advisory_verdict_neither_runs_the_agent_nor_flags_the_case():
+    checker = FakeChecker(awaits_agent=False, advisory=True)
+    agent = FakeAgent()
+
+    EvidenceReceivedHandler(checker=checker, agent=agent).handle("m1", evidence_event())
+
+    assert agent.runs == []
+    assert checker.flagged == []

@@ -35,9 +35,15 @@ export function PhotoPreview({ copy, photo, sample, onSend, onRetake }: PreviewP
 
 type UploadingProps = CopyProps & { kind: EvidenceKind; progress: number; sample: boolean };
 
+function uploadingTitle(copy: VolunteerCopy, kind: EvidenceKind): string {
+  if (kind === "photo") return copy.uploadingPhoto;
+  if (kind === "video") return copy.uploadingVideo;
+  return copy.uploadingVoice;
+}
+
 export function UploadingPanel({ copy, kind, progress, sample }: UploadingProps) {
   const percent = Math.round(progress * 100);
-  const title = kind === "photo" ? copy.uploadingPhoto : copy.uploadingVoice;
+  const title = uploadingTitle(copy, kind);
   return (
     <div className="flow-panel" role="status">
       {sample && <SampleBadge copy={copy} />}
@@ -71,7 +77,7 @@ export function ReadingPanel({ copy, sample }: CopyProps & { sample: boolean }) 
   );
 }
 
-export function StoredPanel({
+export function QueuedPanel({
   copy,
   sample,
   onDone,
@@ -79,8 +85,8 @@ export function StoredPanel({
   return (
     <div className="flow-panel" role="status">
       {sample && <SampleBadge copy={copy} />}
-      <strong>{copy.storedTitle}</strong>
-      <p className="proto-note">{copy.storedNote}</p>
+      <strong>{copy.queuedTitle}</strong>
+      <p className="proto-note">{copy.queuedNote}</p>
       <button type="button" className="btn btn-secondary btn-block" onClick={onDone}>
         {copy.sendAnother}
       </button>
@@ -104,6 +110,9 @@ const FAILURE_TEXT: Record<FailureReason, (copy: VolunteerCopy) => string> = {
   upload: (copy) => copy.uploadFailed,
   read: (copy) => copy.readFailed,
   mic: (copy) => copy.micDenied,
+  video_long: (copy) => copy.videoTooLong,
+  video_big: (copy) => copy.videoTooBig,
+  video_type: (copy) => copy.videoType,
 };
 
 type FailureProps = CopyProps & {

@@ -4,8 +4,10 @@ import { fetchSampleFile } from "../../lib/api/samples";
 import { fetchInbox } from "../../lib/api/volunteer";
 import type { Evidence, EvidenceKind, GeoPoint, SampleItem } from "../../lib/contracts";
 import { readDeviceLocation } from "../../lib/geo";
+import { isPermanentFailure } from "../../lib/volunteer/drain";
 import { type FailureReason, type FlowState, flowReducer, IDLE } from "../../lib/volunteer/flow";
 import { resizePhoto } from "../../lib/volunteer/image";
+import { addOutboxItem } from "../../lib/volunteer/outbox";
 import {
   baseContentType,
   startVoiceRecording,
@@ -13,7 +15,9 @@ import {
 } from "../../lib/volunteer/recorder";
 import { type IssuedTicket, type UploadResult, uploadEvidence } from "../../lib/volunteer/upload";
 import { waitForVerdict } from "../../lib/volunteer/verdictWait";
+import { checkedVideo, type VideoRefusal, VideoRefusedError } from "../../lib/volunteer/video";
 import { inboxKey } from "./inboxQuery";
+import { outboxKey } from "./outboxQuery";
 
 type Pending = {
   blob: Blob;
@@ -27,6 +31,7 @@ export type UploadFlow = {
   choosePhoto: (file: Blob, sample: boolean) => Promise<void>;
   sendPhoto: () => Promise<void>;
   chooseSample: (item: SampleItem) => Promise<void>;
+  chooseVideo: (file: Blob) => Promise<void>;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
   retry: () => Promise<void>;
@@ -36,9 +41,15 @@ export type UploadFlow = {
 type FlowTarget = { volunteerId: string; taskId: string };
 
 async function readPoint(pending: Pending): Promise<GeoPoint | null> {
-  if (pending.kind !== "photo" || pending.sample) return null;
+  if (pending.kind === "audio" || pending.sample) return null;
   return readDeviceLocation().catch(() => null);
 }
+
+const VIDEO_FAILURES: Record<VideoRefusal, FailureReason> = {
+  type: "video_type",
+  size: "video_big",
+  long: "video_long",
+};
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -88,19 +99,35 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
     }
   }
 
-  async function settle(pending: Pending, result: UploadResult) {
-    if (pending.kind === "audio") {
-      dispatch({ type: "stored" });
-      void queryClient.invalidateQueries({ queryKey: inboxKey(volunteerId) });
-      return;
-    }
+  async function settle(result: UploadResult) {
     dispatch({ type: "uploaded" });
     await judge(result.evidenceId, result.evidence);
+  }
+
+  async function queueForLater(pending: Pending, point: GeoPoint | null) {
+    try {
+      await addOutboxItem({
+        volunteerId,
+        taskId,
+        kind: pending.kind,
+        contentType: contentTypeOf(pending),
+        blob: pending.blob,
+        sample: pending.sample,
+        point,
+        ticket: pending.ticket,
+      });
+    } catch {
+      fail("upload");
+      return;
+    }
+    dispatch({ type: "queued" });
+    void queryClient.invalidateQueries({ queryKey: outboxKey(volunteerId) });
   }
 
   async function send(pending: Pending) {
     lastSend.current = pending;
     dispatch({ type: "upload_started", kind: pending.kind, sample: pending.sample });
+    const point = await readPoint(pending);
     try {
       const result = await uploadEvidence({
         volunteerId,
@@ -109,16 +136,17 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
         blob: pending.blob,
         contentType: contentTypeOf(pending),
         sample: pending.sample,
-        point: await readPoint(pending),
+        point,
         ticket: pending.ticket,
         onTicket: (issued) => {
           pending.ticket = issued;
         },
         onProgress: (progress) => dispatch({ type: "progress", progress }),
       });
-      await settle(pending, result);
-    } catch {
-      fail("upload");
+      await settle(result);
+    } catch (error) {
+      if (isPermanentFailure(error)) fail("upload");
+      else await queueForLater(pending, point);
     }
   }
 
@@ -128,6 +156,16 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
       dispatch({ type: "photo_chosen", photo: await resizePhoto(file), sample });
     } catch {
       fail("prepare");
+    }
+  }
+
+  async function chooseVideo(file: Blob) {
+    dispatch({ type: "preparing" });
+    try {
+      const video = await checkedVideo(file);
+      await send({ blob: video, kind: "video", sample: false, ticket: null });
+    } catch (error) {
+      fail(error instanceof VideoRefusedError ? VIDEO_FAILURES[error.refusal] : "prepare");
     }
   }
 
@@ -202,6 +240,7 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
     choosePhoto,
     sendPhoto,
     chooseSample,
+    chooseVideo,
     startRecording,
     stopRecording,
     retry,

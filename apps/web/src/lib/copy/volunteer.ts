@@ -51,8 +51,16 @@ export type VolunteerCopy = {
   readingTitle: string;
   readingNote: string;
   readingSlow: string;
-  storedTitle: string;
-  storedNote: string;
+  queuedTitle: string;
+  queuedNote: string;
+  outboxWaiting: (count: number) => string;
+  outboxSendNow: string;
+  recordVideo: string;
+  videoFile: string;
+  uploadingVideo: string;
+  videoTooLong: string;
+  videoTooBig: string;
+  videoType: string;
   uploadFailed: string;
   readFailed: string;
   prepareFailed: string;
@@ -132,8 +140,17 @@ const ID: VolunteerCopy = {
   keepOpen: "Jangan tutup halaman ini.",
   readingTitle: "Gemini sedang membaca kiriman Anda",
   readingNote: "Biasanya kurang dari 10 detik.",
-  storedTitle: "Terkirim",
-  storedNote: "Pesan suara Anda sudah tersimpan. Petugas akan mendengarkannya.",
+  queuedTitle: "Tersimpan di ponsel",
+  queuedNote: "Tidak ada sinyal. Kiriman Anda akan terkirim sendiri begitu sinyal kembali.",
+  outboxWaiting: (count) => `${count} kiriman menunggu sinyal`,
+  outboxSendNow: "Kirim sekarang",
+  recordVideo: "Rekam video",
+  videoFile: "Berkas video",
+  uploadingVideo: "Mengirim video",
+  videoTooLong: "Video lebih dari 30 detik. Rekam ulang yang lebih singkat.",
+  videoTooBig:
+    "Video terlalu besar (maksimal 25 MB). Rekam ulang yang lebih singkat atau pada resolusi lebih rendah.",
+  videoType: "Video harus berformat MP4 atau MOV.",
   readingSlow: "Hasil belum keluar. Kiriman Anda sudah diterima, cek lagi sebentar lagi.",
   uploadFailed: "Kiriman gagal terkirim. Periksa sinyal Anda, lalu coba lagi.",
   readFailed: "Kiriman diterima, tetapi hasilnya belum bisa dimuat.",
@@ -241,8 +258,18 @@ const EN: VolunteerCopy = {
   keepOpen: "Keep this page open.",
   readingTitle: "Gemini is reading what you sent",
   readingNote: "Usually under 10 seconds.",
-  storedTitle: "Sent",
-  storedNote: "Your voice note is saved. A person will listen to it.",
+  queuedTitle: "Saved on your phone",
+  queuedNote: "There is no signal. Your upload will send itself when the signal returns.",
+  outboxWaiting: (count) =>
+    `${count} ${count === 1 ? "upload is" : "uploads are"} waiting for signal`,
+  outboxSendNow: "Send now",
+  recordVideo: "Record video",
+  videoFile: "Video file",
+  uploadingVideo: "Sending video",
+  videoTooLong: "The video is longer than 30 seconds. Record a shorter one.",
+  videoTooBig:
+    "The video is too big (25 MB at most). Record a shorter one or at a lower resolution.",
+  videoType: "The video must be MP4 or MOV.",
   readingSlow: "The result is not ready. Your upload arrived, check again in a moment.",
   uploadFailed: "The upload did not go through. Check your signal and try again.",
   readFailed: "Your upload arrived, but the result could not be loaded.",

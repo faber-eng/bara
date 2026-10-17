@@ -275,17 +275,6 @@ def test_a_repeat_complete_after_the_verdict_does_not_publish():
     assert len(world.publisher.published) == 1
 
 
-def test_a_repeat_complete_of_a_voice_note_does_not_publish():
-    world = World()
-    world.request(kind="audio", content_type="audio/webm")
-    world.put(name="evidence/c1/e1.webm")
-    world.complete()
-
-    world.complete()
-
-    assert world.publisher.published == []
-
-
 def test_another_person_cannot_complete_the_upload():
     world = World()
     world.request()
@@ -323,7 +312,7 @@ def test_a_second_photo_on_a_done_task_keeps_the_task_and_case_and_publishes():
     assert len(world.publisher.published) == 1
 
 
-def test_a_voice_note_is_stored_without_an_event_or_a_task_change():
+def test_a_voice_note_is_published_without_a_task_or_case_change():
     world = World()
     world.request(kind="audio", content_type="audio/webm")
     world.put(name="evidence/c1/e1.webm")
@@ -333,7 +322,31 @@ def test_a_voice_note_is_stored_without_an_event_or_a_task_change():
     assert evidence.kind == "audio"
     assert world.tasks.get("t1").status == "open"
     assert world.cases.get("c1").status == "assigned"
-    assert world.publisher.published == []
+    assert len(world.publisher.published) == 1
+
+
+def test_a_video_completes_the_task_and_is_published():
+    world = World()
+    world.request(kind="video", content_type="video/mp4")
+    world.put(name="evidence/c1/e1.mp4")
+
+    evidence = world.complete()
+
+    assert evidence.kind == "video"
+    assert world.tasks.get("t1").status == "done"
+    assert world.cases.get("c1").status == "reviewing"
+    assert len(world.publisher.published) == 1
+
+
+def test_a_repeat_complete_of_an_unread_voice_note_publishes_again():
+    world = World()
+    world.request(kind="audio", content_type="audio/webm")
+    world.put(name="evidence/c1/e1.webm")
+    world.complete()
+
+    world.complete()
+
+    assert len(world.publisher.published) == 2
 
 
 def test_a_publish_failure_keeps_the_evidence_and_asks_for_a_retry():

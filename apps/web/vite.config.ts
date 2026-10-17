@@ -2,12 +2,17 @@ import { fileURLToPath } from "node:url";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
+import { serviceWorkerPlugin } from "./src/sw/swBuild";
 
 const fixturesDir = fileURLToPath(new URL("../../data/fixtures", import.meta.url));
 const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8080";
 
 export default defineConfig({
-  plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react()],
+  plugins: [
+    tanstackRouter({ target: "react", autoCodeSplitting: true }),
+    react(),
+    serviceWorkerPlugin(),
+  ],
   resolve: { alias: { "@fixtures": fixturesDir } },
   server: {
     fs: { allow: ["../.."] },
