@@ -246,3 +246,67 @@ def test_the_direct_cloud_run_url_allows_the_web_origin_to_stream(settings):
         "https://example-project.web.app"
     )
     assert refused.status_code == 400
+
+
+ALLOWED_ORIGINS = [
+    "https://example-project.web.app",
+    "https://example-project.firebaseapp.com",
+    "http://localhost:5173",
+]
+
+
+def preflight(client, path, origin, method="GET"):
+    return client.options(
+        path,
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": method,
+            "Access-Control-Request-Headers": "authorization,x-bara-role",
+        },
+    )
+
+
+def test_each_listed_origin_is_allowed_on_the_stream_route(settings):
+    client = route_client(settings, World())
+
+    for origin in ALLOWED_ORIGINS:
+        response = preflight(client, "/api/cases/c1/stream", origin)
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == origin
+        assert "GET" in response.headers["access-control-allow-methods"]
+        allowed = response.headers["access-control-allow-headers"].lower()
+        assert "authorization" in allowed and "x-bara-role" in allowed
+
+
+def test_an_unlisted_origin_is_refused_on_the_stream_route(settings):
+    client = route_client(settings, World())
+
+    for origin in [
+        "https://evil.example",
+        "https://example-project.web.app.evil.example",
+    ]:
+        assert preflight(client, "/api/cases/c1/stream", origin).status_code == 400
+
+
+def test_a_stream_get_from_an_allowed_origin_carries_the_origin_header(settings):
+    client = route_client(settings, World())
+
+    response = client.get(
+        "/api/cases/c1/stream",
+        headers={"Authorization": "Bearer ops", "Origin": ALLOWED_ORIGINS[0]},
+    )
+
+    assert response.headers["access-control-allow-origin"] == ALLOWED_ORIGINS[0]
+
+
+def test_other_routes_get_no_cors_headers(settings):
+    client = route_client(settings, World())
+
+    for path in ["/api/health", "/api/cases/c1/close", "/api/cases/c1/streams"]:
+        response = preflight(client, path, ALLOWED_ORIGINS[0])
+        assert "access-control-allow-origin" not in response.headers
+        get = client.get(
+            path,
+            headers={"Authorization": "Bearer ops", "Origin": ALLOWED_ORIGINS[0]},
+        )
+        assert "access-control-allow-origin" not in get.headers

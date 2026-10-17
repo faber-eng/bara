@@ -5,6 +5,7 @@ import { caseDetailQuery } from "../../lib/api/queries";
 import type { CaseDetail } from "../../lib/contracts";
 import { canCloseCase, spaced } from "../../lib/ops/caseDrawer";
 import { statusChip } from "../../lib/ops/statusChip";
+import { useCaseFollow } from "../../lib/ops/useCaseFollow";
 import { AgentRuns } from "./AgentRuns";
 import { CaseTimeline } from "./CaseTimeline";
 import { EvidenceCard } from "./EvidenceCard";
@@ -98,6 +99,7 @@ type CaseDrawerProps = { caseId: string; onBack: () => void };
 
 export function CaseDrawer({ caseId, onBack }: CaseDrawerProps) {
   const detail = useQuery(caseDetailQuery(caseId));
+  useCaseFollow(caseId);
   return (
     <section className="drawer" aria-label="Case detail">
       <button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>

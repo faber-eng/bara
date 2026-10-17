@@ -2,6 +2,7 @@ timeout: 1200s
 
 substitutions:
   _REGION: asia-southeast1
+  _STREAM_BASE: https://bara-api-7qqdwk3aga-as.a.run.app
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -68,6 +69,7 @@ steps:
         bun run test
         printf '%s\n' "$$FIREBASE_WEB_CONFIG" > .env.production
         printf 'VITE_MAPS_KEY=%s\n' "$$MAPS_KEY" >> .env.production
+        printf 'VITE_STREAM_BASE=%s\n' "$_STREAM_BASE" >> .env.production
         bun run build
 
   - id: image
