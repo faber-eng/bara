@@ -14,6 +14,7 @@ from adapters.factory import (
     utcnow,
 )
 from adapters.gemini import ModelGateway, build_agent_model, build_vertex_clients
+from adapters.reignition import ReignitionScores
 from area_queries import AreaQueries
 from auth import FirebaseTokenVerifier, TokenVerifier
 from bara_agent.agent import build_tools
@@ -389,6 +390,14 @@ def build_public_queries(settings: Settings, adapters: Adapters) -> PublicQuerie
     )
 
 
+def build_tiles(settings: Settings, adapters: Adapters) -> EarthEngineTiles:
+    return EarthEngineTiles(
+        settings.project,
+        settings.config_dir,
+        ReignitionScores(adapters.warehouse),
+    )
+
+
 def create_app() -> FastAPI:
     configure_logging()
     settings = load_settings()
@@ -426,6 +435,6 @@ def create_app() -> FastAPI:
         settings, app.state.adapters, gateway
     )
     app.state.public_queries = build_public_queries(settings, app.state.adapters)
-    app.state.tiles = EarthEngineTiles(settings.project, settings.config_dir)
+    app.state.tiles = build_tiles(settings, app.state.adapters)
     app.state.utcnow = utcnow
     return app

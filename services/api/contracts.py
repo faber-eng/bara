@@ -50,7 +50,7 @@ Channel = Literal["web", "whatsapp"]
 BulletinSource = Literal["gemini", "template"]
 Language = Literal["id", "en", "ms", "fr"]
 SampleKind = Literal["photo", "voice", "area"]
-TileLayerKind = Literal["drying"]
+TileLayerKind = Literal["drying", "peat", "burn_scars", "reignition"]
 
 Subject = Literal["canal_dam", "burned_peat", "smoke_scene", "other"]
 DamState = Literal[
