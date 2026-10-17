@@ -1,4 +1,5 @@
 import type { OpsTab } from "../../lib/ops/tabs";
+import { CaseDrawer } from "./CaseDrawer";
 import { CasesTab } from "./CasesTab";
 import { RankedAreasTab } from "./RankedAreasTab";
 
@@ -13,9 +14,25 @@ type OpsPanelProps = {
   selectedCaseId: string | undefined;
   onTabChange: (tab: OpsTab) => void;
   onCaseSelect: (caseId: string) => void;
+  onCaseClear: () => void;
 };
 
-export function OpsPanel({ tab, selectedCaseId, onTabChange, onCaseSelect }: OpsPanelProps) {
+type TabBodyProps = Pick<OpsPanelProps, "tab" | "selectedCaseId" | "onCaseSelect" | "onCaseClear">;
+
+function TabBody({ tab, selectedCaseId, onCaseSelect, onCaseClear }: TabBodyProps) {
+  if (selectedCaseId !== undefined)
+    return <CaseDrawer caseId={selectedCaseId} onBack={onCaseClear} />;
+  if (tab === "ranked") return <RankedAreasTab />;
+  return <CasesTab selectedCaseId={selectedCaseId} onSelect={onCaseSelect} />;
+}
+
+export function OpsPanel({
+  tab,
+  selectedCaseId,
+  onTabChange,
+  onCaseSelect,
+  onCaseClear,
+}: OpsPanelProps) {
   return (
     <aside className="ops-panel">
       <div className="tabs" role="tablist" aria-label="Ops lists">
@@ -32,11 +49,12 @@ export function OpsPanel({ tab, selectedCaseId, onTabChange, onCaseSelect }: Ops
         ))}
       </div>
       <div className="ops-panel-body" role="tabpanel" aria-label={TAB_LABELS[tab]}>
-        {tab === "ranked" ? (
-          <RankedAreasTab />
-        ) : (
-          <CasesTab selectedCaseId={selectedCaseId} onSelect={onCaseSelect} />
-        )}
+        <TabBody
+          tab={tab}
+          selectedCaseId={selectedCaseId}
+          onCaseSelect={onCaseSelect}
+          onCaseClear={onCaseClear}
+        />
       </div>
     </aside>
   );

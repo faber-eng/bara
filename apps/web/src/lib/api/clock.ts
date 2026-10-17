@@ -2,6 +2,7 @@ import type { ClockState } from "../contracts";
 import { setJudgeMode } from "../judge/store";
 import { sourceFor } from "../sources";
 import { apiRequest } from "./client";
+import { clearFixtureClosures } from "./fixtureClosures";
 import { readBoolean, readNumber, readRecord, readString } from "./parse";
 
 const CLOCK_PATH = "/api/clock";
@@ -65,6 +66,7 @@ export async function advanceClock(hours: number): Promise<ClockState> {
 export async function resetClock(): Promise<ClockState> {
   if (sourceFor("clock") === "fixture") {
     fixtureOffsetSeconds = 0;
+    clearFixtureClosures();
     return readFixtureState();
   }
   return parseClockState(await apiRequest(RESET_PATH, { method: "POST" }));

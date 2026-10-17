@@ -1,3 +1,5 @@
+import type { JsonValue } from "../contracts";
+
 export class ResponseShapeError extends Error {
   override name = "ResponseShapeError";
 }
@@ -55,4 +57,33 @@ export function readOneOf<T extends string>(
   const match = allowed.find((candidate) => candidate === value);
   if (match === undefined) throw new ResponseShapeError(`${label}.${key} is not a known value`);
   return match;
+}
+
+export function readJsonValue(value: unknown, label: string): JsonValue {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number" && !Number.isNaN(value)) return value;
+  if (Array.isArray(value)) return value.map((item) => readJsonValue(item, label));
+  if (typeof value === "object") return readJsonObject(value as JsonRecord, label);
+  throw new ResponseShapeError(`${label} is not JSON`);
+}
+
+function readJsonObject(record: JsonRecord, label: string): { [key: string]: JsonValue } {
+  const result: { [key: string]: JsonValue } = {};
+  for (const [key, item] of Object.entries(record)) result[key] = readJsonValue(item, label);
+  return result;
+}
+
+export function readJsonObjectAt(
+  record: JsonRecord,
+  key: string,
+  label: string,
+): { [key: string]: JsonValue } {
+  return readJsonObject(readRecord(record[key], `${label}.${key}`), `${label}.${key}`);
+}
+
+export function readStringArray(record: JsonRecord, key: string, label: string): string[] {
+  return readArray(record[key], `${label}.${key}`).map((item) => {
+    if (typeof item !== "string") throw new ResponseShapeError(`${label}.${key} has a non-string`);
+    return item;
+  });
 }

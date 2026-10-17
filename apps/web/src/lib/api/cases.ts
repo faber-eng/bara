@@ -9,6 +9,7 @@ import type {
 import { sourceFor } from "../sources";
 import { apiRequest } from "./client";
 import { fixtureClockNowMs } from "./clock";
+import { applyFixtureClosure } from "./fixtureClosures";
 import {
   type JsonRecord,
   readArray,
@@ -32,9 +33,15 @@ const CASE_STATUSES: readonly CaseStatus[] = [
   "monitoring",
   "closed",
 ];
-const TASK_STATUSES: readonly TaskStatus[] = ["open", "done", "overdue", "reassigned", "cancelled"];
+export const TASK_STATUSES: readonly TaskStatus[] = [
+  "open",
+  "done",
+  "overdue",
+  "reassigned",
+  "cancelled",
+];
 
-function parseCase(value: unknown): Case {
+export function parseCase(value: unknown): Case {
   const record = readRecord(value, "case");
   const risk = readRecord(record.risk, "case.risk");
   const flags = readRecord(record.history_flags, "case.history_flags");
@@ -77,14 +84,15 @@ function isPastDeadline(deadline: IsoDateTime | null, nowMs: number): boolean {
   return deadline !== null && Date.parse(deadline) <= nowMs;
 }
 
-function sweepFixtureCase(summary: CaseSummary, nowMs: number): CaseSummary {
+function sweepFixtureCase(source: CaseSummary, nowMs: number): CaseSummary {
+  const summary = { ...source, case: applyFixtureClosure(source.case) };
   const dueAndOpen =
     summary.task_status === "open" && isPastDeadline(summary.next_deadline_at, nowMs);
   if (!dueAndOpen || summary.case.status !== "assigned") return summary;
   return { ...summary, task_status: "overdue", case: { ...summary.case, status: "overdue" } };
 }
 
-async function fetchFixtureCases(): Promise<CaseSummary[]> {
+export async function fetchFixtureCases(): Promise<CaseSummary[]> {
   const cases = parseCaseSummaries((await import("@fixtures/cases.json")).default);
   const nowMs = await fixtureClockNowMs();
   return cases.map((summary) => sweepFixtureCase(summary, nowMs));
