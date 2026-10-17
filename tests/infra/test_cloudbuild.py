@@ -1,3 +1,5 @@
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -5,7 +7,9 @@ import yaml
 from conftest import REPO
 
 CONFIG_PATH = REPO / "cloudbuild.yaml"
+GUARD = REPO / "ci" / "guard.sh"
 STEP_IDS = [
+    "stamp",
     "api-gate",
     "pipelines-gate",
     "web-gate",
@@ -13,6 +17,7 @@ STEP_IDS = [
     "image-jobs",
     "deploy-jobs",
     "deploy-api",
+    "guard-hosting",
     "deploy-hosting",
     "verify",
 ]
@@ -37,6 +42,7 @@ def test_steps_exist_in_order(config):
 
 
 def test_gates_start_in_parallel(steps):
+    assert steps["stamp"]["waitFor"] == ["-"]
     assert steps["api-gate"]["waitFor"] == ["-"]
     assert steps["pipelines-gate"]["waitFor"] == ["-"]
     assert steps["web-gate"]["waitFor"] == ["-"]
@@ -44,8 +50,9 @@ def test_gates_start_in_parallel(steps):
 
 def test_dependency_graph(steps):
     assert sorted(steps["image"]["waitFor"]) == ["api-gate", "pipelines-gate"]
-    assert sorted(steps["deploy-api"]["waitFor"]) == ["image", "web-gate"]
-    assert steps["deploy-hosting"]["waitFor"] == ["deploy-api"]
+    assert sorted(steps["deploy-api"]["waitFor"]) == ["image", "stamp", "web-gate"]
+    assert steps["guard-hosting"]["waitFor"] == ["deploy-api"]
+    assert steps["deploy-hosting"]["waitFor"] == ["guard-hosting"]
     assert steps["verify"]["waitFor"] == ["deploy-hosting"]
 
 
@@ -63,7 +70,7 @@ def descendants(steps, root: str) -> set[str]:
 
 def test_jobs_path_hangs_off_the_pipelines_gate_only(steps):
     assert steps["image-jobs"]["waitFor"] == ["pipelines-gate"]
-    assert steps["deploy-jobs"]["waitFor"] == ["image-jobs"]
+    assert sorted(steps["deploy-jobs"]["waitFor"]) == ["image-jobs", "stamp"]
 
 
 def test_nothing_waits_for_the_jobs_path(steps):
@@ -77,7 +84,7 @@ def test_nothing_waits_for_the_jobs_path(steps):
 def test_a_failing_jobs_path_does_not_fail_the_build(steps):
     assert steps["image-jobs"]["allowFailure"] is True
     assert steps["deploy-jobs"]["allowFailure"] is True
-    for step_id in ("deploy-api", "deploy-hosting", "verify"):
+    for step_id in ("deploy-api", "guard-hosting", "deploy-hosting", "verify"):
         assert "allowFailure" not in steps[step_id]
 
 
@@ -176,6 +183,75 @@ def test_deploy_api_changes_only_the_image(steps):
         "--allow-unauthenticated",
     ):
         assert flag not in text
+
+
+def test_stamp_records_the_build_start_time_in_the_workspace(steps):
+    text = command_text(steps["stamp"])
+    assert "date +%s%N > /workspace/build-started" in text
+
+
+@pytest.mark.parametrize(
+    ("step_id", "target"),
+    [("deploy-jobs", "jobs bara-drying"), ("deploy-api", "services bara-api")],
+)
+def test_each_deploy_runs_the_guard_before_deploying(steps, step_id, target):
+    text = command_text(steps[step_id])
+    guard = f"bash ci/guard.sh {target} $_REGION $PROJECT_ID"
+    assert guard in text
+    assert text.index(guard) < text.index("gcloud run")
+    assert "--update-labels=build_started=" in text
+    assert text.index("superseded-") < text.index("gcloud run")
+
+
+def test_hosting_is_guarded_and_skips_when_the_api_was_superseded(steps):
+    guard = command_text(steps["guard-hosting"])
+    assert "bash ci/guard.sh services bara-api $_REGION $PROJECT_ID" in guard
+    deploy = command_text(steps["deploy-hosting"])
+    assert deploy.index("superseded-bara-api") < deploy.index("firebase-tools")
+    assert "exit 0" in deploy
+
+
+def test_verify_accepts_a_superseded_skip_as_success(steps):
+    text = command_text(steps["verify"])
+    assert text.index("superseded-bara-api") < text.index("for attempt")
+    assert "skipped, superseded" in text
+    assert text.index("exit 0") < text.index("for attempt")
+
+
+def run_guard(tmp_path, live_label, started="200", args=None):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    fake = bin_dir / "gcloud"
+    fake.write_text(f"#!/usr/bin/env bash\nprintf '%s' '{live_label}'\n")
+    fake.chmod(0o755)
+    (tmp_path / "build-started").write_text(started + "\n")
+    env = {
+        **os.environ,
+        "PATH": f"{bin_dir}:{os.environ['PATH']}",
+        "GUARD_DIR": str(tmp_path),
+    }
+    command = ["bash", str(GUARD), *(args or ["services", "bara-api", "r", "p"])]
+    return subprocess.run(command, env=env, capture_output=True, text=True)
+
+
+def test_guard_marks_the_deploy_superseded_when_live_started_later(tmp_path):
+    result = run_guard(tmp_path, live_label="300")
+    assert result.returncode == 0
+    assert "SUPERSEDED" in result.stdout
+    assert (tmp_path / "superseded-bara-api").exists()
+
+
+@pytest.mark.parametrize("live_label", ["100", "200", ""])
+def test_guard_lets_an_equal_older_or_first_deploy_through(tmp_path, live_label):
+    result = run_guard(tmp_path, live_label=live_label)
+    assert result.returncode == 0
+    assert "SUPERSEDED" not in result.stdout
+    assert not (tmp_path / "superseded-bara-api").exists()
+
+
+def test_guard_without_arguments_is_a_usage_error(tmp_path):
+    result = run_guard(tmp_path, live_label="", args=["services"])
+    assert result.returncode == 2
 
 
 def test_deploy_hosting_pins_firebase_tools_and_uses_no_token(steps):

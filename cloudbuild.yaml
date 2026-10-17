@@ -14,6 +14,14 @@ availableSecrets:
       env: FIREBASE_WEB_CONFIG
 
 steps:
+  - id: stamp
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: ["-"]
+    entrypoint: bash
+    args:
+      - -c
+      - date +%s%N > /workspace/build-started
+
   - id: api-gate
     name: python:3.12-slim
     dir: services/api
@@ -89,54 +97,75 @@ steps:
 
   - id: deploy-jobs
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    waitFor: [image-jobs]
+    waitFor: [image-jobs, stamp]
     allowFailure: true
-    entrypoint: gcloud
+    entrypoint: bash
     args:
-      - run
-      - jobs
-      - deploy
-      - bara-drying
-      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA
-      - --region=$_REGION
-      - --project=$PROJECT_ID
-      - --service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com
-      - --cpu=1
-      - --memory=512Mi
-      - --tasks=1
-      - --max-retries=0
-      - --task-timeout=1800s
-      - --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID
-      - --args=jobs.weekly_rankings,--region,riau
-      - --quiet
+      - -c
+      - |
+        set -euo pipefail
+        bash ci/guard.sh jobs bara-drying $_REGION $PROJECT_ID
+        if [ -e /workspace/superseded-bara-drying ]; then
+          exit 0
+        fi
+        gcloud run jobs deploy bara-drying \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-jobs:$SHORT_SHA \
+          --region=$_REGION \
+          --project=$PROJECT_ID \
+          --service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com \
+          --cpu=1 \
+          --memory=512Mi \
+          --tasks=1 \
+          --max-retries=0 \
+          --task-timeout=1800s \
+          --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID \
+          --update-labels=build_started=$$(cat /workspace/build-started) \
+          --args=jobs.weekly_rankings,--region,riau \
+          --quiet
 
   - id: deploy-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    waitFor: [image, web-gate]
-    entrypoint: gcloud
+    waitFor: [image, web-gate, stamp]
+    entrypoint: bash
     args:
-      - run
-      - deploy
-      - bara-api
-      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-api:$SHORT_SHA
-      - --region=$_REGION
-      - --project=$PROJECT_ID
-      - --quiet
+      - -c
+      - |
+        set -euo pipefail
+        bash ci/guard.sh services bara-api $_REGION $PROJECT_ID
+        if [ -e /workspace/superseded-bara-api ]; then
+          exit 0
+        fi
+        gcloud run deploy bara-api \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-api:$SHORT_SHA \
+          --region=$_REGION \
+          --project=$PROJECT_ID \
+          --update-labels=build_started=$$(cat /workspace/build-started) \
+          --quiet
+
+  - id: guard-hosting
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [deploy-api]
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        bash ci/guard.sh services bara-api $_REGION $PROJECT_ID
 
   - id: deploy-hosting
     name: node:22-slim
     dir: apps/web
-    waitFor: [deploy-api]
-    entrypoint: npx
+    waitFor: [guard-hosting]
+    entrypoint: bash
     args:
-      - --yes
-      - firebase-tools@15.34.0
-      - deploy
-      - --only
-      - hosting
-      - --project
-      - $PROJECT_ID
-      - --non-interactive
+      - -c
+      - |
+        set -euo pipefail
+        if [ -e /workspace/superseded-bara-api ]; then
+          echo "deploy-hosting skipped: superseded by a build that started later"
+          exit 0
+        fi
+        npx --yes firebase-tools@15.34.0 deploy --only hosting --project $PROJECT_ID --non-interactive
 
   - id: verify
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -146,6 +175,10 @@ steps:
       - -c
       - |
         set -u
+        if [ -e /workspace/superseded-bara-api ]; then
+          echo "verify: skipped, superseded by a build that started later"
+          exit 0
+        fi
         HEALTH=https://$PROJECT_ID.web.app/api/health
         IMAGES=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-api
         live_sha() {
