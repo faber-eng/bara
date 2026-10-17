@@ -575,6 +575,49 @@ class PublicSummary(Contract):
     data_as_of: DataAsOf
 
 
+RecordKind = Literal["opened", "task", "overdue", "escalated", "closed"]
+
+
+class PublicCell(Contract):
+    cell_id: str
+    centroid: GeoPoint
+    drying_score: Percent
+    rank: Annotated[int, Field(ge=1)]
+    rank_change: int | None
+    components: RankingComponents
+
+
+class PublicCells(Contract):
+    region: str
+    week: IsoWeek
+    cells: list[PublicCell]
+
+
+class PublicDam(Contract):
+    id: str
+    point: GeoPoint
+    last_state: DamState
+    last_checked_at: AwareDatetime | None
+    repair_due_at: AwareDatetime | None
+
+
+class RecordLine(Contract):
+    at: AwareDatetime
+    cell_id: str
+    kind: RecordKind
+    text: str
+
+
+class PublicBulletin(Contract):
+    region: str
+    week: IsoWeek
+    text_id: str | None
+    text_en: str | None
+    cited: list[CitedValue]
+    source: BulletinSource | None
+    created_at: AwareDatetime | None
+
+
 class HealthModels(Contract):
     reasoning: str
     fast: str

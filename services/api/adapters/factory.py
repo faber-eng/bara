@@ -22,6 +22,7 @@ from adapters.firestore_repos import (
     UPLOADS,
     VERDICT_CACHE,
     AgentRunRepository,
+    BulletinRepository,
     CaseRepository,
     CaseworkStore,
     ContactRepository,
@@ -49,6 +50,7 @@ from adapters.tasks import DeadlineScheduler
 from config import Settings
 from contracts import (
     AgentRun,
+    Bulletin,
     Case,
     ClockSettings,
     Contact,
@@ -96,6 +98,7 @@ class Adapters:
     contacts: ContactRepository
     secrets: SecretReader
     claims: ClaimsAdmin
+    bulletins: BulletinRepository
 
 
 def utcnow() -> datetime:
@@ -183,4 +186,5 @@ def build_adapters(settings: Settings) -> Adapters:
             secretmanager.SecretManagerServiceClient(), settings.project
         ),
         claims=FirebaseClaimsAdmin(),
+        bulletins=BulletinRepository(FirestoreCollection(db, "bulletins", Bulletin)),
     )

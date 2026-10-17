@@ -36,6 +36,7 @@ from evidence_events import EvidenceReceivedHandler
 from fire_events import FireQuietHandler
 from logs import configure_logging
 from overdue_events import TaskOverdueHandler
+from public_queries import PublicQueries
 from push_auth import GoogleOidcVerifier
 from ratelimit import FailureLimiter
 from routes import (
@@ -326,6 +327,19 @@ def build_rank_explainer(
     )
 
 
+def build_public_queries(settings: Settings, adapters: Adapters) -> PublicQueries:
+    return PublicQueries(
+        rankings=adapters.rankings,
+        dams=adapters.dams,
+        cases=adapters.cases,
+        tasks=adapters.tasks,
+        evidence=adapters.evidence,
+        escalations=adapters.escalations,
+        bulletins=adapters.bulletins,
+        zones=region_timezones(settings.config_dir),
+    )
+
+
 def create_app() -> FastAPI:
     configure_logging()
     settings = load_settings()
@@ -358,6 +372,7 @@ def create_app() -> FastAPI:
     app.state.rank_explainer = build_rank_explainer(
         settings, app.state.adapters, gateway
     )
+    app.state.public_queries = build_public_queries(settings, app.state.adapters)
     app.state.tiles = EarthEngineTiles(settings.project, settings.config_dir)
     app.state.utcnow = utcnow
     return app
