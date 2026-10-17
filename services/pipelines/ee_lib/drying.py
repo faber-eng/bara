@@ -46,9 +46,12 @@ def s1_collection(
     )
 
 
+def masked_image(name: str) -> ee.Image:
+    return ee.Image(0).selfMask().rename(name).toFloat()
+
+
 def masked_band() -> ee.ImageCollection:
-    empty = ee.Image(0).selfMask().rename(S1_BAND).toFloat()
-    return ee.ImageCollection([empty])
+    return ee.ImageCollection([masked_image(S1_BAND)])
 
 
 def smoothed_median(collection: ee.ImageCollection, span: DateRange) -> ee.Image:

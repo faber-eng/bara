@@ -25,6 +25,11 @@ COMMIT TRANSACTION;
 """
 
 
+DELETE_REGION_SQL = """
+DELETE FROM {table} WHERE region = @region{since};
+"""
+
+
 class InvalidTableName(Exception):
     pass
 
@@ -164,6 +169,10 @@ class Warehouse:
             since_sql = f" AND {since.column} >= @since"
             params["since"] = since.day
         self.ensure_table(spec)
+        if not rows:
+            return self.query(
+                DELETE_REGION_SQL.format(table=spec.name, since=since_sql), params
+            )
         self.load_rows(staging, rows, write="truncate")
         sql = REWRITE_REGION_SQL.format(
             table=spec.name, staging=staging.name, since=since_sql

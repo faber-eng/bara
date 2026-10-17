@@ -52,10 +52,7 @@ SELECT
   event.mean_confidence,
   cell.peat_class,
   cell.canal_dist_m,
-  COUNTIF(
-    cell_years.year BETWEEN @history_from_year
-      AND EXTRACT(YEAR FROM event.quiet_date) - 1
-  ) AS prior_years_burned
+  ARRAY_AGG(DISTINCT cell_years.year IGNORE NULLS) AS burned_years
 FROM fire_events AS event
 JOIN cells AS cell ON cell.cell_id = event.cell_id
 LEFT JOIN cell_years ON cell_years.cell_id = event.cell_id
@@ -68,13 +65,8 @@ ORDER BY event.quiet_date, event.cell_id
 """
 
 
-def read_events(
-    warehouse: Warehouse, region: str, since: date, history_from_year: int
-) -> QueryResult:
-    return warehouse.query(
-        EVENTS_SQL,
-        {"region": region, "since": since, "history_from_year": history_from_year},
-    )
+def read_events(warehouse: Warehouse, region: str, since: date) -> QueryResult:
+    return warehouse.query(EVENTS_SQL, {"region": region, "since": since})
 
 
 def training_row(row: TrainingRow) -> dict[str, object]:

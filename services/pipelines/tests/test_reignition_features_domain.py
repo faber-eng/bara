@@ -6,6 +6,7 @@ from domain.reignition_features import (
     MissingMeasurement,
     cells_by_date,
     event_windows,
+    prior_years_burned,
     split_for,
     training_rows,
 )
@@ -14,6 +15,7 @@ from ee_lib.weeks import DateRange
 
 YEARS = SplitYears(train=(2015, 2024), valid=2025, test=2026)
 QUIET = date(2019, 8, 10)
+HISTORY_FROM = 2001
 
 
 def event(**overrides):
@@ -28,7 +30,7 @@ def event(**overrides):
         "detection_days": 4,
         "max_t21": 330.5,
         "mean_confidence": 62.5,
-        "prior_years_burned": 3,
+        "burned_years": [2016, 2017, 2018],
     }
     return {**base, **overrides}
 
@@ -78,7 +80,7 @@ def test_a_rain_window_ending_the_day_after_the_last_chirps_day_is_measured():
 
 
 def test_training_rows_join_the_event_its_measures_and_peat_fraction():
-    rows = training_rows([event()], [MEASURE], {"riau-1-1": 0.75}, YEARS)
+    rows = training_rows([event()], [MEASURE], {"riau-1-1": 0.75}, YEARS, HISTORY_FROM)
 
     row = rows[0]
     assert row.split == "train"
@@ -102,7 +104,11 @@ def test_an_unlabeled_test_event_keeps_a_null_label():
     measure = {**MEASURE, "quiet_date": "2026-10-01"}
 
     rows = training_rows(
-        [event(quiet_date=quiet, reignited=None)], [measure], {"riau-1-1": 1.0}, YEARS
+        [event(quiet_date=quiet, reignited=None)],
+        [measure],
+        {"riau-1-1": 1.0},
+        YEARS,
+        HISTORY_FROM,
     )
 
     assert rows[0].split == "test"
@@ -113,7 +119,11 @@ def test_events_outside_the_split_years_are_skipped():
     measure = {**MEASURE, "quiet_date": "2014-08-10"}
 
     rows = training_rows(
-        [event(quiet_date=date(2014, 8, 10))], [measure], {"riau-1-1": 1.0}, YEARS
+        [event(quiet_date=date(2014, 8, 10))],
+        [measure],
+        {"riau-1-1": 1.0},
+        YEARS,
+        HISTORY_FROM,
     )
 
     assert rows == []
@@ -121,12 +131,12 @@ def test_events_outside_the_split_years_are_skipped():
 
 def test_a_missing_measure_is_an_error():
     with pytest.raises(MissingMeasurement, match="riau-1-1-20190801"):
-        training_rows([event()], [], {"riau-1-1": 1.0}, YEARS)
+        training_rows([event()], [], {"riau-1-1": 1.0}, YEARS, HISTORY_FROM)
 
 
 def test_a_missing_peat_fraction_is_an_error():
     with pytest.raises(MissingMeasurement, match="peat_fraction"):
-        training_rows([event()], [MEASURE], {}, YEARS)
+        training_rows([event()], [MEASURE], {}, YEARS, HISTORY_FROM)
 
 
 def test_cells_by_date_groups_the_event_cells():
@@ -140,3 +150,24 @@ def test_cells_by_date_groups_the_event_cells():
         QUIET: ["riau-1-1", "riau-1-2"],
         date(2019, 9, 1): ["riau-1-3"],
     }
+
+
+@pytest.mark.parametrize(
+    ("burned", "quiet_year", "expected"),
+    [
+        ([2000, 2001, 2018], 2019, 2),
+        ([2019], 2019, 0),
+        ([2018, 2019, 2020], 2019, 1),
+        ([], 2019, 0),
+        ([None], 2019, 0),
+    ],
+)
+def test_prior_years_burned_counts_history_years_before_the_quiet_year(
+    burned, quiet_year, expected
+):
+    assert prior_years_burned(burned, quiet_year, HISTORY_FROM) == expected
+
+
+def test_a_null_quiet_date_is_an_error():
+    with pytest.raises(MissingMeasurement, match="quiet_date"):
+        cells_by_date([event(quiet_date=None)])

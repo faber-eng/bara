@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Protocol
 
 from adapters import fire_tables
-from adapters.bigquery import QueryResult, Warehouse
+from adapters.bigquery import Warehouse
 from domain.fire_events import (
     Detection,
     EventRules,
@@ -26,6 +26,7 @@ from jobs.cli import (
     JobError,
     configure_logging,
     logger,
+    query_report,
     resolve_config_dir,
     resolve_project,
     run_job,
@@ -40,11 +41,6 @@ class FireSource(Protocol):
     def fire_detections(
         self, aoi: dict, buffer_m: int, start: date, end: date
     ) -> list[dict]: ...
-
-
-def query_report(step: str, result: QueryResult) -> dict[str, object]:
-    logger.info("%s: %s bytes billed", step, result.bytes_billed)
-    return {"step": step, "bytes": result.bytes_billed, "estimate": result.dry_run}
 
 
 def event_rules(rules: ReignitionConfig) -> EventRules:
