@@ -2,10 +2,24 @@ from collections.abc import Callable
 from datetime import datetime
 
 from adapters.store import Collection, Filter
-from contracts import Case, ClockSettings, EventType, ProcessedEvent, Task, Volunteer
+from contracts import (
+    Case,
+    ClockSettings,
+    Contact,
+    Dam,
+    Escalation,
+    EventType,
+    Evidence,
+    Message,
+    ProcessedEvent,
+    Task,
+    Volunteer,
+)
 from domain.clock import is_due
+from domain.reset_scope import ResetSnapshot
 
 CLOCK_DOCUMENT = "clock"
+IN_QUERY_LIMIT = 30
 
 
 class TaskRepository:
@@ -68,3 +82,47 @@ class FirestoreClockStore:
         self._settings.add(
             CLOCK_DOCUMENT, "offset_seconds", seconds, {"updated_by": updated_by}
         )
+
+
+class ResetRepository:
+    def __init__(
+        self,
+        volunteers: Collection[Volunteer],
+        contacts: Collection[Contact],
+        dams: Collection[Dam],
+        cases: Collection[Case],
+        tasks: Collection[Task],
+        evidence: Collection[Evidence],
+        messages: Collection[Message],
+        escalations: Collection[Escalation],
+    ):
+        self._volunteers = volunteers
+        self._contacts = contacts
+        self._dams = dams
+        self._cases = cases
+        self._tasks = tasks
+        self._evidence = evidence
+        self._messages = messages
+        self._escalations = escalations
+
+    def snapshot(self) -> ResetSnapshot:
+        cases = self._cases.where(Filter("example", "==", True))
+        case_ids = [case.id for case in cases]
+        return ResetSnapshot(
+            volunteers=self._volunteers.where(Filter("example", "==", True)),
+            contacts=self._contacts.where(Filter("example", "==", True)),
+            dams=self._dams.where(Filter("example", "==", True)),
+            cases=cases,
+            tasks=children(self._tasks, case_ids),
+            evidence=children(self._evidence, case_ids),
+            messages=children(self._messages, case_ids),
+            escalations=children(self._escalations, case_ids),
+        )
+
+
+def children[T](collection: Collection[T], case_ids: list[str]) -> list[T]:
+    found: list[T] = []
+    for start in range(0, len(case_ids), IN_QUERY_LIMIT):
+        chunk = case_ids[start : start + IN_QUERY_LIMIT]
+        found.extend(collection.where(Filter("case_id", "in", chunk)))
+    return found
