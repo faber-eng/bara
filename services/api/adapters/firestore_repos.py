@@ -23,7 +23,8 @@ from contracts import (
     VolunteerRole,
 )
 from domain.clock import is_due
-from domain.reset_scope import ResetSnapshot
+from domain.reset_scope import ResetScope, ResetSnapshot
+from domain.scenario import Scenario
 
 CLOCK_DOCUMENT = "clock"
 IN_QUERY_LIMIT = 30
@@ -116,7 +117,9 @@ class ResetRepository:
         evidence: Collection[Evidence],
         messages: Collection[Message],
         escalations: Collection[Escalation],
+        agent_runs_for: Callable[[str], Collection[AgentRun]],
     ):
+        self._agent_runs_for = agent_runs_for
         self._volunteers = volunteers
         self._contacts = contacts
         self._dams = dams
@@ -139,6 +142,24 @@ class ResetRepository:
             messages=children(self._messages, case_ids),
             escalations=children(self._escalations, case_ids),
         )
+
+    def delete(self, scope: ResetScope) -> None:
+        for case_id in sorted(scope.case_ids):
+            runs = self._agent_runs_for(case_id)
+            runs.delete_many([run.id for run in runs.where()])
+        self._tasks.delete_many(scope.task_ids)
+        self._evidence.delete_many(scope.evidence_ids)
+        self._messages.delete_many(scope.message_ids)
+        self._escalations.delete_many(scope.escalation_ids)
+        self._cases.delete_many(scope.case_ids)
+        self._volunteers.delete_many(scope.volunteer_ids)
+        self._contacts.delete_many(scope.contact_ids)
+        self._dams.delete_many(scope.dam_ids)
+
+    def seed(self, scenario: Scenario) -> None:
+        self._volunteers.put_many({v.id: v for v in scenario.spec.volunteers})
+        self._contacts.put_many({c.id: c for c in scenario.spec.contacts})
+        self._dams.put_many({dam.id: dam for dam in scenario.dams})
 
 
 def children[T](collection: Collection[T], case_ids: list[str]) -> list[T]:

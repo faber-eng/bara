@@ -21,6 +21,7 @@ from adapters.firestore_repos import (
     FirestoreClockStore,
     RankedDamRepository,
     RankingRepository,
+    ResetRepository,
     TaskRepository,
     VolunteerRepository,
     build_agent_repositories,
@@ -32,8 +33,22 @@ from adapters.storage import AdcSigningAuth, EvidenceStorage
 from adapters.store import FirestoreCollection
 from adapters.tasks import DeadlineScheduler
 from config import Settings
-from contracts import Case, ClockSettings, ProcessedEvent, Task
+from contracts import (
+    AgentRun,
+    Case,
+    ClockSettings,
+    Contact,
+    Dam,
+    Escalation,
+    Evidence,
+    Message,
+    ProcessedEvent,
+    Task,
+    Volunteer,
+)
 from domain.clock import Clock
+from domain.scenario import Scenario
+from scenario_reset import ScenarioResetter
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +93,30 @@ def build_scheduler(settings: Settings) -> DeadlineScheduler | None:
         queue=DEADLINE_QUEUE,
         api_url=settings.api_url,
         invoker_email=settings.tasks_invoker_email,
+    )
+
+
+def build_scenario_resetter(
+    db: firestore.Client, scenario: Scenario
+) -> ScenarioResetter:
+    clock_store = FirestoreClockStore(
+        FirestoreCollection(db, "settings", ClockSettings)
+    )
+    repository = ResetRepository(
+        volunteers=FirestoreCollection(db, "volunteers", Volunteer),
+        contacts=FirestoreCollection(db, "contacts", Contact),
+        dams=FirestoreCollection(db, "dams", Dam),
+        cases=FirestoreCollection(db, "cases", Case),
+        tasks=FirestoreCollection(db, "tasks", Task),
+        evidence=FirestoreCollection(db, "evidence", Evidence),
+        messages=FirestoreCollection(db, "messages", Message),
+        escalations=FirestoreCollection(db, "escalations", Escalation),
+        agent_runs_for=lambda case_id: FirestoreCollection(
+            db, f"cases/{case_id}/agent_runs", AgentRun
+        ),
+    )
+    return ScenarioResetter(
+        repository=repository, clock=Clock(clock_store, utcnow), scenario=scenario
     )
 
 

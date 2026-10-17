@@ -125,3 +125,22 @@ def test_delete_many_removes_documents_in_batches_of_400():
 
     assert client.stores["settings"] == {}
     assert [batch.commits for batch in client.batches] == [1, 1]
+
+
+def test_put_many_writes_in_batches_of_400():
+    from adapters.store import BATCH_LIMIT, FirestoreCollection
+    from contracts import ClockSettings
+    from tests.fakes import StubFirestoreClient
+
+    client = StubFirestoreClient()
+    collection = FirestoreCollection(client, "settings", ClockSettings)
+    items = {
+        f"d{n}": ClockSettings(offset_seconds=n, updated_by="t")
+        for n in range(BATCH_LIMIT + 1)
+    }
+
+    collection.put_many(items)
+
+    assert len(client.stores["settings"]) == BATCH_LIMIT + 1
+    assert client.stores["settings"]["d7"]["offset_seconds"] == 7
+    assert [batch.commits for batch in client.batches] == [1, 1]

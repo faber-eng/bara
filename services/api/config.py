@@ -71,6 +71,7 @@ class Settings(Config):
     api_url: str | None
     config_dir: Path
     samples_dir: Path
+    scenario_dir: Path
 
     @property
     def evidence_bucket(self) -> str:
@@ -98,6 +99,7 @@ def load_settings(
         api_url=read_optional(environ, "BARA_API_URL"),
         config_dir=directory,
         samples_dir=resolve_samples_dir(environ),
+        scenario_dir=resolve_scenario_dir(environ),
     )
 
 
@@ -125,6 +127,18 @@ def resolve_samples_dir(environ: Mapping[str, str]) -> Path:
             "BARA_SAMPLES_DIR is not set and no repo data/samples sits above this file"
         )
     return parents[2] / "data" / "samples"
+
+
+def resolve_scenario_dir(environ: Mapping[str, str]) -> Path:
+    from_env = read_optional(environ, "BARA_SCENARIO_DIR")
+    if from_env is not None:
+        return Path(from_env)
+    parents = Path(__file__).resolve().parents
+    if len(parents) < 3:
+        raise ConfigError(
+            "BARA_SCENARIO_DIR is not set and no repo data/ sits above this file"
+        )
+    return parents[2] / "data"
 
 
 def full_flow_region(config_dir: Path) -> str:

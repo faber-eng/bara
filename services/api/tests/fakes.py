@@ -115,6 +115,9 @@ class InMemoryCollection[T: Contract]:
         for doc_id in list(doc_ids):
             self._documents.pop(doc_id, None)
 
+    def put_many(self, items) -> None:
+        self._documents.update(items)
+
 
 class StubSnapshot:
     def __init__(self, data: dict[str, object] | None):
@@ -163,16 +166,22 @@ class StubDocumentRef:
 
 class StubBatch:
     def __init__(self):
-        self.deleted: list[StubDocumentRef] = []
+        self.operations: list[tuple[str, StubDocumentRef, dict | None]] = []
         self.commits = 0
 
     def delete(self, ref: StubDocumentRef) -> None:
-        self.deleted.append(ref)
+        self.operations.append(("delete", ref, None))
+
+    def set(self, ref: StubDocumentRef, data: dict) -> None:
+        self.operations.append(("set", ref, data))
 
     def commit(self) -> None:
-        for ref in self.deleted:
-            ref.remove()
-        self.deleted = []
+        for kind, ref, data in self.operations:
+            if kind == "delete":
+                ref.remove()
+            else:
+                ref.set(data)
+        self.operations = []
         self.commits += 1
 
 

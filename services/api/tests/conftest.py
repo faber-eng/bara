@@ -18,6 +18,7 @@ def settings() -> Settings:
         api_url="https://api.example.test",
         config_dir=Path(__file__).resolve().parents[3] / "config",
         samples_dir=Path(__file__).resolve().parents[3] / "data" / "samples",
+        scenario_dir=Path(__file__).resolve().parents[3] / "data",
         models=ModelsConfig(
             reasoning=ModelRoute(
                 model="reasoning-primary",

@@ -24,11 +24,13 @@ RUN uv sync --frozen --no-dev
 COPY config/ /app/config/
 COPY data/aoi/ /app/data/aoi/
 COPY data/samples/ /app/samples/
+COPY data/scenario_riau.yaml data/dams_riau_sample.geojson /app/scenario/
 COPY services/pipelines/ee_lib/ /app/ee_lib/
 COPY services/api/ /app/
 
 ENV BARA_CONFIG_DIR=/app/config \
     BARA_SAMPLES_DIR=/app/samples \
+    BARA_SCENARIO_DIR=/app/scenario \
     GOOGLE_GENAI_USE_ENTERPRISE=True
 
 ARG GIT_SHA=unknown

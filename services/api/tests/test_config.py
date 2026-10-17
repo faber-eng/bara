@@ -269,3 +269,14 @@ def test_max_llm_calls_must_be_positive(tmp_path):
 
     with pytest.raises(ConfigError, match="app.yaml"):
         load_settings(BASE_ENV, config_dir=tmp_path)
+
+
+def test_scenario_dir_defaults_to_repo_data_and_follows_the_variable():
+    from pathlib import Path
+
+    from config import resolve_scenario_dir
+
+    assert resolve_scenario_dir({}).name == "data"
+    assert resolve_scenario_dir({"BARA_SCENARIO_DIR": "/app/scenario"}) == Path(
+        "/app/scenario"
+    )

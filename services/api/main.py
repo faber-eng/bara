@@ -2,14 +2,21 @@ import uuid
 
 import firebase_admin
 from fastapi import FastAPI
+from google.cloud import firestore
 
 from adapters.earthengine import EarthEngineTiles
-from adapters.factory import Adapters, build_adapters, utcnow
+from adapters.factory import (
+    Adapters,
+    build_adapters,
+    build_scenario_resetter,
+    utcnow,
+)
 from adapters.gemini import ModelGateway, build_agent_model, build_vertex_clients
 from auth import FirebaseTokenVerifier, TokenVerifier
 from bara_agent.agent import build_tools
 from bara_agent.run import AgentService
 from config import Settings, full_flow_region, load_settings
+from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
 from logs import configure_logging
 from push_auth import GoogleOidcVerifier
@@ -20,14 +27,17 @@ from routes import (
     health,
     join,
     judge_probe,
+    judge_reset,
     judge_trigger,
     samples,
     tiles,
 )
+from scenario_reset import ScenarioResetter
 from trigger import JudgeTrigger
 
 JOIN_MAX_FAILURES = 5
 JOIN_WINDOW_SECONDS = 15 * 60
+RESET_WINDOW_SECONDS = 60 * 60
 
 
 def build_app(
@@ -38,6 +48,9 @@ def build_app(
     app.state.gateway = gateway
     app.state.verifier = verifier
     app.state.join_limiter = FailureLimiter(JOIN_MAX_FAILURES, JOIN_WINDOW_SECONDS)
+    app.state.reset_limiter = FailureLimiter(
+        settings.judge_mode.max_resets_per_hour, RESET_WINDOW_SECONDS
+    )
     app.include_router(health.router)
     app.include_router(clock.router)
     app.include_router(join.router)
@@ -46,6 +59,7 @@ def build_app(
     app.include_router(tiles.router)
     app.include_router(events.router)
     app.include_router(judge_trigger.router)
+    app.include_router(judge_reset.router)
     return app
 
 
@@ -96,6 +110,11 @@ def build_trigger(settings: Settings, adapters: Adapters) -> JudgeTrigger:
     )
 
 
+def build_resetter(settings: Settings) -> ScenarioResetter:
+    db = firestore.Client(project=settings.project)
+    return build_scenario_resetter(db, load_scenario(settings.scenario_dir))
+
+
 def create_app() -> FastAPI:
     configure_logging()
     settings = load_settings()
@@ -108,6 +127,7 @@ def create_app() -> FastAPI:
     )
     app.state.trigger = build_trigger(settings, app.state.adapters)
     app.state.push_verifier = GoogleOidcVerifier()
+    app.state.resetter = build_resetter(settings)
     app.state.tiles = EarthEngineTiles(settings.project, settings.config_dir)
     app.state.utcnow = utcnow
     return app
