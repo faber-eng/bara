@@ -26,11 +26,13 @@ export function rankedBounds(cells: readonly CellPoint[]): CellBounds | undefine
   return bounds;
 }
 
-export function fitToRanked(map: google.maps.Map, bounds: CellBounds): void {
+export function fitToRanked(map: google.maps.Map, bounds: CellBounds): () => void {
   map.setOptions({ maxZoom: RANKED_MAX_ZOOM });
   map.fitBounds(bounds, RANKED_FIT_PADDING_PX);
-  const idle = map.addListener("idle", () => {
+  const idle = map.addListener("idle", release);
+  function release(): void {
     idle.remove();
     map.setOptions({ maxZoom: null });
-  });
+  }
+  return release;
 }

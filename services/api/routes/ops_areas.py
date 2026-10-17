@@ -4,10 +4,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 
-from area_queries import RANKED_CELL_LIMIT, AreaQueries, NoRankings, UnknownCell
+from area_queries import (
+    AreaQueries,
+    CellsBusy,
+    NoRankings,
+    UnknownCell,
+    needs_explanation,
+)
 from auth import Principal, require_role
 from casework.rank_explanation import RankExplainer
+from config import Settings
 from contracts import CellFacts, Rankings
+from ee_lib.config import UnknownRegion, load_region
 
 router = APIRouter(prefix="/api")
 
@@ -34,10 +42,14 @@ ALL_CELLS_CACHE_CONTROL = "private, max-age=300"
 
 @router.get("/cells")
 async def all_cells(region: str, request: Request, _: OpsReader) -> Response:
+    settings: Settings = request.app.state.settings
     try:
+        load_region(settings.config_dir, region)
         cells = await run_in_threadpool(queries(request).all_cells, region)
-    except NoRankings as error:
+    except (UnknownRegion, NoRankings) as error:
         raise HTTPException(status_code=404, detail="no_rankings") from error
+    except CellsBusy as error:
+        raise HTTPException(status_code=503, detail="cells_busy") from error
     return Response(
         cells.body,
         media_type="application/json",
@@ -55,7 +67,7 @@ async def cell_facts(cell_id: str, request: Request, _: OpsReader) -> CellFacts:
         facts = await run_in_threadpool(queries(request).cell_facts, cell_id)
     except UnknownCell as error:
         raise HTTPException(status_code=404, detail="cell_not_found") from error
-    if facts.explanation is not None or facts.rank > RANKED_CELL_LIMIT:
+    if not needs_explanation(facts):
         return facts
     explanation = await explainer(request).explain(cell_id)
     return facts.model_copy(update={"explanation": explanation})

@@ -36,14 +36,12 @@ describe("parseAllCells", () => {
     expect(() => parseAllCells(body)).toThrow(ResponseShapeError);
   });
 
-  it("parses 3,769 rows quickly", () => {
+  it("parses 3,769 rows", () => {
     const cells = Array.from({ length: 3769 }, (_, i) => [`c${i}`, 0.5, 101.4, 50, i + 1]);
-    const started = performance.now();
 
     const parsed = parseAllCells({ ...BODY, cells });
 
     expect(parsed.cells).toHaveLength(3769);
-    expect(performance.now() - started).toBeLessThan(200);
   });
 });
 

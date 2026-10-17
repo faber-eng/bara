@@ -18,6 +18,7 @@ export function CellsLayer({ cells, selectedCellId, focus, onSelect }: CellsLaye
   const layerRef = useRef<CellLayer | null>(null);
   const selectedRef = useRef(selectedCellId);
   const fittedRef = useRef(false);
+  const releaseFitRef = useRef<(() => void) | null>(null);
   const onSelectRef = useRef(onSelect);
 
   useEffect(() => {
@@ -42,8 +43,10 @@ export function CellsLayer({ cells, selectedCellId, focus, onSelect }: CellsLaye
     const bounds = rankedBounds(cells);
     if (bounds === undefined) return;
     fittedRef.current = true;
-    fitToRanked(map, bounds);
+    releaseFitRef.current = fitToRanked(map, bounds);
   }, [map, cells]);
+
+  useEffect(() => () => releaseFitRef.current?.(), []);
 
   useEffect(() => {
     selectedRef.current = selectedCellId;
@@ -51,7 +54,9 @@ export function CellsLayer({ cells, selectedCellId, focus, onSelect }: CellsLaye
   }, [selectedCellId]);
 
   useEffect(() => {
-    if (focus !== null) layerRef.current?.focus(focus.cellId);
+    if (focus === null) return;
+    releaseFitRef.current?.();
+    layerRef.current?.focus(focus.cellId);
   }, [focus]);
 
   return null;

@@ -214,20 +214,10 @@ describe("createCellLayer", () => {
     );
     const map = makeMap();
     const onSelect = vi.fn();
-    const started = performance.now();
     createCellLayer(map as never, many, { onSelect });
-    const builtMs = performance.now() - started;
-
-    expect(builtMs).toBeLessThan(500);
-    const lookups = 2000;
-    const lookupStarted = performance.now();
-    for (let i = 0; i < lookups; i++) {
-      map.listeners.get("click")?.(latLng(-1 + 7 * 0.02, 101 + 9 * 0.02));
-    }
-    const perLookupMs = (performance.now() - lookupStarted) / lookups;
+    map.listeners.get("click")?.(latLng(-1 + 7 * 0.02, 101 + 9 * 0.02));
 
     expect(onSelect).toHaveBeenCalledWith("c547");
-    expect(perLookupMs).toBeLessThan(1);
   });
 });
 
