@@ -278,6 +278,24 @@ class CaseworkStore:
             f"case {case_change.case_id} is no longer {case_change.expected}",
         )
 
+    def commit_review(
+        self,
+        *,
+        case_id: str,
+        message: Message,
+        closed_by: str,
+        closed_at: datetime,
+    ) -> None:
+        fields = {"status": "closed", "closed_by": closed_by, "closed_at": closed_at}
+        self._commit(
+            [Guard(CASES, case_id, "status", "human_review")],
+            [Put(MESSAGES, message.id, message), Update(CASES, case_id, fields)],
+            f"case {case_id} is no longer human_review",
+        )
+
+    def save_note(self, message: Message) -> None:
+        self._commit([], [Put(MESSAGES, message.id, message)], "note not saved")
+
     def commit_ack(
         self,
         *,
@@ -352,6 +370,11 @@ class MessageRepository:
 
     def to(self, recipient_id: str) -> list[Message]:
         return self._messages.where(Filter("to_id", "==", recipient_id))
+
+    def notes_for_case(self, case_id: str) -> list[Message]:
+        return self._messages.where(
+            Filter("case_id", "==", case_id), Filter("thread", "==", "ops")
+        )
 
 
 class UploadRepository:

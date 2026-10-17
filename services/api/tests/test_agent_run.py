@@ -86,6 +86,11 @@ class UnusedChecker:
         raise AssertionError("not called")
 
 
+class UnusedReviewer:
+    def request(self, case_id, reason):
+        raise AssertionError("not called")
+
+
 class UnusedEscalator:
     async def escalate(self, case_id, reason):
         raise AssertionError("not called")
@@ -156,6 +161,7 @@ class World:
                 assigner=self.assigner,
                 checker=UnusedChecker(),
                 escalator=UnusedEscalator(),
+                reviewer=UnusedReviewer(),
                 radius_m=1_000,
             ),
             cases=CaseRepository(self.cases),

@@ -23,6 +23,11 @@ class UnusedChecker:
         raise AssertionError("not called")
 
 
+class UnusedReviewer:
+    def request(self, case_id, reason):
+        raise AssertionError("not called")
+
+
 class UnusedEscalator:
     async def escalate(self, case_id, reason):
         raise AssertionError("not called")
@@ -37,6 +42,7 @@ def registered_names() -> set[str]:
         assigner=UnusedAssigner(),
         checker=UnusedChecker(),
         escalator=UnusedEscalator(),
+        reviewer=UnusedReviewer(),
         radius_m=1_000,
     )
     return {tool_name(tool) for tool in tools}
@@ -60,7 +66,7 @@ def test_instruction_carries_the_never_close_rule_and_the_fraction_glossary():
 
 
 def test_prompt_version():
-    assert PROMPT_VERSION == "agent-v5"
+    assert PROMPT_VERSION == "agent-v6"
 
 
 def test_instruction_steps_end_with_one_assign_task_call():
@@ -128,3 +134,13 @@ def test_an_overdue_task_with_nobody_else_escalates():
 
 def test_a_failed_reassignment_escalates():
     assert "If assign_task returns an error, call escalate once" in overdue_section()
+
+
+def test_an_unclear_or_misplaced_photo_is_sent_to_a_person_by_the_tool():
+    start = INSTRUCTION.index("## When the trigger is evidence.received")
+    section = INSTRUCTION[
+        start : INSTRUCTION.index("## When the trigger is task.overdue")
+    ]
+
+    assert "or location_ok is false, call request_human_review once" in section
+    assert section.index("request_human_review") < section.index("call escalate once")

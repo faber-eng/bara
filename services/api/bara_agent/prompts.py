@@ -8,7 +8,7 @@ from bara_agent.output import ToolName
 from contracts import Case, CaseType, Dam, TaskType, VolunteerRole
 from domain.escalation import DRYING_LIMIT, REIGNITE_LIMIT, REPEAT_ATTEMPT
 
-PROMPT_VERSION = "agent-v5"
+PROMPT_VERSION = "agent-v6"
 AGENT_NAME = "bara_coordinator"
 CASE_TYPE: CaseType = "dam_risk"
 PEOPLE_ROLE: VolunteerRole = "volunteer"
@@ -40,7 +40,10 @@ Then decide what should happen next for the case.
 ## When the trigger is evidence.received
 1. Call check_evidence with the event task_id and evidence_id.
 2. If check_evidence returns an error, or the verdict's needs_human is true, \
-call no other tool: a person reviews the case. Say why in reason.
+or location_ok is false, call request_human_review once with the case id and a \
+reason that names why (the error, low confidence or a location mismatch), and \
+call no other tool: a person reviews the case. If request_human_review returns \
+an error, say so in decision.
 3. If the verdict shows smoke (wisps or plume), open flame or clear hot-ground \
 signs, call escalate once with the case id and a reason from the verdict, and \
 call no other tool: the fire brigade takes the case. If escalate returns an \

@@ -11,6 +11,7 @@ from adapters.firestore_repos import (
     DamRepository,
     EscalationRepository,
     EvidenceRepository,
+    MessageRepository,
     RankedDamRepository,
     RankingRepository,
     TaskRepository,
@@ -25,6 +26,7 @@ from contracts import (
     Dam,
     Escalation,
     Evidence,
+    Message,
     RankedCell,
     RankedDam,
     RankExplanation,
@@ -110,6 +112,7 @@ class World:
             evidence=evidence_repo,
             runs=AgentRunRepository(self.runs_for),
             escalations=EscalationRepository(self.escalations),
+            messages=MessageRepository(InMemoryCollection(Message)),
             clock=self.clock,
         )
         self.area_queries = AreaQueries(

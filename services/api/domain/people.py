@@ -1,8 +1,13 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
+from types import MappingProxyType
 
-from contracts import GeoPoint, Volunteer
+from contracts import GeoPoint, TaskType, Volunteer, VolunteerRole
 from domain.geo import haversine_m
+
+ROLE_FOR_TASK: MappingProxyType[TaskType, VolunteerRole] = MappingProxyType(
+    {"dam_check": "volunteer", "dam_repair": "repair_team", "patrol_recheck": "patrol"}
+)
 
 
 @dataclass(frozen=True)

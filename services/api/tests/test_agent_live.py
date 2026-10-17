@@ -69,6 +69,11 @@ class UnusedChecker:
         raise AssertionError("not called")
 
 
+class UnusedReviewer:
+    def request(self, case_id, reason):
+        raise AssertionError("not called")
+
+
 class UnusedEscalator:
     async def escalate(self, case_id, reason):
         raise AssertionError("not called")
@@ -180,6 +185,7 @@ def test_a_live_dam_risk_run_on_flash_with_real_bigquery():
             ),
             checker=UnusedChecker(),
             escalator=UnusedEscalator(),
+            reviewer=UnusedReviewer(),
             radius_m=settings.grid_cell_m,
         ),
         cases=cases,

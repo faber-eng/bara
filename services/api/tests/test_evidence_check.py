@@ -83,7 +83,9 @@ def collection_of(model, *items):
 
 
 class World:
-    def __init__(self, *, evidence=None, case=None, reader=None, stored=True):
+    def __init__(
+        self, *, evidence=None, case=None, reader=None, stored=True, photo=PHOTO
+    ):
         self.evidence = collection_of(
             Evidence,
             evidence
@@ -98,7 +100,7 @@ class World:
         )
         self.dams = collection_of(Dam, make_dam(id="d1", last_state="unknown"))
         self.cache = InMemoryCollection(VerdictCacheEntry)
-        self.bucket = RecordingBucket({OBJECT: PHOTO} if stored else {})
+        self.bucket = RecordingBucket({OBJECT: photo} if stored else {})
         self.reader = reader or FakeReader()
         clock = Clock(
             InMemoryClockStore(ClockSettings(offset_seconds=0, updated_by="t")),

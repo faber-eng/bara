@@ -19,6 +19,7 @@ from bara_agent.tools.escalate import Escalate, EscalationSource
 from bara_agent.tools.find_people import FindPeople
 from bara_agent.tools.get_area_facts import GetAreaFacts
 from bara_agent.tools.rank_areas import RankAreas
+from bara_agent.tools.request_human_review import RequestHumanReview, ReviewSource
 from bara_agent.tools.result import ToolResult
 
 
@@ -56,6 +57,7 @@ def build_tools(
     assigner: Assigner,
     checker: Checker,
     escalator: EscalationSource,
+    reviewer: ReviewSource,
     radius_m: float,
 ) -> list[AgentTool]:
     return [
@@ -65,4 +67,5 @@ def build_tools(
         AssignTask(assigner),
         CheckEvidence(checker),
         Escalate(escalator),
+        RequestHumanReview(reviewer),
     ]

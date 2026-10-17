@@ -30,6 +30,7 @@ from casework.evidence_reader import EvidenceReader
 from casework.inbox import InboxReader
 from casework.messenger import Messenger
 from casework.rank_explanation import RankExplainer
+from casework.review import ReviewDesk
 from config import Settings, full_flow_region, load_settings, region_timezones
 from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
@@ -182,6 +183,25 @@ def build_escalator(adapters: Adapters, gateway: ModelGateway) -> Escalator:
     )
 
 
+def build_review_desk(
+    settings: Settings,
+    adapters: Adapters,
+    gateway: ModelGateway,
+    escalator: Escalator,
+) -> ReviewDesk:
+    return ReviewDesk(
+        cases=adapters.cases,
+        tasks=adapters.tasks,
+        volunteers=adapters.volunteers,
+        cells=adapters.cells,
+        casework=adapters.casework,
+        assigner=build_assigner(settings, adapters, gateway),
+        escalator=escalator,
+        channel=WebChannel(adapters.clock, new_id),
+        clock=adapters.clock,
+    )
+
+
 def build_acknowledger(adapters: Adapters) -> Acknowledger:
     return Acknowledger(
         escalations=adapters.escalations,
@@ -233,6 +253,7 @@ def build_agent_service(
             assigner=build_assigner(settings, adapters, gateway),
             checker=checker,
             escalator=escalator,
+            reviewer=build_review_desk(settings, adapters, gateway, escalator),
             radius_m=settings.grid_cell_m,
         ),
         cases=adapters.cases,
@@ -323,6 +344,7 @@ def build_case_queries(adapters: Adapters) -> CaseQueries:
         evidence=adapters.evidence,
         runs=adapters.agent_runs,
         escalations=adapters.escalations,
+        messages=adapters.messages,
         signer=adapters.storage,
         clock=adapters.clock,
     )
@@ -388,6 +410,9 @@ def create_app() -> FastAPI:
     )
     app.state.evidence_intake = build_intake(app.state.adapters)
     app.state.inbox_reader = build_inbox(app.state.adapters)
+    app.state.review_desk = build_review_desk(
+        settings, app.state.adapters, gateway, escalator
+    )
     app.state.acknowledger = build_acknowledger(app.state.adapters)
     app.state.brigade_inbox = build_brigade_inbox(app.state.adapters)
     app.state.trigger = build_trigger(settings, app.state.adapters)

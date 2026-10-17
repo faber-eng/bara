@@ -100,7 +100,7 @@ def test_the_timeline_is_oldest_first_and_covers_case_task_evidence_run_and_clos
         ),
     )
 
-    timeline = build_timeline(case, [task], [evidence], [run], [])
+    timeline = build_timeline(case, [task], [evidence], [run], [], [])
 
     assert [entry.at for entry in timeline] == sorted(entry.at for entry in timeline)
     texts = [entry.text for entry in timeline]
@@ -115,7 +115,8 @@ def test_a_failed_run_appears_as_a_failed_run():
     run = make_agent_run(started_at=at(2), final_json=None)
 
     texts = [
-        e.text for e in build_timeline(make_case(opened_at=at(0)), [], [], [run], [])
+        e.text
+        for e in build_timeline(make_case(opened_at=at(0)), [], [], [run], [], [])
     ]
 
     assert any("failed" in text.lower() for text in texts)
@@ -124,7 +125,7 @@ def test_a_failed_run_appears_as_a_failed_run():
 def test_evidence_without_a_capture_time_is_left_out_of_the_timeline():
     evidence = make_evidence(captured_at=None, verdict=verdict())
 
-    timeline = build_timeline(make_case(opened_at=at(0)), [], [evidence], [], [])
+    timeline = build_timeline(make_case(opened_at=at(0)), [], [evidence], [], [], [])
 
     assert len(timeline) == 1
 
@@ -146,7 +147,7 @@ def test_an_acknowledged_escalation_shows_the_handover_and_the_ack():
         contact_id="contact-daops", created_at=at(5), acknowledged_at=at(7)
     )
 
-    timeline = build_timeline(make_case(opened_at=at(0)), [], [], [], [escalation])
+    timeline = build_timeline(make_case(opened_at=at(0)), [], [], [], [escalation], [])
 
     assert [(entry.at, entry.text) for entry in timeline[1:]] == [
         (at(5), "Escalated to brigade contact-daops"),
@@ -157,7 +158,7 @@ def test_an_acknowledged_escalation_shows_the_handover_and_the_ack():
 def test_an_open_escalation_shows_only_the_handover():
     escalation = make_escalation(contact_id="contact-daops", created_at=at(5))
 
-    timeline = build_timeline(make_case(opened_at=at(0)), [], [], [], [escalation])
+    timeline = build_timeline(make_case(opened_at=at(0)), [], [], [], [escalation], [])
 
     assert [entry.text for entry in timeline[1:]] == [
         "Escalated to brigade contact-daops"

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from typing import Annotated
@@ -7,7 +8,9 @@ from fastapi.responses import StreamingResponse
 
 from auth import Principal, require_role
 from case_queries import CaseQueries, UnknownCase
-from contracts import Case, CaseDetail, CaseStatus, CaseSummary
+from casework.escalation import EscalationRejected
+from casework.review import NotInReview, ReviewRejected, UnknownReviewCase
+from contracts import Case, CaseDetail, CaseStatus, CaseSummary, ReviewRequest
 from domain.case_machine import IllegalTransition
 from run_stream import RunStreamer, StreamEvent, render
 
@@ -79,3 +82,24 @@ def close_case(case_id: str, request: Request, principal: OpsReader) -> Case:
             extra={"fields": {"case_id": case_id, "from": error.current}},
         )
         raise HTTPException(status_code=409, detail="illegal_transition") from error
+
+
+@router.post("/cases/{case_id}/review", response_model=Case)
+def review_case(
+    case_id: str, body: ReviewRequest, request: Request, principal: OpsReader
+) -> Case:
+    desk = request.app.state.review_desk
+    try:
+        return asyncio.run(desk.resolve(case_id, body, principal.uid))
+    except UnknownReviewCase as error:
+        raise HTTPException(status_code=404, detail="case_not_found") from error
+    except NotInReview as error:
+        raise HTTPException(status_code=409, detail="not_in_review") from error
+    except ReviewRejected as error:
+        raise HTTPException(status_code=409, detail="review_rejected") from error
+    except EscalationRejected as error:
+        logger.warning(
+            "review escalation refused",
+            extra={"fields": {"case_id": case_id, "error": str(error)}},
+        )
+        raise HTTPException(status_code=409, detail="escalation_rejected") from error

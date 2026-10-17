@@ -11,6 +11,7 @@ ToolName = Literal[
     "assign_task",
     "check_evidence",
     "escalate",
+    "request_human_review",
 ]
 
 

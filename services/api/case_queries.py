@@ -7,6 +7,7 @@ from adapters.firestore_repos import (
     CaseRepository,
     EscalationRepository,
     EvidenceRepository,
+    MessageRepository,
     TaskRepository,
 )
 from adapters.storage import SIGNING_ERRORS
@@ -36,6 +37,7 @@ class CaseQueries:
         evidence: EvidenceRepository,
         runs: AgentRunRepository,
         escalations: EscalationRepository,
+        messages: MessageRepository,
         signer: EvidenceSigner,
         clock: Clock,
     ):
@@ -45,6 +47,7 @@ class CaseQueries:
         self._evidence = evidence
         self._runs = runs
         self._escalations = escalations
+        self._messages = messages
         self._clock = clock
 
     def summaries(self, region: str | None, status: str | None) -> list[CaseSummary]:
@@ -71,7 +74,12 @@ class CaseQueries:
             evidence=[self._signed(item) for item in evidence],
             agent_runs=runs,
             timeline=build_timeline(
-                case, tasks, evidence, runs, self._escalations.for_case(case_id)
+                case,
+                tasks,
+                evidence,
+                runs,
+                self._escalations.for_case(case_id),
+                self._messages.notes_for_case(case_id),
             ),
         )
 
