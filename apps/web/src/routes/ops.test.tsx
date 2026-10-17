@@ -66,10 +66,19 @@ describe("/ops", () => {
     await waitFor(() =>
       expect(router.state.location.search).toMatchObject({ tab: "cases", case: "case-0003" }),
     );
-    expect(screen.getByRole("button", { name: /riau-0388/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(await screen.findByRole("heading", { name: /riau-0388/ })).toBeInTheDocument();
+  });
+
+  it("opens the case drawer from ?case= and returns to the list", async () => {
+    const { router } = renderApp("/ops?tab=cases&case=case-0001");
+
+    expect(await screen.findByRole("region", { name: "Case detail" })).toBeInTheDocument();
+    expect(await screen.findByText("Agent runs")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to list" }));
+
+    await waitFor(() => expect(router.state.location.search.case).toBeUndefined());
+    expect(await screen.findByRole("button", { name: /riau-0412/ })).toBeInTheDocument();
   });
 
   it("ignores an unknown tab value", async () => {

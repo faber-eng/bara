@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { fetchCaseDetail } from "./caseDetail";
 import { fetchCases } from "./cases";
 import { fetchClock } from "./clock";
 import { fetchRankings } from "./rankings";
@@ -39,6 +40,15 @@ export function dryingTilesQuery(region: string) {
     queryKey: ["tiles", "drying", region],
     queryFn: ({ signal }) => fetchDryingTiles(region, signal),
     staleTime: TILES_STALE_MS,
+    retry: false,
+  });
+}
+
+export function caseDetailQuery(caseId: string) {
+  return queryOptions({
+    queryKey: ["cases", "detail", caseId],
+    queryFn: ({ signal }) => fetchCaseDetail(caseId, signal),
+    staleTime: OPS_STALE_MS,
     retry: false,
   });
 }

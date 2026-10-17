@@ -21,6 +21,10 @@ function OpsScreen() {
     void navigate({ search: (previous) => ({ ...previous, case: caseId }) });
   }
 
+  function handleCaseClear() {
+    void navigate({ search: (previous) => ({ ...previous, case: undefined }) });
+  }
+
   return (
     <>
       <h1 className="visually-hidden">Ops dashboard</h1>
@@ -31,6 +35,7 @@ function OpsScreen() {
           selectedCaseId={search.case}
           onTabChange={handleTabChange}
           onCaseSelect={handleCaseSelect}
+          onCaseClear={handleCaseClear}
         />
       </div>
     </>
