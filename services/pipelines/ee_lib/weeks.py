@@ -32,6 +32,7 @@ class DryingWindow:
 @dataclass(frozen=True)
 class EventWindows:
     s1: DateRange
+    s1_previous: DateRange
     rain_7d_before: DateRange | None
     rain_14d_before: DateRange | None
     rain_7d_after: DateRange | None

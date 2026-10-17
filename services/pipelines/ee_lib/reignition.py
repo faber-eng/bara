@@ -20,7 +20,9 @@ def s1_anomaly(
 ) -> ee.Image:
     s1 = drying.s1_collection(data, region, aoi_geometry(aoi))
     wet = drying.wet_baseline(s1, data, windows.s1_baseline_year)
-    return drying.smoothed_median(s1, windows.s1).subtract(wet).rename("s1_anom_db")
+    recent = drying.smoothed_median(s1, windows.s1)
+    nearest = recent.unmask(drying.smoothed_median(s1, windows.s1_previous))
+    return nearest.subtract(wet).rename("s1_anom_db")
 
 
 def event_image(
