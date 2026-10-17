@@ -8,6 +8,12 @@ dependencies = [
     "google-genai==2.31.0",
     "pydantic==2.14.1",
     "pyyaml==6.0.3",
+    "google-cloud-firestore==2.34.1",
+    "google-cloud-bigquery==3.46.2",
+    "google-cloud-storage==3.17.1",
+    "google-cloud-pubsub==2.43.0",
+    "google-cloud-tasks==2.26.0",
+    "firebase-admin==7.7.0",
 ]
 
 [dependency-groups]
@@ -19,6 +25,7 @@ package = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = ["live: talks to real Google Cloud; runs only when BARA_LIVE=1"]
 
 [tool.ruff]
 target-version = "py312"
