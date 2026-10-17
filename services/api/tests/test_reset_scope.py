@@ -1,5 +1,15 @@
 from adapters.firestore_repos import ResetRepository
-from contracts import Case, Contact, Dam, Escalation, Evidence, Message, Task, Volunteer
+from contracts import (
+    AgentRun,
+    Case,
+    Contact,
+    Dam,
+    Escalation,
+    Evidence,
+    Message,
+    Task,
+    Volunteer,
+)
 from domain.reset_scope import ResetSnapshot, plan_reset
 from tests.fakes import (
     InMemoryCollection,
@@ -171,6 +181,7 @@ class World:
         self.messages = InMemoryCollection(Message)
         self.escalations = InMemoryCollection(Escalation)
         self.repo = ResetRepository(
+            agent_runs_for=lambda case_id: InMemoryCollection(AgentRun),
             volunteers=self.volunteers,
             contacts=self.contacts,
             dams=self.dams,

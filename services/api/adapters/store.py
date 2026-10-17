@@ -39,6 +39,8 @@ class Collection[T: Contract](Protocol):
 
     def delete_many(self, doc_ids: Iterable[str]) -> None: ...
 
+    def put_many(self, items: Mapping[str, T]) -> None: ...
+
 
 class FirestoreCollection[T: Contract]:
     def __init__(self, client, name: str, model: type[T]):
@@ -79,6 +81,14 @@ class FirestoreCollection[T: Contract]:
         for item in filters:
             query = query.where(filter=FieldFilter(item.field, item.op, item.value))
         return [self._model.model_validate(s.to_dict()) for s in query.stream()]
+
+    def put_many(self, items: Mapping[str, T]) -> None:
+        pending = list(items.items())
+        for start in range(0, len(pending), BATCH_LIMIT):
+            batch = self._client.batch()
+            for doc_id, item in pending[start : start + BATCH_LIMIT]:
+                batch.set(self._document(doc_id), item.model_dump())
+            batch.commit()
 
     def delete_many(self, doc_ids: Iterable[str]) -> None:
         pending = list(doc_ids)

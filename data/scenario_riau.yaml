@@ -1,0 +1,25 @@
+region: riau
+sim_start: "2026-07-20T08:00:00+07:00"
+dams_file: dams_riau_sample.geojson
+
+volunteers:
+  - { id: vol-ari, name: Ari Wijaya, role: volunteer, region: riau, home: { lat: 0.5106, lon: 102.0132 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: vol-bayu, name: Bayu Pratama, role: volunteer, region: riau, home: { lat: 0.6088, lon: 102.0234 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: vol-citra, name: Citra Lestari, role: volunteer, region: riau, home: { lat: 0.4361, lon: 102.0157 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: vol-eko, name: Eko Saputra, role: volunteer, region: riau, home: { lat: 0.7650, lon: 102.0471 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: vol-fitri, name: Fitri Handayani, role: volunteer, region: riau, home: { lat: 0.3840, lon: 102.0499 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: vol-gunawan, name: Gunawan Hasibuan, role: volunteer, region: riau, home: { lat: 0.6824, lon: 102.0343 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: team-sari, name: Tim Perbaikan Sari, role: repair_team, region: riau, home: { lat: 0.4744, lon: 102.0768 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: team-joko, name: Tim Perbaikan Joko, role: repair_team, region: riau, home: { lat: 0.5632, lon: 101.9706 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: vol-dedi, name: Dedi Kurniawan, role: patrol, region: riau, home: { lat: 0.4650, lon: 101.9503 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+  - { id: patrol-hana, name: Hana Siregar, role: patrol, region: riau, home: { lat: 0.7630, lon: 101.9502 }, language: id, channels: { web: true, whatsapp: null }, available: true, example: true }
+
+contacts:
+  - { id: contact-daops-pekanbaru, name: Manggala Agni Daops Pekanbaru (example), org: Manggala Agni, region: riau, channels: { web: true, whatsapp: null }, example: true }
+
+evidence_fixtures:
+  - { id: broken-dam, kind: photo, path: photos/broken_dam_01.jpg, expect: { subject: canal_dam, dam_state: broken } }
+  - { id: intact-dam, kind: photo, path: photos/intact_dam_01.jpg, expect: { subject: canal_dam, dam_state: intact } }
+  - { id: burned-smoke, kind: photo, path: photos/burned_smoke_01.jpg, expect: { subject: burned_peat, smoke: wisps } }
+  - { id: burned-clear, kind: photo, path: photos/burned_clear_01.jpg, expect: { subject: burned_peat, smoke: none } }
+  - { id: voice-broken-dam, kind: audio, path: voice/voice01.ogg, expect: { transcript_contains: jebol } }
