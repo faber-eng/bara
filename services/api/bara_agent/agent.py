@@ -1,4 +1,4 @@
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Protocol
 
 from google.adk.agents import LlmAgent
@@ -13,6 +13,7 @@ from adapters.firestore_repos import (
 from bara_agent.output import AgentOutput
 from bara_agent.prompts import AGENT_NAME, INSTRUCTION
 from bara_agent.recorder import Summarizer
+from bara_agent.tools.assign_task import Assigner, AssignTask
 from bara_agent.tools.find_people import FindPeople
 from bara_agent.tools.get_area_facts import GetAreaFacts
 from bara_agent.tools.rank_areas import RankAreas
@@ -21,7 +22,7 @@ from bara_agent.tools.result import ToolResult
 
 class AgentTool(Protocol):
     @property
-    def function(self) -> Callable[..., ToolResult]: ...
+    def function(self) -> Callable[..., ToolResult | Awaitable[ToolResult]]: ...
 
     def summarize(self, result: Mapping[str, object]) -> str: ...
 
@@ -50,10 +51,12 @@ def build_tools(
     cells: CellRepository,
     dams: DamRepository,
     volunteers: VolunteerRepository,
+    assigner: Assigner,
     radius_m: float,
 ) -> list[AgentTool]:
     return [
         RankAreas(rankings),
         GetAreaFacts(cells, dams, radius_m),
         FindPeople(cells, volunteers),
+        AssignTask(assigner),
     ]

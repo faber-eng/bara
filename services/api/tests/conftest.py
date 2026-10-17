@@ -3,7 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from config import AgentConfig, JudgeMode, ModelRoute, ModelsConfig, Settings
+from config import (
+    AgentConfig,
+    JudgeMode,
+    ModelRoute,
+    ModelsConfig,
+    Settings,
+    TasksConfig,
+)
 
 
 @pytest.fixture
@@ -13,6 +20,16 @@ def settings() -> Settings:
         git_sha="abc1234",
         judge_mode=JudgeMode(enabled=False, max_resets_per_hour=20),
         agent=AgentConfig(max_llm_calls=12, max_cases_per_trigger=3),
+        tasks=TasksConfig(
+            default_deadline_hours={
+                "dam_check": 72,
+                "dam_repair": 168,
+                "patrol_recheck": 24,
+            },
+            human_review_confidence=0.7,
+            location_tolerance_m=300,
+        ),
+        default_language="id",
         grid_cell_m=1000,
         region="asia-southeast1",
         api_url="https://api.example.test",

@@ -4,6 +4,7 @@ import firebase_admin
 from fastapi import FastAPI
 from google.cloud import firestore
 
+from adapters.channels import WebChannel
 from adapters.earthengine import EarthEngineTiles
 from adapters.factory import (
     Adapters,
@@ -15,7 +16,9 @@ from adapters.gemini import ModelGateway, build_agent_model, build_vertex_client
 from auth import FirebaseTokenVerifier, TokenVerifier
 from bara_agent.agent import build_tools
 from bara_agent.run import AgentService
-from config import Settings, full_flow_region, load_settings
+from casework.assignment import TaskAssigner
+from casework.messenger import Messenger
+from config import Settings, full_flow_region, load_settings, region_timezones
 from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
 from logs import configure_logging
@@ -68,7 +71,33 @@ def build_token_verifier(settings: Settings) -> TokenVerifier:
     return FirebaseTokenVerifier()
 
 
-def build_agent_service(settings: Settings, adapters: Adapters) -> AgentService:
+def new_id() -> str:
+    return uuid.uuid4().hex
+
+
+def build_assigner(
+    settings: Settings, adapters: Adapters, gateway: ModelGateway
+) -> TaskAssigner:
+    return TaskAssigner(
+        cases=adapters.cases,
+        volunteers=adapters.volunteers,
+        dams=adapters.dams,
+        cells=adapters.cells,
+        tasks=adapters.tasks,
+        casework=adapters.casework,
+        channel=WebChannel(adapters.clock, new_id),
+        messenger=Messenger(gateway, settings.default_language),
+        scheduler=adapters.scheduler,
+        clock=adapters.clock,
+        default_deadline_hours=settings.tasks.default_deadline_hours,
+        timezones=region_timezones(settings.config_dir),
+        new_id=new_id,
+    )
+
+
+def build_agent_service(
+    settings: Settings, adapters: Adapters, gateway: ModelGateway
+) -> AgentService:
     return AgentService(
         model=build_agent_model(settings),
         tools=build_tools(
@@ -76,6 +105,7 @@ def build_agent_service(settings: Settings, adapters: Adapters) -> AgentService:
             cells=adapters.cells,
             dams=adapters.dams,
             volunteers=adapters.volunteers,
+            assigner=build_assigner(settings, adapters, gateway),
             radius_m=settings.grid_cell_m,
         ),
         cases=adapters.cases,
@@ -121,7 +151,7 @@ def create_app() -> FastAPI:
     gateway = ModelGateway(settings.models, build_vertex_clients(settings))
     app = build_app(settings, gateway, build_token_verifier(settings))
     app.state.adapters = build_adapters(settings)
-    app.state.agent = build_agent_service(settings, app.state.adapters)
+    app.state.agent = build_agent_service(settings, app.state.adapters, gateway)
     app.state.dispatcher = build_dispatcher(
         settings, app.state.adapters, app.state.agent
     )

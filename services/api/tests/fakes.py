@@ -1,12 +1,12 @@
 import operator
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from types import SimpleNamespace
 
 from google.api_core import exceptions as gax
 from google.cloud.firestore_v1 import Increment
 from google.genai import errors, types
 
-from adapters.store import DocumentNotFound, Filter
+from adapters.store import DocumentNotFound, Filter, Guard, GuardFailed, Put
 from auth import InvalidToken
 from contracts import ClockSettings, Contract
 
@@ -19,6 +19,7 @@ class FakeModels:
     def __init__(self, outcomes: list[types.GenerateContentResponse | Exception]):
         self._outcomes = list(outcomes)
         self.calls: list[str] = []
+        self.requests: list[tuple[object, object]] = []
 
     async def generate_content(
         self,
@@ -28,6 +29,7 @@ class FakeModels:
         config: types.GenerateContentConfigOrDict | None = None,
     ) -> types.GenerateContentResponse:
         self.calls.append(model)
+        self.requests.append((contents, config))
         outcome = self._outcomes.pop(0)
         if isinstance(outcome, Exception):
             raise outcome
@@ -117,6 +119,34 @@ class InMemoryCollection[T: Contract]:
 
     def put_many(self, items) -> None:
         self._documents.update(items)
+
+
+class InMemoryTransactor:
+    def __init__(self, collections: Mapping[str, InMemoryCollection], error=None):
+        self._collections = collections
+        self.error = error
+        self.commits = 0
+
+    def commit(self, guards: Sequence[Guard], writes) -> None:
+        if self.error is not None:
+            raise self.error
+        for guard in guards:
+            self._check(guard)
+        for write in writes:
+            self._apply(write)
+        self.commits += 1
+
+    def _check(self, guard: Guard) -> None:
+        item = self._collections[guard.collection].get(guard.doc_id)
+        if item is None or getattr(item, guard.field) != guard.expected:
+            raise GuardFailed(f"{guard.collection}/{guard.doc_id}")
+
+    def _apply(self, write) -> None:
+        collection = self._collections[write.collection]
+        if isinstance(write, Put):
+            collection.put(write.doc_id, write.item)
+            return
+        collection.update(write.doc_id, write.fields)
 
 
 class StubSnapshot:

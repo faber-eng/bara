@@ -13,12 +13,18 @@ from contracts import Dam, RankedCell, Volunteer
 from tests.fakes import FakeWarehouse, InMemoryCollection
 
 
+class UnusedAssigner:
+    async def assign(self, request):
+        raise AssertionError("not called")
+
+
 def registered_names() -> set[str]:
     tools = build_tools(
         rankings=RankingRepository(lambda region: InMemoryCollection(RankedCell)),
         cells=CellRepository(FakeWarehouse()),
         dams=DamRepository(InMemoryCollection(Dam)),
         volunteers=VolunteerRepository(InMemoryCollection(Volunteer)),
+        assigner=UnusedAssigner(),
         radius_m=1_000,
     )
     return {tool_name(tool) for tool in tools}
@@ -42,4 +48,14 @@ def test_instruction_carries_the_never_close_rule_and_the_fraction_glossary():
 
 
 def test_prompt_version():
-    assert PROMPT_VERSION == "agent-v1"
+    assert PROMPT_VERSION == "agent-v2"
+
+
+def test_instruction_steps_end_with_one_assign_task_call():
+    assert "4. Call assign_task once" in INSTRUCTION
+    assert 'task_type "dam_check"' in INSTRUCTION
+
+
+def test_the_agent_never_picks_deadline_hours_and_skips_an_empty_crew():
+    assert "Leave deadline_hours out." in INSTRUCTION
+    assert "If find_people returns no people, do not call assign_task" in INSTRUCTION

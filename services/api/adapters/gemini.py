@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from collections.abc import Mapping
@@ -27,6 +28,40 @@ class AsyncModels(Protocol):
         contents: types.ContentListUnion,
         config: types.GenerateContentConfigOrDict | None = None,
     ) -> types.GenerateContentResponse: ...
+
+
+class SyncModels(Protocol):
+    def generate_content(
+        self,
+        *,
+        model: str,
+        contents: types.ContentListUnion,
+        config: types.GenerateContentConfigOrDict | None = None,
+    ) -> types.GenerateContentResponse: ...
+
+
+class SyncClient(Protocol):
+    @property
+    def models(self) -> SyncModels: ...
+
+
+class ThreadedModels:
+    def __init__(self, client: SyncClient):
+        self._client = client
+
+    async def generate_content(
+        self,
+        *,
+        model: str,
+        contents: types.ContentListUnion,
+        config: types.GenerateContentConfigOrDict | None = None,
+    ) -> types.GenerateContentResponse:
+        return await asyncio.to_thread(
+            self._client.models.generate_content,
+            model=model,
+            contents=contents,
+            config=config,
+        )
 
 
 class ModelGateway:
@@ -83,12 +118,14 @@ def build_http_options() -> types.HttpOptions:
 
 def build_vertex_clients(settings: Settings) -> dict[Role, AsyncModels]:
     return {
-        role: genai.Client(
-            enterprise=True,
-            project=settings.project,
-            location=settings.models.for_role(role).location,
-            http_options=build_http_options(),
-        ).aio.models
+        role: ThreadedModels(
+            genai.Client(
+                enterprise=True,
+                project=settings.project,
+                location=settings.models.for_role(role).location,
+                http_options=build_http_options(),
+            )
+        )
         for role in ("reasoning", "fast")
     }
 

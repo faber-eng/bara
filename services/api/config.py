@@ -1,10 +1,14 @@
 import os
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal, get_args
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
+from contracts import Language, TaskType
+from domain.assignment import MAX_DEADLINE_HOURS
 
 Role = Literal["reasoning", "fast"]
 
@@ -52,12 +56,38 @@ class AgentConfig(Config):
     max_cases_per_trigger: int = Field(ge=1)
 
 
+class TasksConfig(Config):
+    default_deadline_hours: dict[
+        TaskType, Annotated[int, Field(gt=0, le=MAX_DEADLINE_HOURS)]
+    ]
+    human_review_confidence: Annotated[float, Field(ge=0, le=1)]
+    location_tolerance_m: Annotated[float, Field(gt=0)]
+
+    @field_validator("default_deadline_hours")
+    @classmethod
+    def every_task_type_has_a_deadline(
+        cls, hours: dict[TaskType, int]
+    ) -> dict[TaskType, int]:
+        missing = sorted(set(get_args(TaskType)) - set(hours))
+        if missing:
+            raise ValueError(f"no default deadline for {', '.join(missing)}")
+        return hours
+
+
+class Languages(Config):
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    default: Language
+
+
 class AppConfig(Config):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
     grid_cell_m: int = Field(gt=0)
     judge_mode: JudgeMode
     agent: AgentConfig
+    tasks: TasksConfig
+    languages: Languages
 
 
 class Settings(Config):
@@ -66,6 +96,8 @@ class Settings(Config):
     models: ModelsConfig
     judge_mode: JudgeMode
     agent: AgentConfig
+    tasks: TasksConfig
+    default_language: Language
     grid_cell_m: int
     region: str
     api_url: str | None
@@ -94,6 +126,8 @@ def load_settings(
         models=models,
         judge_mode=apply_judge_override(app.judge_mode, environ),
         agent=app.agent,
+        tasks=app.tasks,
+        default_language=app.languages.default,
         grid_cell_m=app.grid_cell_m,
         region=read_optional(environ, "REGION") or DEFAULT_REGION,
         api_url=read_optional(environ, "BARA_API_URL"),
@@ -143,9 +177,7 @@ def resolve_scenario_dir(environ: Mapping[str, str]) -> Path:
 
 def full_flow_region(config_dir: Path) -> str:
     path = config_dir / "regions.yaml"
-    regions = read_yaml(path)
-    if not isinstance(regions, dict):
-        raise ConfigError(f"{path} is not a mapping of regions")
+    regions = read_regions(config_dir)
     full = [
         region_id
         for region_id, entry in regions.items()
@@ -154,6 +186,35 @@ def full_flow_region(config_dir: Path) -> str:
     if len(full) != 1:
         raise ConfigError(f"{path} must mark exactly one region full_flow: true")
     return full[0]
+
+
+def read_regions(config_dir: Path) -> dict[str, object]:
+    path = config_dir / "regions.yaml"
+    regions = read_yaml(path)
+    if not isinstance(regions, dict):
+        raise ConfigError(f"{path} is not a mapping of regions")
+    return regions
+
+
+def region_timezone(region_id: str, entry: object) -> str:
+    if not isinstance(entry, dict) or not isinstance(entry.get("timezone"), str):
+        raise ConfigError(f"region {region_id} has no timezone in regions.yaml")
+    name = entry["timezone"]
+    try:
+        ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError) as error:
+        raise ConfigError(
+            f"region {region_id} has an unknown timezone {name}"
+        ) from error
+    return name
+
+
+def region_timezones(config_dir: Path) -> dict[str, str]:
+    regions = read_regions(config_dir)
+    return {
+        region_id: region_timezone(region_id, entry)
+        for region_id, entry in regions.items()
+    }
 
 
 def read_yaml(path: Path) -> object:

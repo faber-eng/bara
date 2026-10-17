@@ -483,6 +483,12 @@ class CaseDetail(Contract):
     timeline: list[TimelineEntry]
 
 
+class Inbox(Contract):
+    tasks: list[Task]
+    messages: list[Message]
+    evidence: list[Evidence]
+
+
 class ClockState(Contract):
     now: AwareDatetime
     offset_seconds: int

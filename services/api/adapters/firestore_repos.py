@@ -1,13 +1,24 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
 from google.cloud import firestore
 
-from adapters.store import Collection, Filter, FirestoreCollection
+from adapters.store import (
+    Collection,
+    Filter,
+    FirestoreCollection,
+    Guard,
+    GuardFailed,
+    Put,
+    Transactor,
+    Update,
+    Write,
+)
 from contracts import (
     AgentRun,
     Case,
+    CaseStatus,
     ClockSettings,
     Contact,
     Dam,
@@ -27,12 +38,27 @@ from domain.reset_scope import ResetScope, ResetSnapshot
 from domain.scenario import Scenario
 
 CLOCK_DOCUMENT = "clock"
+TASKS = "tasks"
+CASES = "cases"
+MESSAGES = "messages"
 IN_QUERY_LIMIT = 30
 
 
 class TaskRepository:
     def __init__(self, tasks: Collection[Task]):
         self._tasks = tasks
+
+    def get(self, task_id: str) -> Task | None:
+        return self._tasks.get(task_id)
+
+    def save(self, task: Task) -> None:
+        self._tasks.put(task.id, task)
+
+    def set_cloud_task_name(self, task_id: str, name: str) -> None:
+        self._tasks.update(task_id, {"cloud_task_name": name})
+
+    def for_case(self, case_id: str) -> list[Task]:
+        return self._tasks.where(Filter("case_id", "==", case_id))
 
     def due(self, now: datetime) -> list[Task]:
         open_tasks = self._tasks.where(Filter("status", "==", "open"))
@@ -58,6 +84,39 @@ class CaseRepository:
 
     def delete(self, case_id: str) -> None:
         self._cases.delete_many([case_id])
+
+
+class CaseChanged(Exception):
+    pass
+
+
+class CaseworkStore:
+    def __init__(self, transactor: Transactor):
+        self._transactor = transactor
+
+    def commit_assignment(
+        self,
+        *,
+        expected_status: CaseStatus,
+        next_status: CaseStatus,
+        task: Task,
+        message: Message,
+        reassigned_task_ids: Sequence[str],
+    ) -> None:
+        writes: list[Write] = [
+            Put(TASKS, task.id, task),
+            Put(MESSAGES, message.id, message),
+            Update(CASES, task.case_id, {"status": next_status}),
+        ]
+        for task_id in reassigned_task_ids:
+            writes.append(Update(TASKS, task_id, {"status": "reassigned"}))
+        guard = Guard(CASES, task.case_id, "status", expected_status)
+        try:
+            self._transactor.commit([guard], writes)
+        except GuardFailed as error:
+            raise CaseChanged(
+                f"case {task.case_id} is no longer {expected_status}"
+            ) from error
 
 
 class VolunteerRepository:
