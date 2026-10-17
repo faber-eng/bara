@@ -5,8 +5,7 @@ may reignite, sends a named person to check, reads their evidence, and escalates
 
 Google Cloud AI Builder Cup 2026, Sustainability and Social Impact.
 
-The live link, architecture and eval numbers are added as each wave ships. The full spec is
-[`requirements.md`](./requirements.md); every deviation from it is in [`docs/DECISIONS.md`](./docs/DECISIONS.md).
+The live link, architecture and eval numbers are added as each wave ships. The spec and the plans live in the team's internal docs; every deviation from them is in [`docs/DECISIONS.md`](./docs/DECISIONS.md).
 
 ## Layout
 

@@ -1,10 +1,10 @@
 # Decisions
 
-Every deviation from [`requirements.md`](../requirements.md), one line each, newest last (spec §2, §19.2).
+Every deviation from the internal spec, one line each, newest last (spec §2, §19.2).
 
 | Date | Decision | Why |
 |---|---|---|
-| 2026-10-17 | `requirements.md` is a copy. The source of truth is `projects/ai-builder-cup-bara/requirements-phase/REQUIREMENTS.md` in `faber-eng/shared-context`; a spec change lands there first and is copied here the same day. | One source, so the two cannot drift. |
+| 2026-10-17 | Planning docs (spec, demo script, architecture, task plans) live in `faber-eng/shared-context` under `projects/ai-builder-cup-bara/`, not in this public repo. Section numbers in this file and in scripts refer to `requirements-phase/REQUIREMENTS.md` there. | The code repo goes public (C4); plans stay internal. |
 | 2026-10-17 | The pre-push hook runs `gitleaks git` instead of `gitleaks detect` (§19.5). | gitleaks 8.19 renamed `detect` to `git`; it is the same scan of the commit history. |
 | 2026-10-17 | `.secrets/bara.env` holds only `PROJECT`. Model IDs come from `config/models.yaml` (C8). | One place for model IDs. |
 | 2026-10-17 | `infra/setup.sh` creates what can exist before a deploy. Pub/Sub push subscriptions and the `run.invoker` grants for `bara-pubsub-invoker` and `bara-tasks-invoker` (§15 steps 3 and 4) wait for the `bara-api` event route (epic 01, BT-11). The `bara-jobs` deploy and the Cloud Scheduler jobs wait for epic 01, OT-1. | The subscriptions push to `POST /events/{topic}`, which does not exist yet, and `bara-jobs` is not deployed. |

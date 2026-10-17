@@ -17,7 +17,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/preflight.sh [--project <id>] [P1] [P2] [P3] [P4]
 
-Checks the facts the build plan rests on (requirements.md §15.1). With no check
+Checks the facts the build plan rests on (spec §15.1). With no check
 names it runs all four.
 
   P1  Earth Engine is registered for the project
@@ -127,7 +127,7 @@ check_p3() {
     pass P3 "$positives positives in the train split"
     return
   fi
-  fail P3 "$positives positives in the train split, need $MIN_POSITIVES; widen the label window per requirements.md §18"
+  fail P3 "$positives positives in the train split, need $MIN_POSITIVES; widen the label window per spec §18"
 }
 
 count_objects() {
