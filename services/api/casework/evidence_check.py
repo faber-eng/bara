@@ -185,6 +185,12 @@ class EvidenceChecker:
             advisory=advisory,
         )
 
+    def flag_unread(self, case_id: str, evidence_id: str) -> None:
+        evidence = self._evidence.get(evidence_id)
+        if evidence is not None and evidence.kind == "audio":
+            return
+        self.flag_for_person(case_id)
+
     def flag_for_person(self, case_id: str) -> None:
         case = self._cases.get(case_id)
         if case is None or case.status != "reviewing":

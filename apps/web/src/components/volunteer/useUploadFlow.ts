@@ -24,6 +24,7 @@ type Pending = {
   kind: EvidenceKind;
   sample: boolean;
   ticket: IssuedTicket | null;
+  capturedAt: string;
 };
 
 export type UploadFlow = {
@@ -50,6 +51,10 @@ const VIDEO_FAILURES: Record<VideoRefusal, FailureReason> = {
   size: "video_big",
   long: "video_long",
 };
+
+function newPending(blob: Blob, kind: EvidenceKind, sample: boolean): Pending {
+  return { blob, kind, sample, ticket: null, capturedAt: new Date().toISOString() };
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -114,6 +119,7 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
         blob: pending.blob,
         sample: pending.sample,
         point,
+        capturedAt: pending.capturedAt,
         ticket: pending.ticket,
       });
     } catch {
@@ -137,6 +143,7 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
         contentType: contentTypeOf(pending),
         sample: pending.sample,
         point,
+        capturedAt: pending.capturedAt,
         ticket: pending.ticket,
         onTicket: (issued) => {
           pending.ticket = issued;
@@ -163,7 +170,7 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
     dispatch({ type: "preparing" });
     try {
       const video = await checkedVideo(file);
-      await send({ blob: video, kind: "video", sample: false, ticket: null });
+      await send(newPending(video, "video", false));
     } catch (error) {
       fail(error instanceof VideoRefusedError ? VIDEO_FAILURES[error.refusal] : "prepare");
     }
@@ -171,7 +178,7 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
 
   async function sendPhoto() {
     if (state.step !== "preview") return;
-    await send({ blob: state.photo, kind: "photo", sample: state.sample, ticket: null });
+    await send(newPending(state.photo, "photo", state.sample));
   }
 
   async function chooseSample(item: SampleItem) {
@@ -192,7 +199,7 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
       return;
     }
     if (item.kind === "voice" && baseContentType(file.type) !== "") {
-      await send({ blob: file, kind: "audio", sample: true, ticket: null });
+      await send(newPending(file, "audio", true));
       return;
     }
     throw new Error("The sample cannot be sent as evidence");
@@ -220,7 +227,7 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
     try {
       const blob = await active.stop();
       if (blob.size === 0) throw new Error("The recording is empty");
-      await send({ blob, kind: "audio", sample: false, ticket: null });
+      await send(newPending(blob, "audio", false));
     } catch {
       fail("mic");
     }

@@ -136,3 +136,23 @@ def test_a_case_that_left_escalation_keeps_its_brigade_line():
     texts = [line.text for line in world.queries().record("riau", 50)]
 
     assert "Sent to the fire brigade for riau-monitoring." in texts
+
+
+def test_a_spoken_intact_is_not_a_repair_result():
+    from datetime import UTC, datetime
+
+    from domain.public_summary import repaired_intact
+    from tests.fakes import make_evidence, make_task, make_verdict
+
+    task = make_task(
+        id="t1", type="dam_repair", done_at=datetime(2026, 10, 14, tzinfo=UTC)
+    )
+    intact = make_verdict(dam_state="intact")
+
+    assert repaired_intact(task, [make_evidence(task_id="t1", verdict=intact)]) is True
+    assert (
+        repaired_intact(
+            task, [make_evidence(task_id="t1", kind="audio", verdict=intact)]
+        )
+        is False
+    )

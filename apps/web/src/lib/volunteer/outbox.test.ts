@@ -17,6 +17,7 @@ function item(volunteerId: string, taskId = "task-1"): NewOutboxItem {
     blob: new Blob(["voice"], { type: "audio/webm" }),
     sample: false,
     point: null,
+    capturedAt: "2026-10-18T01:00:00.000Z",
     ticket: null,
   };
 }

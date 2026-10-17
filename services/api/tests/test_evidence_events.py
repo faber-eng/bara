@@ -42,6 +42,9 @@ class FakeChecker:
     def flag_for_person(self, case_id):
         self.flagged.append(case_id)
 
+    def flag_unread(self, case_id, evidence_id):
+        self.flagged.append(case_id)
+
 
 class FakeAgent:
     def __init__(self, error=None):

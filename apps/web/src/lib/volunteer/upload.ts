@@ -14,6 +14,7 @@ export type UploadInput = {
   contentType: string;
   sample: boolean;
   point: GeoPoint | null;
+  capturedAt: string;
   ticket: IssuedTicket | null;
   onTicket: (issued: IssuedTicket) => void;
   onProgress: (fraction: number) => void;
@@ -77,7 +78,7 @@ export async function uploadEvidence(input: UploadInput): Promise<UploadResult> 
   const ticket = await ticketReadyToComplete(input);
   const evidence = await completeUpload(input.volunteerId, ticket.evidence_id, {
     point: input.point,
-    captured_at: new Date().toISOString(),
+    captured_at: input.capturedAt,
   });
   return { evidenceId: ticket.evidence_id, evidence };
 }

@@ -31,13 +31,20 @@ class PreparedMedia:
     kind: EvidenceKind = "photo"
 
 
+async def spawn(args: tuple[str, ...]) -> asyncio.subprocess.Process:
+    try:
+        return await asyncio.create_subprocess_exec(
+            *args,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+    except FileNotFoundError:
+        raise UnreadableMedia(f"{args[0]} is not installed") from None
+
+
 async def run_tool(*args: str) -> bytes:
-    process = await asyncio.create_subprocess_exec(
-        *args,
-        stdin=asyncio.subprocess.DEVNULL,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
+    process = await spawn(args)
     try:
         out, err = await asyncio.wait_for(
             process.communicate(), timeout=FFMPEG_TIMEOUT_SECONDS
@@ -46,8 +53,9 @@ async def run_tool(*args: str) -> bytes:
         process.kill()
         await process.wait()
         raise UnreadableMedia(f"{args[0]} took too long") from None
-    except FileNotFoundError:
-        raise UnreadableMedia(f"{args[0]} is not installed") from None
+    except asyncio.CancelledError:
+        process.kill()
+        raise
     if process.returncode != 0:
         reason = err.decode(errors="replace").strip().splitlines()[-1:] or ["failed"]
         raise UnreadableMedia(f"{args[0]} could not read the file: {reason[0]}")

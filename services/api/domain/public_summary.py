@@ -17,6 +17,7 @@ from contracts import (
     RecordLine,
     Task,
 )
+from domain.escalation import counts_as_proof
 from domain.weeks import iso_week_label
 
 HIGH_RISK_SCORE = 80
@@ -105,6 +106,7 @@ def repaired_intact(task: Task, evidence: Sequence[Evidence]) -> bool:
     return any(
         item.task_id == task.id
         and item.verdict is not None
+        and counts_as_proof(item)
         and item.verdict.dam_state == "intact"
         for item in evidence
     )
