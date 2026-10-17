@@ -64,4 +64,29 @@ describe("judge gate", () => {
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
     expect(container.querySelectorAll("main.shell-main")).toHaveLength(1);
   });
+
+  it("retries a failed clock request and shows the judge bar when it answers", async () => {
+    const answers = [
+      () => new Response("cold", { status: 503 }),
+      () => Response.json({ ...clockOff, judge_mode: true }),
+    ];
+    const fetchMock = stubApi({
+      "GET /api/clock": () => (answers.shift() ?? answers[0] ?? (() => Response.error()))(),
+    });
+    renderApp("/public");
+
+    expect(await screen.findByRole("region", { name: "Judge mode" })).toBeInTheDocument();
+    expect(callsTo(fetchMock, "GET /api/clock")).toHaveLength(2);
+  });
+
+  it("renders the children after three failed clock requests", async () => {
+    const fetchMock = stubApi({ "GET /api/clock": () => new Response("down", { status: 503 }) });
+    renderApp("/public");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Public dashboard" }, { timeout: 4000 }),
+    ).toBeInTheDocument();
+    expect(callsTo(fetchMock, "GET /api/clock")).toHaveLength(3);
+    expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
+  });
 });

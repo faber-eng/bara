@@ -118,3 +118,41 @@ describe("fixture clock", () => {
     expect(reset).toEqual(liveState);
   });
 });
+
+describe("live clock cold start", () => {
+  beforeEach(() => {
+    vi.stubEnv("VITE_SOURCE_CLOCK", "live");
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        (_path: string, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () =>
+              reject(new DOMException("t", "AbortError")),
+            );
+          }),
+      ),
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps waiting through a cold start and gives up after 15 seconds", async () => {
+    const outcome = fetchClock().then(
+      () => "answered",
+      () => "failed",
+    );
+
+    await vi.advanceTimersByTimeAsync(14_900);
+    const early = await Promise.race([outcome, Promise.resolve("waiting")]);
+    await vi.advanceTimersByTimeAsync(200);
+
+    expect(early).toBe("waiting");
+    expect(await outcome).toBe("failed");
+  });
+});
