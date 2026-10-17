@@ -352,6 +352,8 @@ def test_a_fire_of_a_region_without_the_full_flow_opens_no_case_and_no_task():
 
     assert world.all_cases() == []
     assert world.assigner.requests == []
+
+
 def test_at_most_four_volunteer_messages_are_composed_at_once():
     import asyncio
     import time
