@@ -662,8 +662,8 @@ def test_all_cells_of_a_region_without_data_is_404_and_not_cached(settings):
     world = World()
     client = world.client(settings)
 
-    assert client.get("/api/cells?region=nope", headers=OPS).status_code == 404
-    assert client.get("/api/cells?region=nope", headers=OPS).status_code == 404
+    assert client.get("/api/cells?region=riau", headers=OPS).status_code == 404
+    assert client.get("/api/cells?region=riau", headers=OPS).status_code == 404
     assert len(world.warehouse.queries) == 2
 
 
@@ -686,3 +686,48 @@ def test_an_unranked_cell_returns_facts_without_a_model_call(settings):
     assert (body["rank"], body["drying_score"]) == (3000, 12.0)
     assert body["explanation"] is None
     assert world.explainer.calls == []
+
+
+def test_all_cells_of_an_unconfigured_region_is_404_without_a_query(settings):
+    world = World(all_cell_rows=[all_row("a", 1, 90.0)])
+
+    response = world.client(settings).get("/api/cells?region=atlantis", headers=OPS)
+
+    assert response.status_code == 404
+    assert world.warehouse.queries == []
+
+
+def test_all_cells_gives_up_with_503_when_the_load_lock_stays_taken(
+    settings, monkeypatch
+):
+    import area_queries
+
+    monkeypatch.setattr(area_queries, "ALL_CELLS_LOCK_TIMEOUT_SECONDS", 0.01)
+    world = World(all_cell_rows=[all_row("a", 1, 90.0)])
+    world.area_queries._all_cells_lock.acquire()
+
+    response = world.client(settings).get("/api/cells?region=riau", headers=OPS)
+
+    assert response.status_code == 503
+    assert world.warehouse.queries == []
+
+
+class EmptyStream:
+    async def require_case(self, case_id):
+        return None
+
+    async def events(self, case_id):
+        for event in ():
+            yield event
+
+
+def test_the_agent_stream_is_not_compressed(settings):
+    client = World().client(settings)
+    client.app.state.run_streamer = EmptyStream()
+
+    response = client.get(
+        "/api/cases/c1/stream", headers={**OPS, "Accept-Encoding": "gzip"}
+    )
+
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "content-encoding" not in response.headers

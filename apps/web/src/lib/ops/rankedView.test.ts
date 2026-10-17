@@ -48,4 +48,19 @@ describe("rankedView", () => {
     expect(map.setOptions).toHaveBeenLastCalledWith({ maxZoom: null });
     expect(listeners.size).toBe(0);
   });
+
+  it("lifts the zoom cap when released before the map is idle", () => {
+    const remove = vi.fn();
+    const map = {
+      setOptions: vi.fn(),
+      fitBounds: vi.fn(),
+      addListener: () => ({ remove }),
+    };
+
+    const release = fitToRanked(map as never, { south: 0, north: 1, west: 0, east: 1 });
+    release();
+
+    expect(remove).toHaveBeenCalledTimes(1);
+    expect(map.setOptions).toHaveBeenLastCalledWith({ maxZoom: null });
+  });
 });

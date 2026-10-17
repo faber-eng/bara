@@ -23,8 +23,13 @@ RANKED_CELL_LIMIT = 200
 RANKED_DAM_LIMIT = 50
 TREND_WEEKS = 8
 ALL_CELLS_TTL_SECONDS = 300.0
+ALL_CELLS_LOCK_TIMEOUT_SECONDS = 60.0
 COORD_DECIMALS = 5
 SCORE_DECIMALS = 1
+
+
+def needs_explanation(facts: CellFacts) -> bool:
+    return facts.explanation is None and facts.rank <= RANKED_CELL_LIMIT
 
 
 def current_explanation(ranked: RankedCell | None, week_start: date):
@@ -75,6 +80,10 @@ class UnknownCell(Exception):
     pass
 
 
+class CellsBusy(Exception):
+    pass
+
+
 class AreaQueries:
     def __init__(
         self,
@@ -116,11 +125,15 @@ class AreaQueries:
         cached = self._fresh_cells(region)
         if cached is not None:
             return cached
-        with self._all_cells_lock:
+        if not self._all_cells_lock.acquire(timeout=ALL_CELLS_LOCK_TIMEOUT_SECONDS):
+            raise CellsBusy(region)
+        try:
             cached = self._fresh_cells(region)
             if cached is not None:
                 return cached
             return self._load_all_cells(region)
+        finally:
+            self._all_cells_lock.release()
 
     def _fresh_cells(self, region: str) -> AllCells | None:
         entry = self._all_cells.get(region)

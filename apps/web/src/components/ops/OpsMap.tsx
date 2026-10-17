@@ -36,7 +36,7 @@ export function OpsMap({ selectedCellId, focus, onCellSelect, onCellClear }: Ops
   const [opacities, setOpacities] = useState<LayerOpacities>({});
   const mapsKey = readMapsKey();
   const layers = buildMapLayers(tiles.data);
-  const cells = allCells.data?.cells ?? (allCells.isError ? rankings.data?.cells : undefined);
+  const cells = allCells.data?.cells ?? rankings.data?.cells;
 
   function handleOpacityChange(layerId: string, opacity: number) {
     setOpacities((previous) => ({ ...previous, [layerId]: opacity }));
@@ -89,7 +89,7 @@ export function OpsMap({ selectedCellId, focus, onCellSelect, onCellClear }: Ops
           Loading all areas.
         </p>
       )}
-      {allCells.isError && (
+      {allCells.isError && allCells.data === undefined && (
         <p role="status" className="map-note">
           Only the top {RANKED_CELL_LIMIT} areas are clickable right now.
         </p>
