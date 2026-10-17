@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 FALLBACK_STATUS_CODES = frozenset({404, 429})
 RETRY_STATUS_CODES = [500, 502, 503, 504]
 RETRY_ATTEMPTS = 3
+REQUEST_TIMEOUT_MS = 60_000
 
 
 class AsyncModels(Protocol):
@@ -69,9 +70,10 @@ class ModelGateway:
 
 def build_http_options() -> types.HttpOptions:
     return types.HttpOptions(
+        timeout=REQUEST_TIMEOUT_MS,
         retry_options=types.HttpRetryOptions(
             attempts=RETRY_ATTEMPTS, http_status_codes=RETRY_STATUS_CODES
-        )
+        ),
     )
 
 

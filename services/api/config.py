@@ -60,7 +60,12 @@ def resolve_config_dir(environ: Mapping[str, str], config_dir: Path | None) -> P
     from_env = environ.get("BARA_CONFIG_DIR", "").strip()
     if from_env != "":
         return Path(from_env)
-    return Path(__file__).resolve().parents[2] / "config"
+    parents = Path(__file__).resolve().parents
+    if len(parents) < 3:
+        raise ConfigError(
+            "BARA_CONFIG_DIR is not set and no repo config/ sits above this file"
+        )
+    return parents[2] / "config"
 
 
 def read_models(path: Path) -> ModelsConfig:
