@@ -42,8 +42,11 @@ export function headerOf(call: unknown[] | undefined, name: string): string | nu
   return new Headers(init?.headers).get(name);
 }
 
+const NEVER_PENDING_MS = 2_000_000_000;
+
 export function renderApp(path: string, queryClient = new QueryClient()) {
   const router = createAppRouter(createMemoryHistory({ initialEntries: [path] }));
+  router.update({ defaultPendingMs: NEVER_PENDING_MS });
   const view = render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
