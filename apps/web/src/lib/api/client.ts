@@ -27,13 +27,15 @@ export type RequestOptions = {
 
 const BRIGADE_PATH = "/api/brigade/";
 const BRIGADE_ROLE = "brigade";
+const VOLUNTEER_PATH = "/api/v/";
+const VOLUNTEER_ROLE = "volunteer";
 const JUDGE_PATH = "/api/judge/";
 const JUDGE_ROLE = "judge";
 
 function isOwnLivePath(path: string, identity: TokenIdentity): boolean {
   return (
     path === "/api/join" ||
-    path.startsWith(`/api/v/${identity.uid}/`) ||
+    path.startsWith(`${VOLUNTEER_PATH}${identity.uid}/`) ||
     path.startsWith(`${BRIGADE_PATH}${identity.uid}/`) ||
     path.startsWith(`${BRIGADE_PATH}escalations/`)
   );
@@ -44,6 +46,7 @@ function roleForPath(path: string): string | undefined {
   if (role === undefined) return undefined;
   if (path.startsWith(JUDGE_PATH)) return JUDGE_ROLE;
   if (path.startsWith(BRIGADE_PATH)) return BRIGADE_ROLE;
+  if (path.startsWith(VOLUNTEER_PATH)) return VOLUNTEER_ROLE;
   return role;
 }
 
