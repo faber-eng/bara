@@ -2,7 +2,7 @@ import math
 import re
 from collections.abc import Mapping
 
-NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+NUMBER = re.compile(r"(?<![\w.-])-?\d+(?:\.\d+)?(?![\w])")
 EXACT_TOLERANCE = 1e-9
 
 FIELDS = (
@@ -30,18 +30,12 @@ def known_values(facts: Mapping[str, object]) -> dict[str, float]:
     return {key: value for key, value in candidates.items() if value is not None}
 
 
-def decimals(token: str) -> int:
-    if "." not in token:
-        return 0
-    return len(token.split(".")[1])
-
-
 def matches_value(token: str, value: float) -> bool:
-    return round(value, decimals(token)) == float(token)
+    return math.isclose(float(token), value, rel_tol=0, abs_tol=EXACT_TOLERANCE)
 
 
 def numbers_in(text: str, cell_id: str) -> list[str]:
-    return NUMBER.findall(text.replace(cell_id, ""))
+    return NUMBER.findall(text.replace(cell_id, " "))
 
 
 def check_cited(cited: Mapping[str, float], facts: Mapping[str, float]) -> None:
