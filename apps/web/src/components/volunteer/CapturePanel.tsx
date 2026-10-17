@@ -5,8 +5,8 @@ import { SamplePicker } from "../samples/SamplePicker";
 import {
   FailurePanel,
   PhotoPreview,
+  QueuedPanel,
   ReadingPanel,
-  StoredPanel,
   UnreadPanel,
   UploadingPanel,
 } from "./FlowPanels";
@@ -26,11 +26,18 @@ export function CapturePanel({ copy, language, volunteerId, taskId, locked }: Ca
   const flow = useUploadFlow({ volunteerId, taskId });
   const { state } = flow;
   const fileInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (file) void flow.choosePhoto(file, false);
+  }
+
+  function handleVideo(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) void flow.chooseVideo(file);
   }
 
   if (state.step === "preview") {
@@ -63,8 +70,8 @@ export function CapturePanel({ copy, language, volunteerId, taskId, locked }: Ca
       <VerdictCard copy={copy} language={language} evidence={state.evidence} onDone={flow.reset} />
     );
   }
-  if (state.step === "stored") {
-    return <StoredPanel copy={copy} sample={state.sample} onDone={flow.reset} />;
+  if (state.step === "queued") {
+    return <QueuedPanel copy={copy} sample={state.sample} onDone={flow.reset} />;
   }
   if (state.step === "unread") return <UnreadPanel copy={copy} onDone={flow.reset} />;
   if (state.step === "failed") {
@@ -121,6 +128,24 @@ export function CapturePanel({ copy, language, volunteerId, taskId, locked }: Ca
           copy={copy}
           disabled={busy}
           onPick={(item) => void flow.chooseSample(item)}
+        />
+        <button
+          type="button"
+          className="btn btn-primary btn-lg"
+          disabled={busy}
+          onClick={() => videoInput.current?.click()}
+        >
+          {copy.recordVideo}
+        </button>
+        <input
+          ref={videoInput}
+          className="visually-hidden"
+          type="file"
+          accept="video/mp4,video/quicktime,video/*"
+          capture="environment"
+          aria-label={copy.videoFile}
+          tabIndex={-1}
+          onChange={handleVideo}
         />
       </div>
       <p className="proto-note">{copy.cameraHint}</p>

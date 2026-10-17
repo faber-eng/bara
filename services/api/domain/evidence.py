@@ -106,3 +106,7 @@ def final_verdict(
     if needs_human(read, threshold):
         return read.model_copy(update={"needs_human": True})
     return read
+
+
+def location_waived(kind: EvidenceKind, sample: bool) -> bool:
+    return sample or kind == "audio"

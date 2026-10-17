@@ -5,7 +5,7 @@ from typing import Protocol
 
 from casework.evidence_check import CheckedEvidence, CheckError
 from casework.evidence_reader import ReaderFailed
-from casework.photo import UnreadablePhoto
+from casework.media import UnreadableMedia
 from contracts import Event, EvidenceReceived, EvidenceReceivedEvent
 from events import MalformedPush
 from logs import log_extra
@@ -56,6 +56,8 @@ class EvidenceReceivedHandler:
                 ),
             )
             return
+        if checked.advisory:
+            return
         if checked.awaits_agent:
             await self._run_agent(message_id, payload)
         self._checker.flag_for_person(payload.case_id)
@@ -65,7 +67,7 @@ class EvidenceReceivedHandler:
     ) -> CheckedEvidence | None:
         try:
             return await self._checker.check(payload.task_id, payload.evidence_id)
-        except (CheckError, ReaderFailed, UnreadablePhoto) as error:
+        except (CheckError, ReaderFailed, UnreadableMedia) as error:
             logger.error(
                 "evidence check failed",
                 extra=log_extra(

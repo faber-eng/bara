@@ -1,8 +1,8 @@
 import io
-from dataclasses import dataclass
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from casework.media import PreparedMedia, UnreadableMedia
 from contracts import GeoPoint
 
 MAX_EDGE_PX = 1600
@@ -12,14 +12,8 @@ LAT_REF, LAT, LON_REF, LON = 1, 2, 3, 4
 NEGATIVE_REFS = frozenset({"S", "W"})
 
 
-class UnreadablePhoto(Exception):
+class UnreadablePhoto(UnreadableMedia):
     pass
-
-
-@dataclass(frozen=True)
-class PreparedPhoto:
-    data: bytes
-    mime_type: str
 
 
 def open_image(data: bytes) -> Image.Image:
@@ -31,12 +25,12 @@ def open_image(data: bytes) -> Image.Image:
     return image
 
 
-def prepare_photo(data: bytes) -> PreparedPhoto:
+def prepare_photo(data: bytes) -> PreparedMedia:
     image = ImageOps.exif_transpose(open_image(data)).convert("RGB")
     image.thumbnail((MAX_EDGE_PX, MAX_EDGE_PX))
     buffer = io.BytesIO()
     image.save(buffer, "JPEG", quality=JPEG_QUALITY)
-    return PreparedPhoto(buffer.getvalue(), "image/jpeg")
+    return PreparedMedia(buffer.getvalue(), "image/jpeg", "photo")
 
 
 def degrees(parts: tuple, ref: str) -> float:

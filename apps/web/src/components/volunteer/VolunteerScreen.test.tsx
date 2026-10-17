@@ -1,11 +1,18 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setCopyLanguage } from "../../lib/copy/language";
-import { putFile } from "../../lib/volunteer/putFile";
+import { putFile, UploadTransferError } from "../../lib/volunteer/putFile";
 import { callsTo, initOf, renderApp, stubApi } from "../../test-utils";
 
 vi.mock("../../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
-vi.mock("../../lib/volunteer/putFile", () => ({ putFile: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../../lib/volunteer/putFile", async (original) => ({
+  ...(await original<typeof import("../../lib/volunteer/putFile")>()),
+  putFile: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../../lib/volunteer/video", async (original) => {
+  const actual = await original<typeof import("../../lib/volunteer/video")>();
+  return { ...actual, checkedVideo: (file: Blob) => actual.checkedVideo(file, async () => 12) };
+});
 vi.mock("../../lib/volunteer/image", () => ({
   resizePhoto: vi.fn().mockResolvedValue(new Blob(["jpeg"], { type: "image/jpeg" })),
 }));
@@ -195,8 +202,30 @@ describe("volunteer screen", () => {
     expect(await screen.findByText("Sekat terlihat jebol")).toBeInTheDocument();
   });
 
-  it("keeps the photo and offers a retry when the upload fails", async () => {
-    vi.mocked(putFile).mockRejectedValueOnce(new Error("offline"));
+  it("saves the upload on the phone when the signal is gone and sends it when it returns", async () => {
+    vi.mocked(putFile).mockRejectedValueOnce(new UploadTransferError("offline"));
+    const fetchMock = stubApi(uploadHandlers(judged));
+    renderApp("/v/uid-1");
+
+    await pickPhoto();
+    fireEvent.click(await screen.findByRole("button", { name: "Kirim foto" }));
+
+    expect(await screen.findByText("Tersimpan di ponsel")).toBeInTheDocument();
+    expect(await screen.findByText("1 kiriman menunggu sinyal")).toBeInTheDocument();
+    expect(callsTo(fetchMock, "POST /api/v/uid-1/evidence/ev-1/complete")).toHaveLength(0);
+
+    window.dispatchEvent(new Event("online"));
+
+    await waitFor(() =>
+      expect(callsTo(fetchMock, "POST /api/v/uid-1/evidence/ev-1/complete")).toHaveLength(1),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText("1 kiriman menunggu sinyal")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("keeps the photo and offers a retry when the server refuses the upload", async () => {
+    vi.mocked(putFile).mockRejectedValueOnce(new UploadTransferError("too big", 413));
     stubApi(uploadHandlers(judged));
     renderApp("/v/uid-1");
 
@@ -307,7 +336,11 @@ describe("volunteer screen", () => {
         ...judged,
         kind: "audio",
         sample: true,
-        verdict: null,
+        verdict: {
+          ...verdict,
+          transcript: "Sekatnya jebol di sisi kiri",
+          transcript_en: "The dam is broken on the left side",
+        },
       }),
       "GET /api/samples?kind=voice": () => Response.json([voiceItem]),
       [`GET ${voiceItem.url}`]: () =>
@@ -323,8 +356,7 @@ describe("volunteer screen", () => {
     );
     fireEvent.click(await screen.findByRole("button", { name: /Damaged dam, leaking/ }));
 
-    expect(await screen.findByText("Terkirim")).toBeInTheDocument();
-    expect(screen.queryByText("sekat bocor")).not.toBeInTheDocument();
+    expect(await screen.findByText("Sekatnya jebol di sisi kiri")).toBeInTheDocument();
     expect(screen.getByText("Sampel")).toBeInTheDocument();
     const ticketCall = callsTo(fetchMock, "POST /api/v/uid-1/uploads")[0];
     expect(JSON.parse(String(initOf(ticketCall).body))).toMatchObject({
@@ -332,5 +364,35 @@ describe("volunteer screen", () => {
       sample: true,
       content_type: "audio/ogg",
     });
+  });
+
+  it("sends a recorded video after checking its type and length", async () => {
+    const fetchMock = stubApi(uploadHandlers({ ...judged, kind: "video" }));
+    renderApp("/v/uid-1");
+
+    const card = await screen.findByRole("article", { name: "Cek sekat kanal" });
+    const input = within(card).getByLabelText("Berkas video");
+    const clip = new File(["mp4"], "clip.mp4", { type: "video/mp4" });
+    fireEvent.change(input, { target: { files: [clip] } });
+
+    expect(await screen.findByText("Sekat terlihat jebol")).toBeInTheDocument();
+    const ticketCall = callsTo(fetchMock, "POST /api/v/uid-1/uploads")[0];
+    expect(JSON.parse(String(initOf(ticketCall).body))).toMatchObject({
+      kind: "video",
+      content_type: "video/mp4",
+      sample: false,
+    });
+  });
+
+  it("refuses a video that is not MP4 or MOV before any upload", async () => {
+    const fetchMock = stubApi(uploadHandlers(judged));
+    renderApp("/v/uid-1");
+
+    const card = await screen.findByRole("article", { name: "Cek sekat kanal" });
+    const clip = new File(["webm"], "clip.webm", { type: "video/webm" });
+    fireEvent.change(within(card).getByLabelText("Berkas video"), { target: { files: [clip] } });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("MP4 atau MOV");
+    expect(callsTo(fetchMock, "POST /api/v/uid-1/uploads")).toHaveLength(0);
   });
 });

@@ -9,6 +9,7 @@ import { LanguageToggle } from "../LanguageToggle";
 import { InlineLoading } from "../LoadingPanel";
 import { ChatThread, type ThreadEntry, threadEntries } from "./ChatThread";
 import { inboxQuery } from "./inboxQuery";
+import { OutboxStatus } from "./OutboxStatus";
 import { ReplyBar } from "./ReplyBar";
 import { TaskCard } from "./TaskCard";
 
@@ -88,6 +89,7 @@ export function VolunteerScreen({ volunteerId }: { volunteerId: string }) {
           </button>
         </div>
       )}
+      <OutboxStatus copy={copy} volunteerId={volunteerId} />
       {inbox.data && (
         <InboxView
           key={volunteerId}

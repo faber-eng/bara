@@ -5,17 +5,20 @@ import pytest
 from google.genai import errors, types
 
 from casework.evidence_reader import (
+    AUDIO_SYSTEM_INSTRUCTION,
     EVIDENCE_PROMPT_VERSION,
+    PROMPT_VERSIONS,
     SYSTEM_INSTRUCTION,
+    VIDEO_SYSTEM_INSTRUCTION,
     EvidenceReader,
     ReaderFailed,
     render_context,
 )
-from casework.photo import PreparedPhoto
+from casework.media import PreparedMedia
 from contracts import Verdict
 from tests.fakes import make_verdict
 
-PHOTO = PreparedPhoto(b"\xff\xd8 jpeg", "image/jpeg")
+PHOTO = PreparedMedia(b"\xff\xd8 jpeg", "image/jpeg")
 
 
 class FakeModel:
@@ -100,3 +103,63 @@ def test_the_prompt_version_is_set():
 def test_the_instruction_keeps_the_rules_the_verdict_depends_on():
     for phrase in ("unknown", "needs_human", "at most 4", "transcript"):
         assert phrase in SYSTEM_INSTRUCTION
+
+
+def audio_read(model):
+    media = PreparedMedia(b"fLaC", "audio/flac", "audio")
+    return asyncio.run(EvidenceReader(model).read(media, "dam_check"))
+
+
+def spoken_reply(**overrides):
+    fields = {"transcript": "Sekat jebol", "transcript_en": "The dam is broken"}
+    return make_verdict(**{**fields, **overrides}).model_dump_json()
+
+
+def test_a_voice_note_goes_with_its_own_instruction_and_context():
+    model = FakeModel([spoken_reply()])
+
+    audio_read(model)
+
+    _, contents, config = model.calls[0]
+    audio, text = contents
+    assert audio.inline_data.mime_type == "audio/flac"
+    assert config.system_instruction == AUDIO_SYSTEM_INSTRUCTION
+    assert "spoken description" in text
+
+
+def test_a_voice_note_reply_without_a_transcript_is_retried_then_fails():
+    missing = make_verdict().model_dump_json()
+    model = FakeModel([missing, missing])
+
+    with pytest.raises(ReaderFailed, match="no transcript"):
+        audio_read(model)
+    assert len(model.calls) == 2
+
+
+def test_a_voice_note_reply_with_a_transcript_is_accepted():
+    model = FakeModel([spoken_reply()])
+
+    verdict = audio_read(model)
+
+    assert verdict.transcript == "Sekat jebol"
+    assert verdict.transcript_en == "The dam is broken"
+
+
+def test_a_video_goes_with_the_video_instruction():
+    model = FakeModel([make_verdict().model_dump_json()])
+    media = PreparedMedia(b"mp4", "video/mp4", "video")
+
+    asyncio.run(EvidenceReader(model).read(media, "patrol_recheck"))
+
+    _, contents, config = model.calls[0]
+    assert config.system_instruction == VIDEO_SYSTEM_INSTRUCTION
+    assert "short video of burned peat" in contents[1]
+
+
+def test_each_kind_has_its_own_prompt_version():
+    assert len(set(PROMPT_VERSIONS.values())) == 3
+
+
+def test_the_audio_instruction_asks_for_both_transcripts():
+    for phrase in ("transcript_en", "sekat", "empty string", "needs_human"):
+        assert phrase in AUDIO_SYSTEM_INSTRUCTION

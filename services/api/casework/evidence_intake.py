@@ -20,6 +20,7 @@ from contracts import (
     Event,
     EventType,
     Evidence,
+    EvidenceKind,
     EvidenceReceived,
     EvidenceReceivedEvent,
     PendingUpload,
@@ -35,6 +36,7 @@ from logs import log_extra
 
 logger = logging.getLogger(__name__)
 
+COMPLETING_KINDS: frozenset[EvidenceKind] = frozenset({"photo", "video"})
 UPLOADABLE_TASK_STATUSES: frozenset[TaskStatus] = frozenset({"open", "done"})
 
 
@@ -154,9 +156,9 @@ class EvidenceIntake:
             raise TaskClosed(f"task {task.id} is {task.status}")
         case = self._case(upload.case_id)
         evidence = self._evidence_from(upload, completion)
-        is_photo = upload.kind == "photo"
+        completes = upload.kind in COMPLETING_KINDS
         now = self._clock.now()
-        done_at = now if is_photo and task.status == "open" else None
+        done_at = now if completes and task.status == "open" else None
         try:
             self._casework.commit_evidence(
                 evidence=evidence,
@@ -167,12 +169,11 @@ class EvidenceIntake:
             return self._stored_after_race(evidence_id)
         if done_at is not None:
             self._cancel_deadline(task, evidence_id)
-        if is_photo:
-            self._publish(evidence, case, now)
+        self._publish(evidence, case, now)
         return evidence
 
     def _republish_if_unread(self, stored: Evidence) -> Evidence:
-        if stored.kind == "photo" and stored.verdict is None:
+        if stored.verdict is None:
             self._publish(stored, self._case(stored.case_id), self._clock.now())
         return stored
 

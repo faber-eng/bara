@@ -20,10 +20,9 @@ from casework.evidence_check import (
     EvidenceChecker,
     EvidenceMissing,
     UnknownEvidence,
-    UnsupportedEvidence,
 )
-from casework.evidence_reader import EVIDENCE_PROMPT_VERSION
-from casework.photo import PreparedPhoto
+from casework.evidence_reader import EVIDENCE_PROMPT_VERSION, PROMPT_VERSIONS
+from casework.media import MediaTooLong, PreparedMedia, UnreadableMedia
 from contracts import (
     Case,
     ClockSettings,
@@ -47,6 +46,7 @@ from tests.fakes import (
     make_task,
     make_verdict,
 )
+from tests.media_files import short_video, silent_audio
 
 NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
 TARGET = GeoPoint(lat=0.5, lon=101.4)
@@ -68,7 +68,7 @@ class FakeReader:
         self.error = error
         self.calls = []
 
-    async def read(self, photo: PreparedPhoto, task_type):
+    async def read(self, photo: PreparedMedia, task_type):
         self.calls.append((photo, task_type))
         if self.error is not None:
             raise self.error
@@ -262,14 +262,6 @@ def test_evidence_of_another_task_is_unknown():
         world.check(task_id="t2")
 
 
-def test_a_voice_note_is_not_checked_yet():
-    voice = make_evidence(kind="audio", gcs_uri="gs://bucket-test/evidence/c1/e1.webm")
-    world = World(evidence=voice)
-
-    with pytest.raises(UnsupportedEvidence):
-        world.check()
-
-
 def test_a_missing_file_is_reported():
     world = World(stored=False)
 
@@ -371,3 +363,151 @@ def test_a_verdict_without_smoke_leaves_the_flag_off():
     world.check()
 
     assert world.cases.get("c1").history_flags.smoke_seen is False
+
+
+AUDIO_OBJECT = "evidence/c1/e1.webm"
+VIDEO_OBJECT = "evidence/c1/e1.mp4"
+
+
+def spoken(**overrides):
+    fields = {
+        "transcript": "Sekatnya jebol di sisi kiri",
+        "transcript_en": "The dam is broken on the left side",
+    }
+    return make_verdict(**{**fields, **overrides})
+
+
+def voice_world(reader=None, **evidence_overrides):
+    fields = {"kind": "audio", "gcs_uri": f"gs://bucket-test/{AUDIO_OBJECT}"}
+    world = World(
+        evidence=make_evidence(**{**fields, **evidence_overrides}),
+        reader=reader or FakeReader(spoken()),
+    )
+    world.bucket = RecordingBucket({AUDIO_OBJECT: silent_audio("webm")})
+    world.checker._storage = EvidenceStorage(world.bucket, fixed_signing_auth)
+    return world
+
+
+def video_world(seconds=2, reader=None, **evidence_overrides):
+    fields = {
+        "kind": "video",
+        "gcs_uri": f"gs://bucket-test/{VIDEO_OBJECT}",
+        "point": GeoPoint(lat=0.5005, lon=101.4),
+    }
+    world = World(
+        evidence=make_evidence(**{**fields, **evidence_overrides}),
+        reader=reader,
+    )
+    world.bucket = RecordingBucket({VIDEO_OBJECT: short_video(seconds)})
+    world.checker._storage = EvidenceStorage(world.bucket, fixed_signing_auth)
+    return world
+
+
+def test_a_voice_note_is_sent_to_the_reader_as_flac():
+    world = voice_world()
+
+    world.check()
+
+    media, _ = world.reader.calls[0]
+    assert media.kind == "audio"
+    assert media.mime_type == "audio/flac"
+    assert media.data[:4] == b"fLaC"
+
+
+def test_a_voice_note_verdict_carries_both_transcripts():
+    world = voice_world()
+
+    checked = world.check()
+
+    assert checked.verdict.transcript == "Sekatnya jebol di sisi kiri"
+    assert checked.verdict.transcript_en == "The dam is broken on the left side"
+    assert world.evidence.get("e1").verdict == checked.verdict
+
+
+def test_a_voice_note_needs_no_location():
+    world = voice_world()
+
+    checked = world.check()
+
+    assert checked.location_ok is None
+    assert checked.verdict.needs_human is False
+
+
+def test_a_voice_note_is_advisory_and_moves_no_case_or_dam():
+    world = voice_world()
+
+    checked = world.check()
+
+    assert checked.advisory is True
+    assert checked.awaits_agent is False
+    assert world.cases.get("c1").status == "reviewing"
+    assert world.dams.get("d1").last_state == "unknown"
+
+
+def test_a_voice_note_verdict_is_cached_under_its_own_prompt_version():
+    world = voice_world()
+
+    world.check()
+
+    key = verdict_cache_key("0" * 64, PROMPT_VERSIONS["audio"], "dam_check")
+    assert world.cache.get(key).verdict == spoken()
+    assert PROMPT_VERSIONS["audio"] != PROMPT_VERSIONS["photo"]
+
+
+def test_a_cached_voice_verdict_skips_the_converter_and_the_model():
+    world = voice_world()
+    world.bucket = RecordingBucket({AUDIO_OBJECT: b"not audio at all"})
+    world.checker._storage = EvidenceStorage(world.bucket, fixed_signing_auth)
+    key = verdict_cache_key("0" * 64, PROMPT_VERSIONS["audio"], "dam_check")
+    world.cache.put(
+        key,
+        VerdictCacheEntry(
+            id=key, verdict=spoken(), model="m", prompt_version=PROMPT_VERSIONS["audio"]
+        ),
+    )
+
+    checked = world.check()
+
+    assert checked.from_cache is True
+    assert world.reader.calls == []
+
+
+def test_a_file_that_is_not_audio_is_unreadable():
+    world = voice_world()
+    world.bucket = RecordingBucket({AUDIO_OBJECT: b"not audio at all"})
+    world.checker._storage = EvidenceStorage(world.bucket, fixed_signing_auth)
+
+    with pytest.raises(UnreadableMedia):
+        world.check()
+
+
+def test_a_short_video_is_sent_to_the_reader_as_mp4():
+    world = video_world()
+
+    checked = world.check()
+
+    media, _ = world.reader.calls[0]
+    assert media.kind == "video"
+    assert media.mime_type == "video/mp4"
+    assert checked.location_ok is True
+    assert checked.advisory is False
+    assert world.cases.get("c1").status == "reviewing"
+
+
+def test_a_video_over_thirty_seconds_is_refused_with_its_length():
+    world = video_world(seconds=32)
+
+    with pytest.raises(MediaTooLong, match="32 s long; the limit is 30 s"):
+        world.check()
+
+    assert world.reader.calls == []
+    assert world.evidence.get("e1").verdict is None
+
+
+def test_a_video_without_a_point_needs_a_person():
+    world = video_world(point=None)
+
+    checked = world.check()
+
+    assert checked.verdict.needs_human is True
+    assert "no location" in checked.verdict.reasons
