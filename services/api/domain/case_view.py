@@ -4,6 +4,7 @@ from contracts import (
     CaseSummary,
     Escalation,
     Evidence,
+    Message,
     PastCheck,
     Task,
     TimelineEntry,
@@ -73,6 +74,10 @@ def run_entry(run: AgentRun) -> TimelineEntry:
     )
 
 
+def note_entry(note: Message) -> TimelineEntry:
+    return TimelineEntry(at=note.created_at, text=f"Review note: {note.text}")
+
+
 def escalation_entries(escalation: Escalation) -> list[TimelineEntry]:
     contact = escalation.contact_id
     entries = [
@@ -94,6 +99,7 @@ def build_timeline(
     evidence: list[Evidence],
     runs: list[AgentRun],
     escalations: list[Escalation],
+    notes: list[Message],
 ) -> list[TimelineEntry]:
     entries = case_entries(case)
     for task in tasks:
@@ -103,6 +109,7 @@ def build_timeline(
     entries.extend(run_entry(run) for run in runs)
     for escalation in escalations:
         entries.extend(escalation_entries(escalation))
+    entries.extend(note_entry(note) for note in notes)
     return sorted(entries, key=lambda entry: entry.at)
 
 

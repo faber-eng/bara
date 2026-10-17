@@ -701,6 +701,7 @@ APP_BUILDER_STUBS = {
     "build_run_streamer": "streamer",
     "build_checker": "checker",
     "build_escalator": "escalator",
+    "build_review_desk": "review_desk",
     "build_acknowledger": "acknowledger",
     "build_brigade_inbox": "brigade_inbox",
     "build_intake": "intake",

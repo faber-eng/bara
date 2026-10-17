@@ -158,6 +158,17 @@ class Case(Contract):
     example: bool
 
 
+ReviewAction = Literal["assign", "escalate", "close"]
+ReviewNote = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
+]
+
+
+class ReviewRequest(Contract):
+    action: ReviewAction
+    note: ReviewNote
+
+
 class ToolCall(Contract):
     name: str
     args: dict[str, JsonValue]
