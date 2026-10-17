@@ -56,6 +56,13 @@ class AgentConfig(Config):
     max_cases_per_trigger: int = Field(ge=1)
 
 
+class ReignitionConfig(Config):
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    recheck_spots_per_fire: int = Field(ge=1)
+    recheck_after_hours: int = Field(ge=1, le=MAX_DEADLINE_HOURS)
+
+
 class TasksConfig(Config):
     default_deadline_hours: dict[
         TaskType, Annotated[int, Field(gt=0, le=MAX_DEADLINE_HOURS)]
@@ -88,6 +95,7 @@ class AppConfig(Config):
     agent: AgentConfig
     tasks: TasksConfig
     languages: Languages
+    reignition: ReignitionConfig
 
 
 class Settings(Config):
@@ -97,6 +105,7 @@ class Settings(Config):
     judge_mode: JudgeMode
     agent: AgentConfig
     tasks: TasksConfig
+    reignition: ReignitionConfig
     default_language: Language
     grid_cell_m: int
     region: str
@@ -127,6 +136,7 @@ def load_settings(
         judge_mode=apply_judge_override(app.judge_mode, environ),
         agent=app.agent,
         tasks=app.tasks,
+        reignition=app.reignition,
         default_language=app.languages.default,
         grid_cell_m=app.grid_cell_m,
         region=read_optional(environ, "REGION") or DEFAULT_REGION,

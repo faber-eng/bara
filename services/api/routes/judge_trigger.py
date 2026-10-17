@@ -20,12 +20,18 @@ router = APIRouter(prefix="/api/judge")
 class TriggerRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    event: Literal["drying.ranked"]
+    event: Literal["drying.ranked", "fire.quiet"]
 
 
 class TriggerAccepted(BaseModel):
     event: str
     message_id: str
+
+
+def publish(trigger: JudgeTrigger, event: str) -> str:
+    if event == "fire.quiet":
+        return trigger.fire_quiet()
+    return trigger.drying_ranked()
 
 
 @router.post("/trigger", status_code=202, response_model=TriggerAccepted)
@@ -36,7 +42,7 @@ def trigger_event(
 ) -> TriggerAccepted:
     trigger: JudgeTrigger = request.app.state.trigger
     try:
-        message_id = trigger.drying_ranked()
+        message_id = publish(trigger, body.event)
     except NoRankings as error:
         raise HTTPException(status_code=409, detail="no_rankings") from error
     except PUBLISH_ERRORS as error:

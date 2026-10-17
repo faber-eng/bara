@@ -31,6 +31,7 @@ from config import Settings, full_flow_region, load_settings, region_timezones
 from domain.scenario import load_scenario
 from events import DryingRankedHandler, EventDispatcher
 from evidence_events import EvidenceReceivedHandler
+from fire_events import FireQuietHandler
 from logs import configure_logging
 from overdue_events import TaskOverdueHandler
 from push_auth import GoogleOidcVerifier
@@ -221,6 +222,7 @@ def build_dispatcher(
     adapters: Adapters,
     agent: AgentService,
     checker: EvidenceChecker,
+    assigner: TaskAssigner,
 ) -> EventDispatcher:
     drying_ranked = DryingRankedHandler(
         cases=adapters.cases,
@@ -228,6 +230,16 @@ def build_dispatcher(
         agent=agent,
         clock=adapters.clock,
         max_cases=settings.agent.max_cases_per_trigger,
+    )
+    fire_quiet = FireQuietHandler(
+        cases=adapters.cases,
+        tasks=adapters.tasks,
+        volunteers=adapters.volunteers,
+        cells=adapters.cells,
+        assigner=assigner,
+        clock=adapters.clock,
+        spots=settings.reignition.recheck_spots_per_fire,
+        recheck_hours=settings.reignition.recheck_after_hours,
     )
     evidence_received = EvidenceReceivedHandler(checker=checker, agent=agent)
     task_overdue = TaskOverdueHandler(
@@ -237,6 +249,7 @@ def build_dispatcher(
         adapters.events,
         {
             "drying.ranked": drying_ranked,
+            "fire.quiet": fire_quiet,
             "evidence.received": evidence_received,
             "task.overdue": task_overdue,
         },
@@ -263,6 +276,7 @@ def build_trigger(settings: Settings, adapters: Adapters) -> JudgeTrigger:
         clock=adapters.clock,
         new_id=lambda: uuid.uuid4().hex,
         region=full_flow_region(settings.config_dir),
+        scenario=load_scenario(settings.scenario_dir),
     )
 
 
@@ -306,7 +320,11 @@ def create_app() -> FastAPI:
         settings, app.state.adapters, gateway, checker, escalator
     )
     app.state.dispatcher = build_dispatcher(
-        settings, app.state.adapters, app.state.agent, checker
+        settings,
+        app.state.adapters,
+        app.state.agent,
+        checker,
+        build_assigner(settings, app.state.adapters, gateway),
     )
     app.state.evidence_intake = build_intake(app.state.adapters)
     app.state.inbox_reader = build_inbox(app.state.adapters)

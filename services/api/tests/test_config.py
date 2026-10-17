@@ -28,6 +28,7 @@ tasks:
   location_tolerance_m: 300
 judge_mode: { enabled: false, max_resets_per_hour: 5 }
 agent: { max_llm_calls: 12, max_cases_per_trigger: 3 }
+reignition: { recheck_spots_per_fire: 3, recheck_after_hours: 48 }
 """
 
 
@@ -348,3 +349,10 @@ def test_a_default_deadline_past_the_cloud_tasks_limit_is_an_error(tmp_path):
 
     with pytest.raises(ConfigError, match="app.yaml"):
         load_settings(BASE_ENV, config_dir=tmp_path)
+
+
+def test_the_repo_config_gives_three_rechecks_after_48_hours():
+    settings = load_settings(BASE_ENV, REPO_CONFIG_DIR)
+
+    assert settings.reignition.recheck_spots_per_fire == 3
+    assert settings.reignition.recheck_after_hours == 48

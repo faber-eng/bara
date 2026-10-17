@@ -692,6 +692,7 @@ APP_BUILDER_STUBS = {
     "build_brigade_inbox": "brigade_inbox",
     "build_intake": "intake",
     "build_inbox": "inbox",
+    "build_assigner": "assigner",
 }
 
 
