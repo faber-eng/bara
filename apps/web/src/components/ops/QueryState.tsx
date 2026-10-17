@@ -1,6 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { ApiError } from "../../lib/api/client";
+import { InlineLoading } from "../LoadingPanel";
 
 const FORBIDDEN_STATUSES = [401, 403];
 
@@ -31,11 +32,7 @@ export function QueryState<T>({
   children,
 }: QueryStateProps<T>) {
   if (query.isPending) {
-    return (
-      <p role="status" className="ops-state">
-        Loading {label}
-      </p>
-    );
+    return <InlineLoading text={`Loading ${label}`} />;
   }
   if (query.isError) {
     return (

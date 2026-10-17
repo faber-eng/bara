@@ -6,6 +6,7 @@ import type { Inbox } from "../../lib/contracts";
 import { useCopyLanguage } from "../../lib/copy/language";
 import { type VolunteerCopy, volunteerCopy } from "../../lib/copy/volunteer";
 import { LanguageToggle } from "../LanguageToggle";
+import { InlineLoading } from "../LoadingPanel";
 import { ChatThread, type ThreadEntry, threadEntries } from "./ChatThread";
 import { inboxQuery } from "./inboxQuery";
 import { ReplyBar } from "./ReplyBar";
@@ -74,7 +75,7 @@ export function VolunteerScreen({ volunteerId }: { volunteerId: string }) {
     <section className="volunteer" aria-label={copy.tasksLabel}>
       <h1 className="visually-hidden">{copy.tasksLabel}</h1>
       <LanguageToggle label={copy.toggleLabel} />
-      {inbox.isPending && <p role="status">{copy.loading}</p>}
+      {inbox.isPending && <InlineLoading text={copy.loading} />}
       {inbox.isError && inbox.data === undefined && (
         <div role="alert" className="banner banner-danger">
           <p>{failureText(inbox.error, copy)}</p>
