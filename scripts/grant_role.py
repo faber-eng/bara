@@ -9,22 +9,28 @@ from typing import TextIO
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "services" / "api"))
 
+from google.api_core.exceptions import GoogleAPICallError
+
+from adapters.firestore_repos import ContactRepository
 from adapters.identity import (
     ClaimsAdmin,
     IdentityUnavailable,
     UserNotFound,
     grant_role,
 )
+from domain.brigade_contact import DEFAULT_ORG, DEFAULT_REGION, build_brigade_contact
 
 EXIT_OK = 0
 EXIT_FAILURE = 1
 EXIT_USAGE = 2
 EXIT_NO_USER = 3
 EXIT_FIREBASE = 4
+EXIT_FIRESTORE = 5
 GRANTABLE = ("ops", "brigade")
 DESCRIPTION = (
     "Give a signed-in user the ops or brigade role. Prints '<uid> <role>'. "
-    "The user must have signed in with Google once first."
+    "The user must have signed in with Google once first. Granting brigade also "
+    "creates contacts/<uid> if it is absent, so the brigade inbox opens for that user."
 )
 
 
@@ -34,6 +40,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("role", choices=GRANTABLE)
     parser.add_argument(
         "--project", help="GCP project; else PROJECT or .secrets/bara.env"
+    )
+    parser.add_argument(
+        "--region", default=DEFAULT_REGION, help="region of the brigade contact"
+    )
+    parser.add_argument(
+        "--org", default=DEFAULT_ORG, help="organisation of the brigade contact"
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="look the user up, write nothing"
@@ -72,6 +84,37 @@ def build_admin(project: str) -> ClaimsAdmin:
     return FirebaseClaimsAdmin()
 
 
+def build_contacts(project: str) -> ContactRepository:
+    from google.cloud import firestore
+
+    from adapters.store import FirestoreCollection
+    from contracts import Contact
+
+    client = firestore.Client(project=project)
+    return ContactRepository(FirestoreCollection(client, "contacts", Contact))
+
+
+def ensure_contact(
+    args: argparse.Namespace,
+    admin: ClaimsAdmin,
+    contacts: ContactRepository,
+    uid: str,
+    err: TextIO,
+) -> None:
+    exists = contacts.get(uid) is not None
+    if exists:
+        print(f"contacts/{uid} exists", file=err)
+        return
+    if args.dry_run:
+        print(f"dry run: would create contacts/{uid}", file=err)
+        return
+    contact = build_brigade_contact(
+        uid, admin.display_name(uid), args.email, args.org, args.region
+    )
+    created = contacts.create_if_absent(contact)
+    print(f"contacts/{uid} {'created' if created else 'exists'}", file=err)
+
+
 def parse(argv: list[str], out: TextIO, err: TextIO) -> argparse.Namespace | int:
     parser = build_parser()
     if not argv:
@@ -88,6 +131,7 @@ def main(
     argv: list[str],
     environ: Mapping[str, str] = os.environ,
     admin_factory: Callable[[str], ClaimsAdmin] = build_admin,
+    contacts_factory: Callable[[str], ContactRepository] = build_contacts,
     out: TextIO = sys.stdout,
     err: TextIO = sys.stderr,
 ) -> int:
@@ -102,12 +146,20 @@ def main(
             file=err,
         )
         return EXIT_USAGE
-    return run(args, admin_factory(project), out, err)
+    return run(args, admin_factory(project), contacts_factory(project), out, err)
 
 
-def run(args: argparse.Namespace, admin: ClaimsAdmin, out: TextIO, err: TextIO) -> int:
+def run(
+    args: argparse.Namespace,
+    admin: ClaimsAdmin,
+    contacts: ContactRepository,
+    out: TextIO,
+    err: TextIO,
+) -> int:
     try:
         result = grant_role(admin, args.email, args.role, args.dry_run)
+        if args.role == "brigade":
+            ensure_contact(args, admin, contacts, result.uid, err)
     except UserNotFound:
         print(
             f"no user with email {args.email}\n"
@@ -122,6 +174,13 @@ def run(args: argparse.Namespace, admin: ClaimsAdmin, out: TextIO, err: TextIO) 
             file=err,
         )
         return EXIT_FIREBASE
+    except GoogleAPICallError as error:
+        print(
+            f"Firestore refused the request: {type(error).__name__}: {error}\n"
+            "the claim is set; check roles/datastore.user and run this again",
+            file=err,
+        )
+        return EXIT_FIRESTORE
     except (OSError, RuntimeError, ValueError) as error:
         print(f"failed: {type(error).__name__}: {error}", file=err)
         return EXIT_FAILURE
