@@ -363,6 +363,8 @@ export type PublicBulletin = {
   text_en: string | null;
   cited: CitedValue[];
   source: BulletinSource | null;
+  model: string | null;
+  prompt_version: string | null;
   created_at: IsoDateTime | null;
 };
 

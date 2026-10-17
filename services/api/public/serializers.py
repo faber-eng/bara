@@ -51,6 +51,8 @@ def serialize_bulletin(
             text_en=None,
             cited=[],
             source=None,
+            model=None,
+            prompt_version=None,
             created_at=None,
         )
     return PublicBulletin(
@@ -60,5 +62,7 @@ def serialize_bulletin(
         text_en=bulletin.text_en,
         cited=list(bulletin.cited),
         source=bulletin.source,
+        model=bulletin.model,
+        prompt_version=bulletin.prompt_version,
         created_at=bulletin.created_at,
     )

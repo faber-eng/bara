@@ -644,6 +644,8 @@ class PublicBulletin(Contract):
     text_en: str | None
     cited: list[CitedValue]
     source: BulletinSource | None
+    model: str | None
+    prompt_version: str | None
     created_at: AwareDatetime | None
 
 
