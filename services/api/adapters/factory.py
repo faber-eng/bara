@@ -11,13 +11,18 @@ from google.cloud import (
     tasks_v2,
 )
 
-from adapters.bigquery import Warehouse
+from adapters.bigquery import DATASET, Warehouse
+from adapters.cells import CellRepository
 from adapters.firestore_repos import (
+    AgentRunRepository,
     CaseRepository,
+    DamRepository,
     EventLog,
     FirestoreClockStore,
+    RankingRepository,
     TaskRepository,
     VolunteerRepository,
+    build_agent_repositories,
 )
 from adapters.identity import ClaimsAdmin, FirebaseClaimsAdmin
 from adapters.pubsub import EventPublisher
@@ -26,12 +31,11 @@ from adapters.storage import AdcSigningAuth, EvidenceStorage
 from adapters.store import FirestoreCollection
 from adapters.tasks import DeadlineScheduler
 from config import Settings
-from contracts import Case, ClockSettings, ProcessedEvent, Task, Volunteer
+from contracts import Case, ClockSettings, ProcessedEvent, Task
 from domain.clock import Clock
 
 logger = logging.getLogger(__name__)
 
-DATASET = "bara"
 DEADLINE_QUEUE = "task-deadlines"
 
 
@@ -45,7 +49,11 @@ class Adapters:
     storage: EvidenceStorage
     publisher: EventPublisher
     scheduler: DeadlineScheduler | None
+    cells: CellRepository
+    rankings: RankingRepository
     volunteers: VolunteerRepository
+    dams: DamRepository
+    agent_runs: AgentRunRepository
     secrets: SecretReader
     claims: ClaimsAdmin
 
@@ -77,20 +85,24 @@ def build_adapters(settings: Settings) -> Adapters:
         FirestoreCollection(db, "settings", ClockSettings)
     )
     bucket = storage.Client(project=settings.project).bucket(settings.evidence_bucket)
+    warehouse = Warehouse(
+        bigquery.Client(project=settings.project), settings.project, DATASET
+    )
+    agent_repos = build_agent_repositories(db)
     return Adapters(
         clock=Clock(clock_store, utcnow),
         tasks=TaskRepository(FirestoreCollection(db, "tasks", Task)),
         cases=CaseRepository(FirestoreCollection(db, "cases", Case)),
         events=EventLog(FirestoreCollection(db, "events", ProcessedEvent), utcnow),
-        warehouse=Warehouse(
-            bigquery.Client(project=settings.project), settings.project, DATASET
-        ),
+        warehouse=warehouse,
         storage=EvidenceStorage(bucket, AdcSigningAuth),
         publisher=EventPublisher(pubsub_v1.PublisherClient(), settings.project),
         scheduler=build_scheduler(settings),
-        volunteers=VolunteerRepository(
-            FirestoreCollection(db, "volunteers", Volunteer)
-        ),
+        cells=CellRepository(warehouse),
+        rankings=agent_repos.rankings,
+        volunteers=agent_repos.volunteers,
+        dams=agent_repos.dams,
+        agent_runs=agent_repos.agent_runs,
         secrets=SecretManagerReader(
             secretmanager.SecretManagerServiceClient(), settings.project
         ),

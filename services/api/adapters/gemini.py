@@ -1,11 +1,13 @@
 import logging
+import os
 from collections.abc import Mapping
 from typing import Protocol
 
 from google import genai
+from google.adk.models import BaseLlm, FallbackModel, Gemini
 from google.genai import errors, types
 
-from config import ModelsConfig, Role, Settings
+from config import ConfigError, ModelsConfig, Role, Settings
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +15,8 @@ FALLBACK_STATUS_CODES = frozenset({404, 429})
 RETRY_STATUS_CODES = [500, 502, 503, 504]
 RETRY_ATTEMPTS = 3
 REQUEST_TIMEOUT_MS = 60_000
+ENTERPRISE_VARIABLE = "GOOGLE_GENAI_USE_ENTERPRISE"
+ENABLED_VALUES = frozenset({"true", "1"})
 
 
 class AsyncModels(Protocol):
@@ -87,3 +91,41 @@ def build_vertex_clients(settings: Settings) -> dict[Role, AsyncModels]:
         ).aio.models
         for role in ("reasoning", "fast")
     }
+
+
+def require_enterprise_mode(environ: Mapping[str, str]) -> None:
+    value = environ.get(ENTERPRISE_VARIABLE, "").lower()
+    if value not in ENABLED_VALUES:
+        raise ConfigError(
+            f"{ENTERPRISE_VARIABLE} must be True: ADK sends the agent's output "
+            "schema together with its tools only in Vertex enterprise mode"
+        )
+
+
+def agent_gemini(settings: Settings, model: str, location: str) -> Gemini:
+    return Gemini(
+        model=model,
+        client_kwargs={
+            "enterprise": True,
+            "project": settings.project,
+            "location": location,
+            "http_options": build_http_options(),
+        },
+    )
+
+
+def compose_agent_model(primary: BaseLlm, fallback: BaseLlm) -> FallbackModel:
+    return FallbackModel(
+        models=[primary, fallback], retriable_status_codes=FALLBACK_STATUS_CODES
+    )
+
+
+def build_agent_model(
+    settings: Settings, environ: Mapping[str, str] = os.environ
+) -> FallbackModel:
+    require_enterprise_mode(environ)
+    route = settings.models.reasoning
+    return compose_agent_model(
+        agent_gemini(settings, route.model, route.location),
+        agent_gemini(settings, route.fallback, route.location),
+    )

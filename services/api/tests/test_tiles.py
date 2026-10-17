@@ -124,6 +124,7 @@ def test_create_app_wires_earth_engine_tiles_without_a_network_call(monkeypatch)
     monkeypatch.setattr(main, "configure_logging", lambda: None)
     monkeypatch.setattr(main, "build_token_verifier", lambda settings: FakeVerifier({}))
     monkeypatch.setattr(main, "build_adapters", lambda settings: "adapters")
+    monkeypatch.setattr(main, "build_agent_service", lambda settings, adapters: "agent")
     monkeypatch.setattr(
         main,
         "build_vertex_clients",

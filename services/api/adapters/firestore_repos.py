@@ -1,8 +1,12 @@
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 
-from adapters.store import Collection, Filter
+from google.cloud import firestore
+
+from adapters.store import Collection, Filter, FirestoreCollection
 from contracts import (
+    AgentRun,
     Case,
     ClockSettings,
     Contact,
@@ -12,8 +16,10 @@ from contracts import (
     Evidence,
     Message,
     ProcessedEvent,
+    RankedCell,
     Task,
     Volunteer,
+    VolunteerRole,
 )
 from domain.clock import is_due
 from domain.reset_scope import ResetSnapshot
@@ -42,6 +48,9 @@ class CaseRepository:
             return None
         return min(live, key=lambda case: case.opened_at)
 
+    def get(self, case_id: str) -> Case | None:
+        return self._cases.get(case_id)
+
 
 class VolunteerRepository:
     def __init__(self, volunteers: Collection[Volunteer]):
@@ -52,6 +61,11 @@ class VolunteerRepository:
 
     def create_if_absent(self, volunteer: Volunteer) -> bool:
         return self._volunteers.create_if_absent(volunteer.id, volunteer)
+
+    def available(self, role: VolunteerRole) -> list[Volunteer]:
+        return self._volunteers.where(
+            Filter("role", "==", role), Filter("available", "==", True)
+        )
 
 
 class EventLog:
@@ -126,3 +140,57 @@ def children[T](collection: Collection[T], case_ids: list[str]) -> list[T]:
         chunk = case_ids[start : start + IN_QUERY_LIMIT]
         found.extend(collection.where(Filter("case_id", "in", chunk)))
     return found
+
+
+class RankingRepository:
+    def __init__(self, cells_for: Callable[[str], Collection[RankedCell]]):
+        self._cells_for = cells_for
+
+    def top(self, region: str, limit: int) -> list[RankedCell]:
+        return self._cells_for(region).where(Filter("rank", "<=", limit))
+
+
+class DamRepository:
+    def __init__(self, dams: Collection[Dam]):
+        self._dams = dams
+
+    def in_region(self, region: str) -> list[Dam]:
+        return self._dams.where(Filter("region", "==", region))
+
+    def get(self, dam_id: str) -> Dam | None:
+        return self._dams.get(dam_id)
+
+
+class AgentRunRepository:
+    def __init__(self, runs_for: Callable[[str], Collection[AgentRun]]):
+        self._runs_for = runs_for
+
+    def save(self, case_id: str, run: AgentRun) -> None:
+        self._runs_for(case_id).put(run.id, run)
+
+
+@dataclass(frozen=True)
+class AgentRepositories:
+    rankings: RankingRepository
+    volunteers: VolunteerRepository
+    dams: DamRepository
+    agent_runs: AgentRunRepository
+
+
+def build_agent_repositories(db: firestore.Client) -> AgentRepositories:
+    return AgentRepositories(
+        rankings=RankingRepository(
+            lambda region: FirestoreCollection(
+                db, f"rankings/{region}/cells", RankedCell
+            )
+        ),
+        volunteers=VolunteerRepository(
+            FirestoreCollection(db, "volunteers", Volunteer)
+        ),
+        dams=DamRepository(FirestoreCollection(db, "dams", Dam)),
+        agent_runs=AgentRunRepository(
+            lambda case_id: FirestoreCollection(
+                db, f"cases/{case_id}/agent_runs", AgentRun
+            )
+        ),
+    )

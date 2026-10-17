@@ -136,6 +136,7 @@ export type AgentRun = {
   tool_calls: ToolCall[];
   final_json: AgentDecision | null;
   model: string;
+  prompt_version: string;
   started_at: IsoDateTime;
   ms: number;
 };

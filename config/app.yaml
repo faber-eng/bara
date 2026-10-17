@@ -22,3 +22,4 @@ tasks:
   location_tolerance_m: 300            # evidence GPS must be within this of the task point
 languages: { default: id, supported: [id, en, ms, fr] }
 judge_mode: { enabled: true, max_resets_per_hour: 20 }
+agent: { max_llm_calls: 12, max_cases_per_trigger: 3 }   # cases one drying.ranked event may open

@@ -20,8 +20,10 @@ fast:
 
 
 VALID_APP_YAML = """
+grid_cell_m: 1000
 languages: { default: id }
 judge_mode: { enabled: false, max_resets_per_hour: 5 }
+agent: { max_llm_calls: 12, max_cases_per_trigger: 3 }
 """
 
 
@@ -164,7 +166,11 @@ def test_missing_app_yaml_is_an_error(tmp_path):
 
 def test_app_yaml_without_judge_mode_is_an_error(tmp_path):
     write_models_yaml(tmp_path, VALID_MODELS_YAML)
-    (tmp_path / "app.yaml").write_text("languages: { default: id }\n")
+    (tmp_path / "app.yaml").write_text(
+        VALID_APP_YAML.replace(
+            "judge_mode: { enabled: false, max_resets_per_hour: 5 }\n", ""
+        )
+    )
 
     with pytest.raises(ConfigError, match="app.yaml"):
         load_settings(BASE_ENV, config_dir=tmp_path)
@@ -233,3 +239,33 @@ def test_two_full_flow_regions_are_a_config_error(tmp_path):
 
     with pytest.raises(ConfigError):
         full_flow_region(tmp_path)
+
+
+def test_agent_bounds_and_grid_size_come_from_the_repo_app_yaml():
+    settings = load_settings(BASE_ENV, REPO_CONFIG_DIR)
+
+    assert settings.agent.max_llm_calls == 12
+    assert settings.agent.max_cases_per_trigger == 3
+    assert settings.grid_cell_m == 1000
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["agent: { max_llm_calls: 12, max_cases_per_trigger: 3 }\n", "grid_cell_m: 1000\n"],
+)
+def test_app_yaml_without_agent_bounds_or_grid_size_is_an_error(tmp_path, line):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+    (tmp_path / "app.yaml").write_text(VALID_APP_YAML.replace(line, ""))
+
+    with pytest.raises(ConfigError, match="app.yaml"):
+        load_settings(BASE_ENV, config_dir=tmp_path)
+
+
+def test_max_llm_calls_must_be_positive(tmp_path):
+    write_models_yaml(tmp_path, VALID_MODELS_YAML)
+    (tmp_path / "app.yaml").write_text(
+        VALID_APP_YAML.replace("max_llm_calls: 12", "max_llm_calls: 0")
+    )
+
+    with pytest.raises(ConfigError, match="app.yaml"):
+        load_settings(BASE_ENV, config_dir=tmp_path)

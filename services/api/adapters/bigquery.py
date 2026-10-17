@@ -4,6 +4,7 @@ from datetime import date, datetime
 
 from google.cloud import bigquery
 
+DATASET = "bara"
 MAX_BYTES_BILLED = 1_000_000_000
 TABLE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
