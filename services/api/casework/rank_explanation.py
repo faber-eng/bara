@@ -90,7 +90,7 @@ class TextModel(Protocol):
 
 
 class AreaFacts(Protocol):
-    def get_area_facts(self, cell_id: str) -> dict: ...
+    def facts(self, cell_id: str) -> dict: ...
 
 
 def render_fact(field: str, shown: Shown) -> dict[str, object]:
@@ -177,7 +177,7 @@ class RankExplainer:
             return None
 
     async def _explain(self, cell_id: str) -> RankExplanation | None:
-        facts = await asyncio.to_thread(self._facts.get_area_facts, cell_id)
+        facts = await asyncio.to_thread(self._facts.facts, cell_id)
         if "error" in facts:
             log_event(
                 logging.WARNING,

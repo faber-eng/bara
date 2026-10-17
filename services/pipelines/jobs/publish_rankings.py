@@ -118,7 +118,6 @@ def publish_rankings(
     dam_docs = {dam.dam_id: dam_document(dam) for dam in dams}
     store.replace(region, "cells", cell_docs, week=label)
     store.replace(region, "dams", dam_docs, week=label)
-    store.write_run(region, label, run_record(week_start, now, len(cells), len(dams)))
     result: dict[str, object] = {**summary}
     if latest:
         replaced_cells = store.replace(region, "cells", cell_docs)
@@ -127,6 +126,7 @@ def publish_rankings(
             "cells": replaced_cells.deleted,
             "dams": replaced_dams.deleted,
         }
+    store.write_run(region, label, run_record(week_start, now, len(cells), len(dams)))
     if announce:
         event = ranking_event(region, week_start, cells, dams, new_id(), now)
         message_id = publisher.publish(event)

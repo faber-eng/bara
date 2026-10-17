@@ -85,3 +85,32 @@ def test_a_build_that_raises_leaves_nothing_cached():
         pass
 
     assert cache.get_or_build(KEY, lambda: "url") == "url"
+
+
+def test_waiters_share_the_failure_of_the_build_in_flight():
+    cache = TileUrlCache()
+    builds = []
+
+    def fail() -> str:
+        builds.append(1)
+        time.sleep(0.2)
+        raise RuntimeError("boom")
+
+    errors: list[str] = []
+
+    def call():
+        try:
+            cache.get_or_build(KEY, fail)
+        except RuntimeError as error:
+            errors.append(str(error))
+
+    threads = [threading.Thread(target=call) for _ in range(6)]
+    started = time.perf_counter()
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == ["boom"] * 6
+    assert len(builds) == 1
+    assert time.perf_counter() - started < 0.6

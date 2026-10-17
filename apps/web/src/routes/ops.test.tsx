@@ -124,7 +124,7 @@ describe("/ops", () => {
       "GET /api/clock": () =>
         Response.json({ now: "2026-07-20T08:00:00+07:00", offset_seconds: 0, judge_mode: false }),
       "GET /api/rankings/riau": () => Response.json(rankings),
-      "GET /api/cases?region=riau": () => Response.json(cases),
+      "GET /api/cases?region=riau&limit=200": () => Response.json(cases),
       "GET /api/tiles/drying?region=riau": () =>
         Response.json({
           layer: "drying",

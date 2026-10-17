@@ -119,7 +119,7 @@ class FakeFacts:
         self.calls = []
         self.result = result
 
-    def get_area_facts(self, cell_id):
+    def facts(self, cell_id):
         self.calls.append(cell_id)
         if self.result is not None:
             return self.result
@@ -359,7 +359,7 @@ def test_a_store_failure_still_returns_the_explanation(caplog):
 
 def test_a_facts_failure_gives_null_not_an_exception():
     class Broken:
-        def get_area_facts(self, cell_id):
+        def facts(self, cell_id):
             raise RuntimeError("bigquery is down")
 
     world = World([], facts=Broken())
@@ -468,3 +468,13 @@ def test_a_small_negative_signal_is_not_written_as_negative_zero():
 
 def test_a_distance_that_rounds_to_a_kilometre_is_written_in_km():
     assert shown_values({"canal_dist_m": 999.6})["canal_dist_m"].written == "1.0 km"
+
+
+def test_the_explainer_reads_facts_from_the_real_area_facts_tool():
+    import inspect
+
+    from bara_agent.tools.get_area_facts import GetAreaFacts
+    from casework.rank_explanation import AreaFacts
+
+    assert not inspect.iscoroutinefunction(GetAreaFacts.facts)
+    assert callable(AreaFacts.facts)

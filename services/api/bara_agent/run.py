@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -80,6 +80,26 @@ class RunContext:
         }
 
 
+class RunSaves:
+    def __init__(self) -> None:
+        self._gate = asyncio.Lock()
+        self._finished = False
+
+    async def progress(
+        self, save: Callable[[RunContext], None], context: RunContext
+    ) -> None:
+        async with self._gate:
+            if not self._finished:
+                await asyncio.to_thread(save, context)
+
+    async def finish[**P, R](
+        self, save: Callable[P, R], *args: P.args, **kwargs: P.kwargs
+    ) -> R:
+        async with self._gate:
+            self._finished = True
+            return await asyncio.to_thread(save, *args, **kwargs)
+
+
 class AgentService:
     def __init__(
         self,
@@ -117,7 +137,11 @@ class AgentService:
         started = time.perf_counter()
         message = render_run_input(RunInput(trigger, case, dam, event, started_at))
         context = RunContext(trigger, case_id, run_id, started_at, started, recorder)
-        save_progress = self._progress_saver(context)
+        saves = RunSaves()
+
+        async def save_progress() -> None:
+            await saves.progress(self._save_progress, context)
+
         recorder.on_call_finished(save_progress)
         await save_progress()
         try:
@@ -126,7 +150,7 @@ class AgentService:
             logger.exception(
                 "agent run failed", extra=context.log_fields("agent_run_failed")
             )
-            await asyncio.to_thread(self._store_failed_run, context)
+            await saves.finish(self._store_failed_run, context)
             raise
         try:
             output = parse_output(text)
@@ -135,19 +159,10 @@ class AgentService:
                 "agent output invalid",
                 extra=context.log_fields("agent_output_invalid", error=str(error)),
             )
-            await asyncio.to_thread(self._store_failed_run, context)
+            await saves.finish(self._store_failed_run, context)
             raise
         self._warn_on_evidence_mismatch(context, output)
-        return await asyncio.to_thread(self._save, context, output.to_decision())
-
-    def _progress_saver(self, context: RunContext) -> Callable[[], Awaitable[None]]:
-        gate = asyncio.Lock()
-
-        async def save() -> None:
-            async with gate:
-                await asyncio.to_thread(self._save_progress, context)
-
-        return save
+        return await saves.finish(self._save, context, output.to_decision())
 
     def _dam_for(self, case: Case) -> Dam | None:
         if case.dam_id is None:

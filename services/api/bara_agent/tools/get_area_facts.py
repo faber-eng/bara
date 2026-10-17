@@ -36,9 +36,9 @@ class GetAreaFacts:
         Args:
             cell_id: Grid cell id from the case or from rank_areas.
         """
-        return await asyncio.to_thread(self._facts, cell_id)
+        return await asyncio.to_thread(self.facts, cell_id)
 
-    def _facts(self, cell_id: str) -> ToolResult:
+    def facts(self, cell_id: str) -> ToolResult:
         weeks = self._cells.weekly(cell_id, TREND_WEEKS)
         if not weeks:
             return tool_error(f"no drying data for cell {cell_id!r}")
