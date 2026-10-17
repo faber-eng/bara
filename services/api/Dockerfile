@@ -28,7 +28,8 @@ COPY services/pipelines/ee_lib/ /app/ee_lib/
 COPY services/api/ /app/
 
 ENV BARA_CONFIG_DIR=/app/config \
-    BARA_SAMPLES_DIR=/app/samples
+    BARA_SAMPLES_DIR=/app/samples \
+    GOOGLE_GENAI_USE_ENTERPRISE=True
 
 ARG GIT_SHA=unknown
 ENV GIT_SHA=${GIT_SHA}

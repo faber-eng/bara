@@ -5,14 +5,19 @@ from adapters.firestore_repos import (
     EventLog,
     FirestoreClockStore,
     TaskRepository,
+    build_agent_repositories,
 )
 from adapters.store import FirestoreCollection
 from contracts import Case, ClockSettings, ProcessedEvent, Task
 from tests.fakes import (
     InMemoryCollection,
     StubFirestoreClient,
+    make_agent_run,
     make_case,
+    make_dam,
+    make_ranked_cell,
     make_task,
+    make_volunteer,
 )
 
 NOW = datetime(2026, 10, 20, 12, 0, tzinfo=UTC)
@@ -137,3 +142,67 @@ def test_volunteer_create_if_absent_creates_once_and_keeps_the_first():
     assert repo.create_if_absent(make_volunteer(id="u1", name="First")) is True
     assert repo.create_if_absent(make_volunteer(id="u1", name="Second")) is False
     assert repo.get("u1").name == "First"
+
+
+def test_get_returns_the_case_or_none():
+    case = make_case(id="c1")
+    repo = make_case_repo(case)
+
+    assert repo.get("c1") == case
+    assert repo.get("missing") is None
+
+
+def firestore_repos():
+    client = StubFirestoreClient()
+    return client, build_agent_repositories(client)
+
+
+def test_rankings_read_the_region_subcollection_up_to_the_limit():
+    client, repos = firestore_repos()
+    for rank in (1, 2, 3):
+        cell = make_ranked_cell(cell_id=f"riau-{rank}", rank=rank)
+        client.collection("rankings/riau/cells").document(cell.cell_id).set(
+            cell.model_dump()
+        )
+    other = make_ranked_cell(cell_id="congo-1", region="congo_cuvette")
+    client.collection("rankings/congo_cuvette/cells").document("congo-1").set(
+        other.model_dump()
+    )
+
+    top = repos.rankings.top("riau", 2)
+
+    assert sorted(cell.cell_id for cell in top) == ["riau-1", "riau-2"]
+
+
+def test_available_volunteers_match_the_role_and_availability():
+    client, repos = firestore_repos()
+    people = [
+        make_volunteer(id="ok"),
+        make_volunteer(id="busy", available=False),
+        make_volunteer(id="patrol", role="patrol"),
+    ]
+    for person in people:
+        client.collection("volunteers").document(person.id).set(person.model_dump())
+
+    assert [v.id for v in repos.volunteers.available("volunteer")] == ["ok"]
+
+
+def test_dams_in_region_and_by_id():
+    client, repos = firestore_repos()
+    riau = make_dam(id="d1")
+    congo = make_dam(id="d2", region="congo_cuvette")
+    for dam in (riau, congo):
+        client.collection("dams").document(dam.id).set(dam.model_dump())
+
+    assert repos.dams.in_region("riau") == [riau]
+    assert repos.dams.get("d2") == congo
+    assert repos.dams.get("missing") is None
+
+
+def test_agent_runs_are_stored_under_the_case():
+    client, repos = firestore_repos()
+    run = make_agent_run(id="r1")
+
+    repos.agent_runs.save("c1", run)
+
+    assert client.stores["cases/c1/agent_runs"]["r1"] == run.model_dump()

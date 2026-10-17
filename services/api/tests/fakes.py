@@ -399,3 +399,127 @@ def make_escalation(**overrides):
         "acknowledged_at": None,
     }
     return Escalation(**{**fields, **overrides})
+
+
+def make_ranked_cell(**overrides):
+    from datetime import date
+
+    from contracts import GeoPoint, RankedCell, RankingComponents
+
+    fields = {
+        "cell_id": "riau-1-1",
+        "region": "riau",
+        "week_start": date(2026, 10, 12),
+        "centroid": GeoPoint(lat=0.5, lon=101.4),
+        "components": RankingComponents(
+            s1_anom_db=-4.2,
+            rain_30d_mm=180.0,
+            rain_deficit_pct=0.31,
+            canal_dist_m=140.0,
+            peat_class=1,
+        ),
+        "drying_score": 90.0,
+        "rank": 1,
+        "rank_change": None,
+        "stale_s1": False,
+        "explanation": None,
+    }
+    return RankedCell(**{**fields, **overrides})
+
+
+def make_agent_run(**overrides):
+    from datetime import UTC, datetime
+
+    from contracts import AgentRun
+
+    fields = {
+        "id": "r1",
+        "trigger": "drying.ranked",
+        "tool_calls": [],
+        "final_json": None,
+        "model": "reasoning-primary",
+        "prompt_version": "agent-v1",
+        "started_at": datetime(2026, 10, 17, 12, 0, tzinfo=UTC),
+        "ms": 0,
+    }
+    return AgentRun(**{**fields, **overrides})
+
+
+class FakeWarehouse:
+    def __init__(self, rows_by_sql: Mapping[str, list[dict]] | None = None):
+        self._rows_by_sql = dict(rows_by_sql or {})
+        self.queries: list[tuple[str, dict[str, object]]] = []
+
+    def query(self, sql: str, params: Mapping[str, object]) -> list[dict]:
+        self.queries.append((sql, dict(params)))
+        return [dict(row) for row in self._rows_by_sql.get(sql, [])]
+
+
+def weekly_row(**overrides) -> dict:
+    from datetime import date
+
+    fields = {
+        "cell_id": "riau-1-1",
+        "region": "riau",
+        "week_start": date(2026, 10, 12),
+        "s1_anom_db": -4.2,
+        "stale_s1": False,
+        "rain_30d_mm": 180.0,
+        "rain_deficit_pct": 0.31,
+        "canal_dist_m": 140.0,
+        "peat_class": 1,
+        "drying_score": 90.5,
+        "rank": 1,
+        "lat": 0.5,
+        "lon": 101.4,
+    }
+    return {**fields, **overrides}
+
+
+def function_call(name: str, args: dict[str, object], call_id: str):
+    from google.adk.models import LlmResponse
+
+    part = types.Part(
+        function_call=types.FunctionCall(id=call_id, name=name, args=args)
+    )
+    return LlmResponse(content=types.Content(role="model", parts=[part]))
+
+
+def final_answer(text: str):
+    from google.adk.models import LlmResponse
+
+    return LlmResponse(
+        content=types.Content(role="model", parts=[types.Part(text=text)])
+    )
+
+
+def make_fake_llm(model: str, script: list):
+    from google.adk.models import BaseLlm, LlmCapabilities
+    from pydantic import Field
+
+    class FakeLlm(BaseLlm):
+        outcomes: list
+        contents: list = Field(default_factory=list)
+        system_instructions: list = Field(default_factory=list)
+        response_schemas: list = Field(default_factory=list)
+        tool_names: list = Field(default_factory=list)
+
+        @property
+        def capabilities(self) -> LlmCapabilities:
+            return LlmCapabilities(output_schema_and_tools=True)
+
+        async def generate_content_async(self, llm_request, stream=False):
+            self.contents.append(
+                [c.model_copy(deep=True) for c in llm_request.contents]
+            )
+            self.system_instructions.append(llm_request.config.system_instruction)
+            self.response_schemas.append(llm_request.config.response_schema)
+            self.tool_names.append(sorted(llm_request.tools_dict))
+            if not self.outcomes:
+                raise AssertionError(f"{self.model} has no scripted response left")
+            outcome = self.outcomes.pop(0)
+            if isinstance(outcome, Exception):
+                raise outcome
+            yield outcome.model_copy(update={"model_version": self.model})
+
+    return FakeLlm(model=model, outcomes=list(script))

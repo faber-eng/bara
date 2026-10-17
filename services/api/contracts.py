@@ -178,6 +178,7 @@ class AgentRun(Contract):
     tool_calls: list[ToolCall]
     final_json: AgentDecision | None
     model: str
+    prompt_version: str
     started_at: AwareDatetime
     ms: Count
 

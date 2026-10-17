@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 Role = Literal["reasoning", "fast"]
 
@@ -47,10 +47,17 @@ class JudgeMode(Config):
     max_resets_per_hour: int
 
 
+class AgentConfig(Config):
+    max_llm_calls: int = Field(ge=1)
+    max_cases_per_trigger: int = Field(ge=1)
+
+
 class AppConfig(Config):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
+    grid_cell_m: int = Field(gt=0)
     judge_mode: JudgeMode
+    agent: AgentConfig
 
 
 class Settings(Config):
@@ -58,6 +65,8 @@ class Settings(Config):
     git_sha: str
     models: ModelsConfig
     judge_mode: JudgeMode
+    agent: AgentConfig
+    grid_cell_m: int
     region: str
     api_url: str | None
     config_dir: Path
@@ -83,6 +92,8 @@ def load_settings(
         git_sha=read_git_sha(environ),
         models=models,
         judge_mode=apply_judge_override(app.judge_mode, environ),
+        agent=app.agent,
+        grid_cell_m=app.grid_cell_m,
         region=read_optional(environ, "REGION") or DEFAULT_REGION,
         api_url=read_optional(environ, "BARA_API_URL"),
         config_dir=directory,
