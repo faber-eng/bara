@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 BULLETIN_ROLE: Role = "fast"
 ATTEMPTS = 2
+GENERATE_BUDGET_SECONDS = 70
 
 SYSTEM_INSTRUCTION = f"""\
 You write the weekly public bulletin for a peatland fire-prevention programme. \
@@ -197,9 +198,10 @@ class BulletinWriter:
         return bulletin
 
     async def _compose(self, summary: PublicSummary) -> Bulletin:
-        output = await self._generate(summary)
-        if output is None:
+        generated = await self._generate_within_budget(summary)
+        if generated is None:
             return self._from_template(summary)
+        output, model_name = generated
         cited = [CitedValue(field=i.field, value=i.value) for i in output.cited]
         return Bulletin(
             id=f"{summary.region}_{summary.week}",
@@ -207,19 +209,42 @@ class BulletinWriter:
             text_en=output.text_en,
             cited=cited,
             source="gemini",
-            model=self._model_name,
+            model=model_name,
             prompt_version=BULLETIN_PROMPT_VERSION,
             created_at=self._now(),
         )
 
-    async def _generate(self, summary: PublicSummary) -> BulletinOutput | None:
+    async def _generate_within_budget(
+        self, summary: PublicSummary
+    ) -> tuple[BulletinOutput, str] | None:
+        try:
+            return await asyncio.wait_for(
+                self._generate(summary), GENERATE_BUDGET_SECONDS
+            )
+        except Exception:
+            logger.exception(
+                "bulletin model call failed",
+                extra={
+                    "fields": {
+                        "event": "bulletin_model_error",
+                        "region": summary.region,
+                        "week": summary.week,
+                    }
+                },
+            )
+            return None
+
+    async def _generate(
+        self, summary: PublicSummary
+    ) -> tuple[BulletinOutput, str] | None:
         contents = render_summary(summary)
         for attempt in range(1, ATTEMPTS + 1):
             try:
                 response = await self._model.generate(
                     BULLETIN_ROLE, contents, generation_config()
                 )
-                return read_reply(response, summary)
+                output = read_reply(response, summary)
+                return output, response.model_version or self._model_name
             except BulletinRejected as error:
                 log_event(
                     logging.WARNING,

@@ -170,3 +170,32 @@ def test_a_zero_field_is_cited_and_passes():
     world = World([ok], FakeSummaries(summary))
 
     assert world.write().source == "gemini"
+
+
+def test_a_slow_model_stores_the_template_inside_the_budget(monkeypatch):
+    import casework.bulletin as module
+
+    class Slow:
+        async def generate(self, role, contents, config=None):
+            await asyncio.sleep(5)
+
+    monkeypatch.setattr(module, "GENERATE_BUDGET_SECONDS", 0.05)
+    world = World([])
+    world.writer._model = Slow()
+
+    assert world.write().source == "template"
+    assert world.stored().source == "template"
+
+
+def test_an_unexpected_model_error_stores_the_template():
+    world = World([ValueError("boom")])
+
+    assert world.write().source == "template"
+
+
+def test_the_stored_model_is_the_one_that_answered():
+    answered = reply()
+    answered.model_version = "gemini-2.5-flash"
+    world = World([answered])
+
+    assert world.write().model == "gemini-2.5-flash"

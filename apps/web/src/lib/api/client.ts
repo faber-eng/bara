@@ -71,11 +71,17 @@ export async function buildHeaders(path: string, hasBody: boolean): Promise<Head
   return headers;
 }
 
+function anonymousHeaders(hasBody: boolean): Headers {
+  const headers = new Headers();
+  if (hasBody) headers.set("Content-Type", "application/json");
+  return headers;
+}
+
 async function send(path: string, options: RequestOptions, signal: AbortSignal): Promise<Response> {
   const hasBody = options.body !== undefined;
   return fetch(path, {
     method: options.method ?? "GET",
-    headers: options.anonymous ? new Headers() : await buildHeaders(path, hasBody),
+    headers: options.anonymous ? anonymousHeaders(hasBody) : await buildHeaders(path, hasBody),
     body: hasBody ? JSON.stringify(options.body) : undefined,
     signal,
   });

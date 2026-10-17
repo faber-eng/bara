@@ -167,6 +167,17 @@ describe("PublicScreen", () => {
     );
   });
 
+  it("says there is no ranking yet when the latest week has none", async () => {
+    stubApi({
+      "GET /api/public/riau/summary": () =>
+        Response.json({ detail: "no_rankings" }, { status: 404 }),
+    });
+
+    renderApp("/public");
+
+    expect(await screen.findByText("Belum ada peringkat untuk wilayah ini.")).toBeInTheDocument();
+  });
+
   it("shows the ranking-only note for Congo and no response record", async () => {
     stubApi({
       "GET /api/public/congo_cuvette/summary": () =>

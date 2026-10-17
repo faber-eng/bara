@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from google.api_core.exceptions import GoogleAPICallError
 from pydantic import BaseModel, ConfigDict
 
@@ -62,7 +62,6 @@ def publish(trigger: JudgeTrigger, event: str) -> str:
 def trigger_event(
     body: TriggerRequest,
     request: Request,
-    background: BackgroundTasks,
     principal: Annotated[Principal, Depends(require_role("ops", "judge"))],
 ) -> TriggerAccepted:
     reject_when_limited(request, principal.uid)
@@ -76,5 +75,4 @@ def trigger_event(
             "judge trigger failed", extra={"fields": {"uid": principal.uid}}
         )
         raise HTTPException(status_code=502, detail="publish_failed") from error
-    background.add_task(request.app.state.bulletin_job)
     return TriggerAccepted(event=body.event, message_id=message_id)

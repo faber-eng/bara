@@ -25,6 +25,7 @@ export type PublicCopy = {
   failed: string;
   retry: string;
   noRanking: (week: string) => string;
+  noRankingYet: string;
   map: {
     label: string;
     keyMissing: string;
@@ -126,6 +127,7 @@ const EN: PublicCopy = {
   failed: "Could not load this week.",
   retry: "Try again",
   noRanking: (week) => `There is no ranking for ${week} yet. Choose another week.`,
+  noRankingYet: "There is no ranking for this region yet.",
   map: {
     label: "Map of drying cells and dams",
     keyMissing: "The map is not available right now.",
@@ -244,6 +246,7 @@ const ID: PublicCopy = {
   failed: "Minggu ini belum bisa dimuat.",
   retry: "Coba lagi",
   noRanking: (week) => `Belum ada peringkat untuk ${week}. Pilih minggu lain.`,
+  noRankingYet: "Belum ada peringkat untuk wilayah ini.",
   map: {
     label: "Peta petak kering dan sekat kanal",
     keyMissing: "Peta belum bisa ditampilkan sekarang.",
