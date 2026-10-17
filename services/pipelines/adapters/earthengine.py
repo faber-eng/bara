@@ -10,15 +10,19 @@ from ee_lib.config import DataConfig, RegionConfig
 from ee_lib.weeks import DryingWindow, EventWindows
 
 PAGE_SIZE = 1000
-MEASURE_SCALE_M = 100
-MEASURE_TILE_SCALE = 4
 DATES_PER_CALL = 10
 CALL_ATTEMPTS = 3
 RETRY_WAIT_S = 5.0
+TRANSIENT_ERRORS = ("too many concurrent", "timed out", "deadline", "429", "503")
 
 
 class EarthEngineError(Exception):
     pass
+
+
+def is_transient(error: ee.EEException) -> bool:
+    message = str(error).lower()
+    return any(marker in message for marker in TRANSIENT_ERRORS)
 
 
 def with_retries[T](
@@ -29,7 +33,9 @@ def with_retries[T](
     for attempt in range(1, attempts):
         try:
             return call()
-        except ee.EEException:
+        except ee.EEException as error:
+            if not is_transient(error):
+                raise
             wait(RETRY_WAIT_S * attempt)
     return call()
 
@@ -75,8 +81,8 @@ class EarthEngineSource:
         measured = image.reduceRegions(
             collection=drying.cells_collection(cells_table, region),
             reducer=ee.Reducer.mean(),
-            scale=MEASURE_SCALE_M,
-            tileScale=MEASURE_TILE_SCALE,
+            scale=drying.MEASURE_SCALE_M,
+            tileScale=drying.MEASURE_TILE_SCALE,
         )
         return [feature["properties"] for feature in compute_features(measured)]
 

@@ -16,6 +16,7 @@ from ee_lib.weeks import DateRange
 YEARS = SplitYears(train=(2015, 2024), valid=2025, test=2026)
 QUIET = date(2019, 8, 10)
 HISTORY_FROM = 2001
+WET = (1, 2, 3)
 
 
 def event(**overrides):
@@ -23,6 +24,7 @@ def event(**overrides):
         "event_id": "riau-1-1-20190801",
         "cell_id": "riau-1-1",
         "region": "riau",
+        "start_date": date(2019, 8, 1),
         "quiet_date": QUIET,
         "reignited": 1,
         "peat_class": 1,
@@ -54,18 +56,37 @@ def test_split_is_by_quiet_year(year, split):
 
 
 def test_event_windows_end_at_the_quiet_date():
-    windows = event_windows(QUIET, s1_days=12, chirps_last=date(2026, 9, 30))
+    windows = event_windows(
+        QUIET, s1_days=12, chirps_last=date(2026, 9, 30), wet_months=WET
+    )
 
     assert windows.s1 == DateRange(date(2019, 7, 29), QUIET)
     assert windows.rain_7d_before == DateRange(date(2019, 8, 3), QUIET)
     assert windows.rain_14d_before == DateRange(date(2019, 7, 27), QUIET)
     assert windows.rain_7d_after == DateRange(QUIET, date(2019, 8, 17))
+    assert windows.s1_baseline_year == 2019
+
+
+@pytest.mark.parametrize(
+    ("quiet", "baseline_year"),
+    [(date(2019, 2, 20), 2018), (date(2019, 3, 31), 2018), (date(2019, 4, 1), 2019)],
+)
+def test_the_s1_wet_baseline_is_the_last_wet_season_over_before_the_quiet_date(
+    quiet, baseline_year
+):
+    windows = event_windows(
+        quiet, s1_days=12, chirps_last=date(2026, 9, 30), wet_months=WET
+    )
+
+    assert windows.s1_baseline_year == baseline_year
 
 
 def test_a_rain_window_past_the_last_chirps_day_is_not_measured():
     quiet = date(2026, 9, 27)
 
-    windows = event_windows(quiet, s1_days=12, chirps_last=date(2026, 9, 30))
+    windows = event_windows(
+        quiet, s1_days=12, chirps_last=date(2026, 9, 30), wet_months=WET
+    )
 
     assert windows.rain_7d_before == DateRange(date(2026, 9, 20), quiet)
     assert windows.rain_7d_after is None
@@ -74,7 +95,9 @@ def test_a_rain_window_past_the_last_chirps_day_is_not_measured():
 def test_a_rain_window_ending_the_day_after_the_last_chirps_day_is_measured():
     quiet = date(2026, 9, 24)
 
-    windows = event_windows(quiet, s1_days=12, chirps_last=date(2026, 9, 30))
+    windows = event_windows(
+        quiet, s1_days=12, chirps_last=date(2026, 9, 30), wet_months=WET
+    )
 
     assert windows.rain_7d_after == DateRange(quiet, date(2026, 10, 1))
 
@@ -171,3 +194,18 @@ def test_prior_years_burned_counts_history_years_before_the_quiet_year(
 def test_a_null_quiet_date_is_an_error():
     with pytest.raises(MissingMeasurement, match="quiet_date"):
         cells_by_date([event(quiet_date=None)])
+
+
+def test_prior_years_burned_stops_before_the_start_year():
+    started_in_december = event(
+        start_date=date(2019, 12, 28),
+        quiet_date=date(2020, 1, 5),
+        burned_years=[2018, 2019, 2020],
+    )
+    measure = {**MEASURE, "quiet_date": "2020-01-05"}
+
+    rows = training_rows(
+        [started_in_december], [measure], {"riau-1-1": 1.0}, YEARS, HISTORY_FROM
+    )
+
+    assert rows[0].prior_years_burned == 1

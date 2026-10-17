@@ -53,7 +53,15 @@ def covered(span: DateRange, chirps_last: date) -> DateRange | None:
     return span
 
 
-def event_windows(quiet_date: date, s1_days: int, chirps_last: date) -> EventWindows:
+def wet_baseline_year(quiet_date: date, wet_months: Sequence[int]) -> int:
+    if quiet_date.month > max(wet_months):
+        return quiet_date.year
+    return quiet_date.year - 1
+
+
+def event_windows(
+    quiet_date: date, s1_days: int, chirps_last: date, wet_months: Sequence[int]
+) -> EventWindows:
     def before(days: int) -> DateRange:
         return DateRange(quiet_date - timedelta(days=days), quiet_date)
 
@@ -63,6 +71,7 @@ def event_windows(quiet_date: date, s1_days: int, chirps_last: date) -> EventWin
         rain_7d_before=covered(before(RAIN_BEFORE_SHORT_DAYS), chirps_last),
         rain_14d_before=covered(before(RAIN_BEFORE_LONG_DAYS), chirps_last),
         rain_7d_after=covered(after, chirps_last),
+        s1_baseline_year=wet_baseline_year(quiet_date, wet_months),
     )
 
 
@@ -86,11 +95,18 @@ def event_quiet_date(event: Mapping[str, object]) -> date:
     return quiet_date
 
 
+def event_start_date(event: Mapping[str, object]) -> date:
+    start_date = event["start_date"]
+    if not isinstance(start_date, date):
+        raise MissingMeasurement(f"event {event['event_id']!r} has no start_date")
+    return start_date
+
+
 def prior_years_burned(
-    burned_years: Sequence[object], quiet_year: int, history_from_year: int
+    burned_years: Sequence[object], start_year: int, history_from_year: int
 ) -> int:
     years = {year for year in burned_years if isinstance(year, int)}
-    return sum(1 for year in years if history_from_year <= year < quiet_year)
+    return sum(1 for year in years if history_from_year <= year < start_year)
 
 
 def burned_years_of(event: Mapping[str, object]) -> Sequence[object]:
@@ -129,7 +145,7 @@ def training_row(
         mean_confidence=float(event["mean_confidence"]),
         month=quiet_date.month,
         prior_years_burned=prior_years_burned(
-            burned_years_of(event), quiet_date.year, history_from_year
+            burned_years_of(event), event_start_date(event).year, history_from_year
         ),
     )
 

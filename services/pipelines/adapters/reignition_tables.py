@@ -45,6 +45,7 @@ SELECT
   event.event_id,
   event.cell_id,
   event.region,
+  event.start_date,
   event.quiet_date,
   event.reignited,
   event.detection_days,
@@ -58,11 +59,28 @@ JOIN cells AS cell ON cell.cell_id = event.cell_id
 LEFT JOIN cell_years ON cell_years.cell_id = event.cell_id
 WHERE event.region = @region AND event.quiet_date >= @since
 GROUP BY
-  event.event_id, event.cell_id, event.region, event.quiet_date, event.reignited,
+  event.event_id, event.cell_id, event.region, event.start_date, event.quiet_date,
+  event.reignited,
   event.detection_days, event.max_t21, event.mean_confidence, cell.peat_class,
   cell.canal_dist_m
 ORDER BY event.quiet_date, event.cell_id
 """
+
+
+OLDEST_OPEN_SQL = """
+SELECT MIN(quiet_date) AS oldest
+FROM reignition_training
+WHERE region = @region AND (reignited IS NULL OR rain_7d_after_mm IS NULL)
+"""
+
+
+def oldest_open(warehouse: Warehouse, region: str) -> date | None:
+    if not warehouse.table_exists(REIGNITION_TRAINING.name):
+        return None
+    rows = warehouse.query(OLDEST_OPEN_SQL, {"region": region}).rows
+    if not rows:
+        return None
+    return rows[0]["oldest"]
 
 
 def read_events(warehouse: Warehouse, region: str, since: date) -> QueryResult:

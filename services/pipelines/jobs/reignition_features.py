@@ -59,12 +59,26 @@ class FeatureSource(Protocol):
     def peat_fractions(self, region: RegionConfig, cells_table: str) -> list[dict]: ...
 
 
-def resolve_since(rebuild_all: bool, days: int, today: date, data: DataConfig) -> date:
+def oldest_open_quiet_date(warehouse: Warehouse, region_id: str) -> date | None:
+    return reignition_tables.oldest_open(warehouse, region_id)
+
+
+def resolve_since(
+    rebuild_all: bool,
+    days: int,
+    today: date,
+    data: DataConfig,
+    oldest_open: date | None,
+) -> date:
+    first = date(data.reignition.split_years.train[0], 1, 1)
     if rebuild_all:
-        return date(data.reignition.split_years.train[0], 1, 1)
+        return first
     if days < 1:
         raise UsageError(f"--days must be at least 1, got {days}")
-    return today - timedelta(days=days)
+    window = today - timedelta(days=days)
+    if oldest_open is None or oldest_open >= window:
+        return window
+    return max(oldest_open, first)
 
 
 def peat_by_cell(measured: Sequence[Mapping[str, object]]) -> dict[str, float]:
@@ -130,7 +144,12 @@ def reignition_features(
         (
             quiet_date,
             cell_ids,
-            event_windows(quiet_date, data.drying.s1_window_days, chirps_last),
+            event_windows(
+                quiet_date,
+                data.drying.s1_window_days,
+                chirps_last,
+                data.drying.wet_baseline_months,
+            ),
         )
         for quiet_date, cell_ids in grouped
     ]
@@ -212,14 +231,18 @@ def main(
         from ee_lib import session
 
         session.initialize(project)
+        warehouse = Warehouse(bigquery.Client(project=project), project, DATASET)
+        oldest_open = None
+        if not args.all:
+            oldest_open = oldest_open_quiet_date(warehouse, region.id)
         return reignition_features(
             region=region,
             aoi=aoi,
             data=data,
-            since=resolve_since(args.all, args.days, today, data),
+            since=resolve_since(args.all, args.days, today, data, oldest_open),
             today=today,
             earth=earthengine.EarthEngineSource(data),
-            warehouse=Warehouse(bigquery.Client(project=project), project, DATASET),
+            warehouse=warehouse,
             dry_run=args.dry_run,
         )
 
