@@ -1,0 +1,725 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          101.950328,
+          0.464992
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-001",
+        "canal_osm_id": "838648059",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-07-01T03:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          101.950182,
+          0.76298
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-002",
+        "canal_osm_id": "840983969",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-05T02:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          101.958562,
+          0.35684
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-003",
+        "canal_osm_id": "839519718",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-05-25T07:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          101.970551,
+          0.563173
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-004",
+        "canal_osm_id": "839849558",
+        "region": "riau",
+        "last_state": "overtopped",
+        "last_checked_at": "2026-05-23T04:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.005087,
+          0.829081
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-005",
+        "canal_osm_id": "840615252",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-07-15T01:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.015679,
+          0.436107
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-006",
+        "canal_osm_id": "839562670",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-05-28T06:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.013151,
+          0.510629
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-007",
+        "canal_osm_id": "839862468",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-05-24T05:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.023392,
+          0.608821
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-008",
+        "canal_osm_id": "839266899",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-05-27T08:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.034386,
+          0.682378
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-009",
+        "canal_osm_id": "839336834",
+        "region": "riau",
+        "last_state": "broken",
+        "last_checked_at": "2026-06-19T05:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.049953,
+          0.38401
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-010",
+        "canal_osm_id": "839562677",
+        "region": "riau",
+        "last_state": "broken",
+        "last_checked_at": "2026-07-13T08:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.0471,
+          0.765159
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-011",
+        "canal_osm_id": "853822769",
+        "region": "riau",
+        "last_state": "unknown",
+        "last_checked_at": null,
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.07679,
+          0.474357
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-012",
+        "canal_osm_id": "839862552",
+        "region": "riau",
+        "last_state": "broken",
+        "last_checked_at": "2026-06-11T08:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.075765,
+          0.844521
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-013",
+        "canal_osm_id": "859187045",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-07-06T01:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.084789,
+          0.591769
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-014",
+        "canal_osm_id": "839266853",
+        "region": "riau",
+        "last_state": "broken",
+        "last_checked_at": "2026-06-28T03:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.129814,
+          0.528134
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-015",
+        "canal_osm_id": "839302603",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-14T07:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.130926,
+          0.699851
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-016",
+        "canal_osm_id": "839312020",
+        "region": "riau",
+        "last_state": "broken",
+        "last_checked_at": "2026-07-07T05:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.126985,
+          0.710309
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-017",
+        "canal_osm_id": "839312021",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-07-03T03:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.129216,
+          0.791496
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-018",
+        "canal_osm_id": "839399512",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-16T04:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.148043,
+          0.356924
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-019",
+        "canal_osm_id": "840619031",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-05-24T06:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.163458,
+          0.447672
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-020",
+        "canal_osm_id": "839908690",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-26T01:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.168823,
+          0.639575
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-021",
+        "canal_osm_id": "839119427",
+        "region": "riau",
+        "last_state": "unknown",
+        "last_checked_at": null,
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.201779,
+          0.808581
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-022",
+        "canal_osm_id": "838867672",
+        "region": "riau",
+        "last_state": "overtopped",
+        "last_checked_at": "2026-06-23T05:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.210531,
+          0.375931
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-023",
+        "canal_osm_id": "839095905",
+        "region": "riau",
+        "last_state": "broken",
+        "last_checked_at": "2026-06-14T04:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.210602,
+          0.530502
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-024",
+        "canal_osm_id": "839049069",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-05-31T06:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.255023,
+          0.681866
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-025",
+        "canal_osm_id": "839379583",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-21T02:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.265692,
+          0.764759
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-026",
+        "canal_osm_id": "838867697",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-24T06:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.273424,
+          0.393191
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-027",
+        "canal_osm_id": "839058995",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-06-20T07:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.273772,
+          0.474362
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-028",
+        "canal_osm_id": "839049040",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-06T07:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.300339,
+          0.590185
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-029",
+        "canal_osm_id": "839385030",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-07-19T05:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.318064,
+          0.845046
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-030",
+        "canal_osm_id": "839546094",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-18T03:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.336427,
+          0.358293
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-031",
+        "canal_osm_id": "840551555",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-06-16T07:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.339457,
+          0.746931
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-032",
+        "canal_osm_id": "839551032",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-06-20T02:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.355246,
+          0.421281
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-033",
+        "canal_osm_id": "839079534",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-07-10T02:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.353711,
+          0.499606
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-034",
+        "canal_osm_id": "839383598",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-06-18T06:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.381837,
+          0.664912
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-035",
+        "canal_osm_id": "839389561",
+        "region": "riau",
+        "last_state": "broken",
+        "last_checked_at": "2026-07-17T06:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.406796,
+          0.355663
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-036",
+        "canal_osm_id": "840061743",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-06-14T08:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.417463,
+          0.781796
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-037",
+        "canal_osm_id": "839841201",
+        "region": "riau",
+        "last_state": "damaged",
+        "last_checked_at": "2026-07-19T07:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.444372,
+          0.710337
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-038",
+        "canal_osm_id": "839389572",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-05-31T04:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.503224,
+          0.675915
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-039",
+        "canal_osm_id": "839393024",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-07-15T01:00:00+07:00",
+        "example": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          102.544238,
+          0.781155
+        ]
+      },
+      "properties": {
+        "id": "dam-riau-040",
+        "canal_osm_id": "838286168",
+        "region": "riau",
+        "last_state": "intact",
+        "last_checked_at": "2026-05-21T03:00:00+07:00",
+        "example": true
+      }
+    }
+  ]
+}

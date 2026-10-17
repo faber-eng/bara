@@ -3,6 +3,7 @@ from datetime import date
 
 import pytest
 
+from api_contracts import load_api_contracts
 from domain.drying import (
     CellInput,
     MissingMeasurement,
@@ -16,7 +17,6 @@ from domain.drying import (
     zscores,
 )
 from ee_lib.config import DryingWeights, load_data_config
-from tests.contracts import load_api_contracts
 
 WEEK = date(2026, 10, 12)
 WEIGHTS = DryingWeights(

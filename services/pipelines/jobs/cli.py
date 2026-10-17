@@ -46,6 +46,21 @@ def resolve_config_dir(flag: str | None, environ: Mapping[str, str]) -> Path:
     return Path(__file__).resolve().parents[3] / "config"
 
 
+def resolve_data_dir(flag: str | None, environ: Mapping[str, str]) -> Path:
+    if flag:
+        return Path(flag)
+    from_env = environ.get("BARA_DATA_DIR", "").strip()
+    if from_env != "":
+        return Path(from_env)
+    return Path(__file__).resolve().parents[3] / "data"
+
+
+def write_json_atomic(path: Path, document: object) -> None:
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n")
+    temporary.replace(path)
+
+
 def emit(summary: Mapping[str, object]) -> None:
     sys.stdout.write(json.dumps(summary, default=str) + "\n")
 
