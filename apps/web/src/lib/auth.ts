@@ -1,4 +1,4 @@
-import type { Auth } from "firebase/auth";
+import type { Auth, User } from "firebase/auth";
 
 const CONFIG_KEYS = [
   "VITE_FIREBASE_API_KEY",
@@ -59,4 +59,47 @@ export async function getIdToken(): Promise<string> {
   const auth = await ensureSignedIn();
   if (auth.currentUser === null) throw new Error("Firebase has no signed-in user");
   return auth.currentUser.getIdToken();
+}
+
+export type AuthUser = { uid: string; isAnonymous: boolean; displayName: string | null };
+
+function toAuthUser(user: User | null): AuthUser | null {
+  if (user === null) return null;
+  return { uid: user.uid, isAnonymous: user.isAnonymous, displayName: user.displayName };
+}
+
+export async function signInWithGoogle(): Promise<AuthUser> {
+  const auth = await ensureSignedIn();
+  const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
+  const result = await signInWithPopup(auth, new GoogleAuthProvider());
+  const user = toAuthUser(result.user);
+  if (user === null) throw new Error("Google sign-in returned no user");
+  return user;
+}
+
+export async function refreshIdToken(): Promise<string> {
+  const auth = await ensureSignedIn();
+  if (auth.currentUser === null) throw new Error("Firebase has no signed-in user");
+  return auth.currentUser.getIdToken(true);
+}
+
+export function subscribeAuthUser(
+  onUser: (user: AuthUser | null) => void,
+  onFailure: (error: Error) => void,
+): () => void {
+  let cancelled = false;
+  let unsubscribe = () => {};
+  async function start() {
+    const auth = await ensureSignedIn();
+    const { onAuthStateChanged } = await import("firebase/auth");
+    if (cancelled) return;
+    unsubscribe = onAuthStateChanged(auth, (user) => onUser(toAuthUser(user)));
+  }
+  start().catch((error: unknown) => {
+    if (!cancelled) onFailure(error instanceof Error ? error : new Error("Sign-in failed"));
+  });
+  return () => {
+    cancelled = true;
+    unsubscribe();
+  };
 }

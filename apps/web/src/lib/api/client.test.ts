@@ -132,3 +132,78 @@ describe("apiRequest", () => {
     vi.useRealTimers();
   });
 });
+
+function jwt(payload: object): string {
+  return `h.${btoa(JSON.stringify(payload))}.s`;
+}
+
+describe("apiRequest for a signed-in user", () => {
+  beforeEach(() => {
+    setJudgeMode(true);
+    selectPerson("ops");
+  });
+
+  afterEach(() => {
+    setJudgeMode(false);
+    vi.unstubAllGlobals();
+  });
+
+  async function authWithToken(token: string) {
+    const auth = await import("../auth");
+    vi.mocked(auth.getIdToken).mockResolvedValue(token);
+  }
+
+  it("keeps the role header off /api/join and the user's own volunteer routes", async () => {
+    await authWithToken(jwt({ sub: "u-9", firebase: { sign_in_provider: "google.com" } }));
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(Response.json({})));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiRequest("/api/join", { method: "POST", body: {} });
+    await apiRequest("/api/v/u-9/inbox");
+
+    for (const call of fetchMock.mock.calls) {
+      expect(new Headers((call[1] as RequestInit).headers).has("X-Bara-Role")).toBe(false);
+    }
+  });
+
+  it("still sends the role header for a signed-in user on other routes", async () => {
+    await authWithToken(jwt({ sub: "u-9", firebase: { sign_in_provider: "google.com" } }));
+    const fetchMock = stubFetch(Response.json({}));
+
+    await apiRequest("/api/v/vol-ari/inbox");
+
+    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("ops");
+  });
+
+  it("keeps the role header for an anonymous user", async () => {
+    await authWithToken(jwt({ sub: "u-9", firebase: { sign_in_provider: "anonymous" } }));
+    const fetchMock = stubFetch(Response.json({}));
+
+    await apiRequest("/api/v/u-9/inbox");
+
+    expect(sentHeaders(fetchMock).get("X-Bara-Role")).toBe("ops");
+  });
+});
+
+describe("apiRequest failures", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("carries the detail string of the error body", async () => {
+    stubFetch(Response.json({ detail: "invalid_invite_code" }, { status: 403 }));
+
+    const error = await apiRequest("/api/join").catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 403, detail: "invalid_invite_code" });
+  });
+
+  it("has a null detail when the body is not JSON", async () => {
+    stubFetch(new Response("boom", { status: 500 }));
+
+    const error = await apiRequest("/api/join").catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ status: 500, detail: null });
+  });
+});

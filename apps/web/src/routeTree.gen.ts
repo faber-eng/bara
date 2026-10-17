@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrigadeRouteImport } from './routes/brigade'
+import { Route as JoinRouteImport } from './routes/join'
 import { Route as OpsRouteImport } from './routes/ops'
 import { Route as PublicRouteImport } from './routes/public'
 import { Route as AreaNewRouteImport } from './routes/area.new'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const BrigadeRoute = BrigadeRouteImport.update({
   id: '/brigade',
   path: '/brigade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OpsRoute = OpsRouteImport.update({
@@ -50,6 +56,7 @@ const VVolunteerIdRoute = VVolunteerIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/brigade': typeof BrigadeRoute
+  '/join': typeof JoinRoute
   '/ops': typeof OpsRoute
   '/public': typeof PublicRoute
   '/area/new': typeof AreaNewRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/brigade': typeof BrigadeRoute
+  '/join': typeof JoinRoute
   '/ops': typeof OpsRoute
   '/public': typeof PublicRoute
   '/area/new': typeof AreaNewRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/brigade': typeof BrigadeRoute
+  '/join': typeof JoinRoute
   '/ops': typeof OpsRoute
   '/public': typeof PublicRoute
   '/area/new': typeof AreaNewRoute
@@ -75,13 +84,27 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/brigade' | '/ops' | '/public' | '/area/new' | '/v/$volunteerId'
+    | '/'
+    | '/brigade'
+    | '/join'
+    | '/ops'
+    | '/public'
+    | '/area/new'
+    | '/v/$volunteerId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/brigade' | '/ops' | '/public' | '/area/new' | '/v/$volunteerId'
+  to:
+    | '/'
+    | '/brigade'
+    | '/join'
+    | '/ops'
+    | '/public'
+    | '/area/new'
+    | '/v/$volunteerId'
   id:
     | '__root__'
     | '/'
     | '/brigade'
+    | '/join'
     | '/ops'
     | '/public'
     | '/area/new'
@@ -91,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrigadeRoute: typeof BrigadeRoute
+  JoinRoute: typeof JoinRoute
   OpsRoute: typeof OpsRoute
   PublicRoute: typeof PublicRoute
   AreaNewRoute: typeof AreaNewRoute
@@ -111,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/brigade'
       fullPath: '/brigade'
       preLoaderRoute: typeof BrigadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ops': {
@@ -147,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrigadeRoute: BrigadeRoute,
+  JoinRoute: JoinRoute,
   OpsRoute: OpsRoute,
   PublicRoute: PublicRoute,
   AreaNewRoute: AreaNewRoute,
