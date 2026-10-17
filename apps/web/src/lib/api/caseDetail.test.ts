@@ -125,6 +125,18 @@ describe("closeCase", () => {
     expect(initOf(fetchMock.mock.calls[0]).method).toBe("POST");
   });
 
+  it("accepts a close answered with no body", async () => {
+    vi.stubEnv("VITE_SOURCE_CASEDETAIL", "live");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    await expect(closeCase("case-0005")).resolves.toBeUndefined();
+  });
+
+  it("reopens a closed fixture case when the scenario resets", async () => {
+    await closeCase("case-0005");
+    await resetClock();
+    expect((await fetchCaseDetail("case-0005")).case.status).toBe("resolved_pending_human");
+  });
+
   it("closes the fixture case in the detail and in the list", async () => {
     await closeCase("case-0005");
     const result = await fetchCaseDetail("case-0005");

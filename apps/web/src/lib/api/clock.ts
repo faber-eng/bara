@@ -64,9 +64,9 @@ export async function advanceClock(hours: number): Promise<ClockState> {
 }
 
 export async function resetClock(): Promise<ClockState> {
+  clearFixtureClosures();
   if (sourceFor("clock") === "fixture") {
     fixtureOffsetSeconds = 0;
-    clearFixtureClosures();
     return readFixtureState();
   }
   return parseClockState(await apiRequest(RESET_PATH, { method: "POST" }));

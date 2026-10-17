@@ -9,6 +9,7 @@ import type {
   ToolCall,
   Verdict,
 } from "../contracts";
+import { canCloseCase } from "../ops/caseDrawer";
 import { sourceFor } from "../sources";
 import { fetchFixtureCases, parseCase, TASK_STATUSES } from "./cases";
 import { ApiError, apiRequest } from "./client";
@@ -41,7 +42,6 @@ const DAM_STATES = [
 const SMOKES = ["none", "wisps", "plume", "unknown"] as const;
 const HOT_GROUNDS = ["none", "possible", "clear", "unknown"] as const;
 const OPEN_FLAMES = ["yes", "no", "unknown"] as const;
-const CLOSABLE_FIXTURE_STATUS = "resolved_pending_human";
 
 function parsePoint(value: unknown, label: string): GeoPoint {
   const record = readRecord(value, label);
@@ -153,11 +153,13 @@ export function parseCaseDetail(body: unknown): CaseDetail {
 }
 
 async function loadFixtureDetail(caseId: string): Promise<CaseDetail> {
-  const full = parseCaseDetail((await import("@fixtures/case_detail.json")).default);
-  if (full.case.id === caseId) return full;
   const summary = (await fetchFixtureCases()).find((entry) => entry.case.id === caseId);
   if (summary === undefined) throw new ApiError(`GET /api/cases/${caseId} returned 404`, 404);
-  return { case: summary.case, tasks: [], evidence: [], agent_runs: [], timeline: [] };
+  const full = parseCaseDetail((await import("@fixtures/case_detail.json")).default);
+  if (full.case.id !== caseId) {
+    return { case: summary.case, tasks: [], evidence: [], agent_runs: [], timeline: [] };
+  }
+  return { ...full, case: summary.case };
 }
 
 async function fetchFixtureDetail(caseId: string): Promise<CaseDetail> {
@@ -172,7 +174,7 @@ export async function fetchCaseDetail(caseId: string, signal?: AbortSignal): Pro
 
 async function closeFixtureCase(caseId: string): Promise<void> {
   const detail = await fetchFixtureDetail(caseId);
-  if (detail.case.status !== CLOSABLE_FIXTURE_STATUS && detail.case.status !== "human_review") {
+  if (!canCloseCase(detail.case.status)) {
     throw new ApiError(`POST /api/cases/${caseId}/close returned 409`, 409);
   }
   recordFixtureClosure(caseId, new Date(await fixtureClockNowMs()).toISOString());

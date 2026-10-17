@@ -14,7 +14,7 @@ function OpsScreen() {
   const navigate = Route.useNavigate();
 
   function handleTabChange(tab: OpsTab) {
-    void navigate({ search: (previous) => ({ ...previous, tab }) });
+    void navigate({ search: (previous) => ({ ...previous, tab, case: undefined }) });
   }
 
   function handleCaseSelect(caseId: string) {

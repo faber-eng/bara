@@ -69,6 +69,11 @@ async function failureFrom(response: Response, path: string, method: string): Pr
   return new ApiError(`${method} ${path} returned ${response.status}`, response.status, detail);
 }
 
+async function readBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+  return text === "" ? null : JSON.parse(text);
+}
+
 export async function apiRequest(path: string, options: RequestOptions = {}): Promise<unknown> {
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -78,7 +83,7 @@ export async function apiRequest(path: string, options: RequestOptions = {}): Pr
   try {
     const response = await send(path, options, controller.signal);
     if (!response.ok) throw await failureFrom(response, path, options.method ?? "GET");
-    return await response.json();
+    return await readBody(response);
   } finally {
     clearTimeout(timer);
     options.signal?.removeEventListener("abort", abort);

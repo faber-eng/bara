@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { closeCase } from "../../lib/api/caseDetail";
 import { caseDetailQuery } from "../../lib/api/queries";
 import type { CaseDetail } from "../../lib/contracts";
@@ -14,7 +14,7 @@ function CloseButton({ caseId }: { caseId: string }) {
   const queryClient = useQueryClient();
   const close = useMutation({
     mutationFn: () => closeCase(caseId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cases"] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cases"] }),
   });
   return (
     <div className="drawer-close">
@@ -34,9 +34,11 @@ function CloseButton({ caseId }: { caseId: string }) {
 function DrawerHead({ detail }: { detail: CaseDetail }) {
   const record = detail.case;
   const chip = statusChip(record.status);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => headingRef.current?.focus(), []);
   return (
     <header className="drawer-head">
-      <h2>
+      <h2 ref={headingRef} tabIndex={-1}>
         {record.cell_id} · {spaced(record.type)}
       </h2>
       <p>
