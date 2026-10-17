@@ -2,6 +2,7 @@ import type { ClockState } from "../../lib/contracts";
 import { ClockControls } from "./ClockControls";
 import { ClockReadout } from "./ClockReadout";
 import { RoleSwitcher } from "./RoleSwitcher";
+import { ScenarioControls } from "./ScenarioControls";
 
 export function JudgeBar({ clock }: { clock: ClockState }) {
   return (
@@ -12,6 +13,7 @@ export function JudgeBar({ clock }: { clock: ClockState }) {
         <RoleSwitcher />
         <ClockReadout now={clock.now} />
         <ClockControls />
+        <ScenarioControls />
       </section>
     </div>
   );
