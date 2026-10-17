@@ -81,3 +81,86 @@ class FakeEarth:
     def drying_inputs(self, region, aoi, cells_table, week_start, window):
         self.calls.append(("drying_inputs", (cells_table, week_start, window)))
         return list(self.measurements)
+
+
+class FakeDocumentRef:
+    def __init__(self, store: dict, path: str, doc_id: str):
+        self.store = store
+        self.path = path
+        self.id = doc_id
+
+    @property
+    def key(self) -> str:
+        return f"{self.path}/{self.id}"
+
+
+class FakeCollectionRef:
+    def __init__(self, store: dict, path: str):
+        self._store = store
+        self._path = path
+
+    def document(self, doc_id: str) -> FakeDocumentRef:
+        return FakeDocumentRef(self._store, self._path, doc_id)
+
+    def list_documents(self):
+        prefix = f"{self._path}/"
+        return [
+            FakeDocumentRef(self._store, self._path, key[len(prefix) :])
+            for key in list(self._store)
+            if key.startswith(prefix) and "/" not in key[len(prefix) :]
+        ]
+
+
+class FakeBatch:
+    def __init__(self, client: "FakeFirestore"):
+        self._client = client
+        self._ops: list[tuple[str, FakeDocumentRef, dict | None]] = []
+
+    def set(self, ref: FakeDocumentRef, data: dict) -> None:
+        self._ops.append(("set", ref, data))
+
+    def delete(self, ref: FakeDocumentRef) -> None:
+        self._ops.append(("delete", ref, None))
+
+    def commit(self) -> None:
+        self._client.commits.append([(op, ref.key) for op, ref, _ in self._ops])
+        for op, ref, data in self._ops:
+            if op == "set":
+                self._client.docs[ref.key] = data
+            else:
+                self._client.docs.pop(ref.key, None)
+
+
+class FakeFirestore:
+    def __init__(self, docs: dict[str, dict] | None = None):
+        self.docs: dict[str, dict] = dict(docs or {})
+        self.commits: list[list[tuple[str, str]]] = []
+
+    def collection(self, path: str) -> FakeCollectionRef:
+        return FakeCollectionRef(self.docs, path)
+
+    def batch(self) -> FakeBatch:
+        return FakeBatch(self)
+
+
+class FakePublishFuture:
+    def __init__(self, message_id: str):
+        self._message_id = message_id
+
+    def result(self, timeout=None) -> str:
+        return self._message_id
+
+
+class FakePubSub:
+    def __init__(self, message_id: str = "msg-1", log: list | None = None):
+        self.published: list[tuple[str, bytes, dict]] = []
+        self._message_id = message_id
+        self._log = log if log is not None else []
+
+    def topic_path(self, project: str, topic: str) -> str:
+        return f"projects/{project}/topics/{topic}"
+
+    def publish(self, path: str, data: bytes, **attributes):
+        self._log.append("publish")
+        self.published.append((path, data, attributes))
+        return FakePublishFuture(self._message_id)
