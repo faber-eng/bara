@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-
 from conftest import REPO
 
 CONFIG_PATH = REPO / "cloudbuild.yaml"
@@ -89,7 +88,7 @@ def test_image_is_built_with_the_git_sha_and_pushed_by_a_step(steps, config):
     text = command_text(steps["image"])
     assert "--build-arg GIT_SHA=$SHORT_SHA" in text
     assert "-f services/api/Dockerfile" in text
-    assert "asia-southeast1-docker.pkg.dev/$PROJECT_ID/bara/bara-api:$SHORT_SHA" in text
+    assert "${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-api:$SHORT_SHA" in text
     assert "docker push" in text or "push" in steps["image"]["args"]
     assert "images" not in config
 
@@ -99,7 +98,13 @@ def test_deploy_api_changes_only_the_image(steps):
     assert "gcloud run deploy bara-api" in text
     assert "--image" in text
     assert "--region $_REGION" in text or "--region=$_REGION" in text
-    for flag in ("--min", "--max", "--memory", "--service-account", "--allow-unauthenticated"):
+    for flag in (
+        "--min",
+        "--max",
+        "--memory",
+        "--service-account",
+        "--allow-unauthenticated",
+    ):
         assert flag not in text
 
 

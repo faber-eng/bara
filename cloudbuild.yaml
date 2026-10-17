@@ -1,0 +1,105 @@
+timeout: 1200s
+
+substitutions:
+  _REGION: asia-southeast1
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/maps-key/versions/latest
+      env: MAPS_KEY
+    - versionName: projects/$PROJECT_ID/secrets/firebase-web-config/versions/latest
+      env: FIREBASE_WEB_CONFIG
+
+steps:
+  - id: api-gate
+    name: python:3.12-slim
+    dir: services/api
+    waitFor: ["-"]
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        pip install --quiet uv==0.13.1
+        uv sync --frozen
+        uv run ruff check .
+        uv run ruff format --check .
+        uv run pytest
+
+  - id: web-gate
+    name: oven/bun:1.4.0
+    dir: apps/web
+    waitFor: ["-"]
+    secretEnv: [MAPS_KEY, FIREBASE_WEB_CONFIG]
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        bun install --frozen-lockfile
+        bun run check
+        bun run typecheck
+        bun run test
+        printf '%s\n' "$$FIREBASE_WEB_CONFIG" > .env.production
+        printf 'VITE_MAPS_KEY=%s\n' "$$MAPS_KEY" >> .env.production
+        bun run build
+
+  - id: image
+    name: gcr.io/cloud-builders/docker
+    waitFor: [api-gate]
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMAGE=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-api:$SHORT_SHA
+        docker build -f services/api/Dockerfile --build-arg GIT_SHA=$SHORT_SHA -t $$IMAGE .
+        docker push $$IMAGE
+
+  - id: deploy-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [image, web-gate]
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - bara-api
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/bara/bara-api:$SHORT_SHA
+      - --region=$_REGION
+      - --project=$PROJECT_ID
+      - --quiet
+
+  - id: deploy-hosting
+    name: node:22-slim
+    dir: apps/web
+    waitFor: [deploy-api]
+    entrypoint: npx
+    args:
+      - --yes
+      - firebase-tools@15.34.0
+      - deploy
+      - --only
+      - hosting
+      - --project
+      - $PROJECT_ID
+      - --non-interactive
+
+  - id: verify
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor: [deploy-hosting]
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -u
+        for attempt in 1 2 3 4 5; do
+          if curl -fsS https://$PROJECT_ID.web.app/api/health | grep -q '"git_sha":"$SHORT_SHA"'; then
+            exit 0
+          fi
+          sleep $$((attempt * 5))
+        done
+        echo "https://$PROJECT_ID.web.app/api/health never reported git_sha $SHORT_SHA" >&2
+        exit 1

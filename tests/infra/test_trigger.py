@@ -1,7 +1,9 @@
 from conftest import CI_ACCOUNT, PROJECT, REGION
 
 SCRIPT = "infra/trigger.sh"
-REPOSITORY = f"projects/{PROJECT}/locations/{REGION}/connections/github/repositories/bara"
+REPOSITORY = (
+    f"projects/{PROJECT}/locations/{REGION}/connections/github/repositories/bara"
+)
 TRIGGER_EXISTS = "builds triggers describe bara-main"
 
 
@@ -38,20 +40,31 @@ def test_no_project_exits_3(run_script):
 
 
 def test_no_gcloud_exits_4(run_script, bare_bin):
-    result = run_script(SCRIPT, "--project", PROJECT, "--repository", REPOSITORY, path=bare_bin)
+    result = run_script(
+        SCRIPT, "--project", PROJECT, "--repository", REPOSITORY, path=bare_bin
+    )
     assert result.code == 4
 
 
 def test_dry_run_reports_would_make_and_creates_nothing(run_script):
-    result = run_script(SCRIPT, "--project", PROJECT, "--repository", REPOSITORY, "--dry-run")
+    result = run_script(
+        SCRIPT, "--project", PROJECT, "--repository", REPOSITORY, "--dry-run"
+    )
     assert result.code == 0
-    assert [(r.state, r.name) for r in result.reports()] == [("would make", "bara-main")]
+    assert [(r.state, r.name) for r in result.reports()] == [
+        ("would make", "bara-main")
+    ]
     assert not [call for call in result.calls if "create" in call]
 
 
 def test_existing_trigger_reports_ok_and_creates_nothing(run_script):
     result = run_script(
-        SCRIPT, "--project", PROJECT, "--repository", REPOSITORY, ok_pattern=TRIGGER_EXISTS
+        SCRIPT,
+        "--project",
+        PROJECT,
+        "--repository",
+        REPOSITORY,
+        ok_pattern=TRIGGER_EXISTS,
     )
     assert result.code == 0
     assert [(r.state, r.name) for r in result.reports()] == [("ok", "bara-main")]

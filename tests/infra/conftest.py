@@ -49,7 +49,9 @@ class Result:
         return [Report(*m.groups()) for m in matches if m]
 
     def states_of(self, kind: str, name_part: str) -> list[str]:
-        return [r.state for r in self.reports() if r.kind == kind and name_part in r.name]
+        return [
+            r.state for r in self.reports() if r.kind == kind and name_part in r.name
+        ]
 
 
 @pytest.fixture
@@ -93,6 +95,7 @@ def run_script(tmp_path: Path, stub_bin: Path):
         bash = shutil.which("bash")
         done = subprocess.run(
             [bash, str(REPO / script), *args],
+            check=False,
             env=env,
             capture_output=True,
             text=True,
