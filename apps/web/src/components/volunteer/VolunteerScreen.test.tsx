@@ -258,4 +258,71 @@ describe("volunteer screen", () => {
 
     expect(await screen.findByText("Belum ada tugas")).toBeInTheDocument();
   });
+
+  it("sends a sample photo with sample true and marks the evidence as a sample", async () => {
+    const photoItem = {
+      id: "broken-dam-1",
+      kind: "photo",
+      label: "Breached dam on the river Gour",
+      credit: "Peter Bond, CC BY-SA 2.0",
+      url: "/api/samples/broken-dam-1/file",
+    };
+    const fetchMock = stubApi({
+      ...uploadHandlers({ ...judged, sample: true }),
+      "GET /api/samples?kind=photo": () => Response.json([photoItem]),
+      [`GET ${photoItem.url}`]: () => new Response("jpegbytes"),
+    });
+    renderApp("/v/uid-1");
+
+    const card = await screen.findByRole("article", { name: "Cek sekat kanal" });
+    fireEvent.click(
+      within(card).getAllByRole("button", { name: "Pakai contoh" })[0] as HTMLElement,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /Breached dam/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Kirim foto" }));
+
+    expect(await screen.findByText("Sekat terlihat jebol")).toBeInTheDocument();
+    expect(screen.getByText("Sampel")).toBeInTheDocument();
+    const ticketCall = callsTo(fetchMock, "POST /api/v/uid-1/uploads")[0];
+    expect(JSON.parse(String(initOf(ticketCall).body))).toMatchObject({ sample: true });
+  });
+
+  it("sends a sample voice note straight to the upload route", async () => {
+    const voiceItem = {
+      id: "damaged-dam-leak",
+      kind: "voice",
+      label: "Damaged dam, leaking",
+      credit: "Faber Fathers",
+      url: "/api/samples/damaged-dam-leak/file",
+    };
+    const fetchMock = stubApi({
+      ...uploadHandlers({
+        ...judged,
+        kind: "audio",
+        sample: true,
+        verdict: { ...verdict, transcript: "sekat bocor", transcript_en: "the dam leaks" },
+      }),
+      "GET /api/samples?kind=voice": () => Response.json([voiceItem]),
+      [`GET ${voiceItem.url}`]: () =>
+        new Response(new Blob(["ogg"], { type: "audio/ogg" }), {
+          headers: { "Content-Type": "audio/ogg" },
+        }),
+    });
+    renderApp("/v/uid-1");
+
+    const card = await screen.findByRole("article", { name: "Cek sekat kanal" });
+    fireEvent.click(
+      within(card).getAllByRole("button", { name: "Pakai contoh" })[1] as HTMLElement,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /Damaged dam, leaking/ }));
+
+    expect(await screen.findByText("sekat bocor")).toBeInTheDocument();
+    expect(screen.getByText("Sampel")).toBeInTheDocument();
+    const ticketCall = callsTo(fetchMock, "POST /api/v/uid-1/uploads")[0];
+    expect(JSON.parse(String(initOf(ticketCall).body))).toMatchObject({
+      kind: "audio",
+      sample: true,
+      content_type: "audio/ogg",
+    });
+  });
 });
