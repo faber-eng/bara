@@ -38,7 +38,7 @@ from logs import configure_logging
 from overdue_events import TaskOverdueHandler
 from public_queries import PublicQueries
 from push_auth import GoogleOidcVerifier
-from ratelimit import FailureLimiter
+from ratelimit import FailureLimiter, RequestLimiter
 from routes import (
     brigade,
     clock,
@@ -52,6 +52,7 @@ from routes import (
     judge_trigger,
     ops_areas,
     ops_cases,
+    public,
     samples,
     tiles,
     volunteer,
@@ -62,6 +63,8 @@ from trigger import JudgeTrigger
 JOIN_MAX_FAILURES = 5
 JOIN_WINDOW_SECONDS = 15 * 60
 RESET_WINDOW_SECONDS = 60 * 60
+PUBLIC_MAX_REQUESTS = 60
+PUBLIC_WINDOW_SECONDS = 60
 
 
 def build_app(
@@ -75,12 +78,16 @@ def build_app(
     app.state.reset_limiter = FailureLimiter(
         settings.judge_mode.max_resets_per_hour, RESET_WINDOW_SECONDS
     )
+    app.state.public_limiter = RequestLimiter(
+        PUBLIC_MAX_REQUESTS, PUBLIC_WINDOW_SECONDS
+    )
     app.include_router(health.router)
     app.include_router(clock.router)
     app.include_router(join.router)
     app.include_router(samples.router)
     app.include_router(judge_probe.router)
     app.include_router(tiles.router)
+    app.include_router(public.router)
     app.include_router(events.router)
     app.include_router(judge_trigger.router)
     app.include_router(judge_reset.router)

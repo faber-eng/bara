@@ -82,3 +82,30 @@ def test_the_detector_flags_a_whole_evidence_document():
 
     assert leaks(json.dumps(evidence), world.blocklist())
     assert forbidden_keys(evidence)
+
+
+ROUTES = [
+    "summary",
+    "cells",
+    "dams",
+    "record",
+    "bulletin",
+    "export.csv",
+    "export.geojson",
+]
+
+
+@pytest.mark.parametrize("route", ROUTES)
+def test_no_public_route_carries_a_private_value(settings, route):
+    world = PublicWorld()
+    response = world.client(settings).get(f"/api/public/riau/{route}")
+
+    assert response.status_code == 200
+    assert leaks(response.text, world.blocklist()) == []
+
+
+@pytest.mark.parametrize("route", ["summary", "cells", "dams", "record", "bulletin"])
+def test_no_public_route_carries_a_private_key(settings, route):
+    response = PublicWorld().client(settings).get(f"/api/public/riau/{route}")
+
+    assert forbidden_keys(response.json()) == set()

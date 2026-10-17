@@ -1,4 +1,4 @@
-from ratelimit import FailureLimiter
+from ratelimit import FailureLimiter, RequestLimiter
 
 
 class FakeTime:
@@ -74,3 +74,40 @@ def test_old_failures_drop_out_one_by_one():
     time.now += 400
 
     assert limiter.retry_after("u1") == 0
+
+
+def test_the_request_limiter_allows_the_quota_then_returns_the_wait():
+    time = FakeTime()
+    limiter = RequestLimiter(max_requests=3, window_seconds=60, clock=time)
+
+    assert [limiter.hit("ip") for _ in range(3)] == [0, 0, 0]
+    time.now += 10
+    assert limiter.hit("ip") == 50
+
+
+def test_the_request_limiter_frees_the_quota_when_the_window_passes():
+    time = FakeTime()
+    limiter = RequestLimiter(max_requests=1, window_seconds=60, clock=time)
+    limiter.hit("ip")
+
+    time.now += 60
+
+    assert limiter.hit("ip") == 0
+
+
+def test_the_request_limiter_counts_each_key_apart():
+    limiter = RequestLimiter(max_requests=1, window_seconds=60, clock=FakeTime())
+    limiter.hit("a")
+
+    assert limiter.hit("b") == 0
+    assert limiter.hit("a") > 0
+
+
+def test_the_request_limiter_keeps_a_bounded_number_of_keys():
+    limiter = RequestLimiter(
+        max_requests=1, window_seconds=60, clock=FakeTime(), max_keys=3
+    )
+    for key in ["a", "b", "c", "d"]:
+        limiter.hit(key)
+
+    assert limiter.hit("a") == 0

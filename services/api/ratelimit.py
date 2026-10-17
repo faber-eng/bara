@@ -1,6 +1,7 @@
 import math
+import threading
 import time
-from collections import defaultdict, deque
+from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable
 
 
@@ -37,3 +38,43 @@ class FailureLimiter:
         if not failures:
             self._failures.pop(key, None)
         return failures
+
+
+MAX_TRACKED_KEYS = 10_000
+
+
+class RequestLimiter:
+    def __init__(
+        self,
+        max_requests: int,
+        window_seconds: float,
+        clock: Callable[[], float] = time.monotonic,
+        max_keys: int = MAX_TRACKED_KEYS,
+    ):
+        self._max_requests = max_requests
+        self._window_seconds = window_seconds
+        self._clock = clock
+        self._max_keys = max_keys
+        self._lock = threading.Lock()
+        self._hits: OrderedDict[str, deque[float]] = OrderedDict()
+
+    def hit(self, key: str) -> int:
+        with self._lock:
+            now = self._clock()
+            hits = self._hits.pop(key, None) or deque()
+            self._hits[key] = hits
+            self._evict_over_limit()
+            return self._record(hits, now)
+
+    def _record(self, hits: deque[float], now: float) -> int:
+        cutoff = now - self._window_seconds
+        while hits and hits[0] <= cutoff:
+            hits.popleft()
+        if len(hits) >= self._max_requests:
+            return max(1, math.ceil(hits[0] + self._window_seconds - now))
+        hits.append(now)
+        return 0
+
+    def _evict_over_limit(self) -> None:
+        while len(self._hits) > self._max_keys:
+            self._hits.popitem(last=False)
