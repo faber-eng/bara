@@ -1,7 +1,15 @@
 from datetime import date
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, TypeAdapter
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    StringConstraints,
+    TypeAdapter,
+)
 
 
 class Contract(BaseModel):
@@ -14,6 +22,11 @@ Count = Annotated[int, Field(ge=0)]
 IsoWeek = Annotated[str, Field(pattern=r"^\d{4}-W\d{2}$")]
 Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 GcsUri = Annotated[str, Field(pattern=r"^gs://")]
+WhatsappNumber = Annotated[str, Field(pattern=r"^\+[1-9]\d{7,14}$")]
+InviteCode = Annotated[str, StringConstraints(min_length=1, max_length=128)]
+PersonName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)
+]
 Scalar = int | float | str
 
 CaseType = Literal["dam_risk", "reignition", "hotspot"]
@@ -35,6 +48,8 @@ EvidenceKind = Literal["photo", "video", "audio"]
 MessageThread = Literal["volunteer", "brigade", "ops"]
 Channel = Literal["web", "whatsapp"]
 BulletinSource = Literal["gemini", "template"]
+Language = Literal["id", "en", "ms", "fr"]
+SampleKind = Literal["photo", "voice", "area"]
 
 Subject = Literal["canal_dam", "burned_peat", "smoke_scene", "other"]
 DamState = Literal[
@@ -139,6 +154,7 @@ class Case(Contract):
     closed_by: str | None
     closed_at: AwareDatetime | None
     history_flags: HistoryFlags
+    example: bool
 
 
 class ToolCall(Contract):
@@ -191,6 +207,7 @@ class Evidence(Contract):
     verdict: Verdict | None
     location_ok: bool | None
     uploaded_by: str
+    sample: bool
 
 
 class Message(Contract):
@@ -366,6 +383,7 @@ class Envelope(Contract):
     id: str
     occurred_at: AwareDatetime
     region: str
+    example: bool
 
 
 class HotspotDetectedEvent(Envelope):
@@ -461,6 +479,39 @@ class CaseDetail(Contract):
     evidence: list[Evidence]
     agent_runs: list[AgentRun]
     timeline: list[TimelineEntry]
+
+
+class ClockState(Contract):
+    now: AwareDatetime
+    offset_seconds: int
+    judge_mode: bool
+
+
+class CaseSummary(Contract):
+    case: Case
+    next_deadline_at: AwareDatetime | None
+    task_status: TaskStatus | None
+
+
+class JoinRequest(Contract):
+    invite_code: InviteCode
+    name: PersonName
+    home: GeoPoint
+    language: Language
+    whatsapp: WhatsappNumber | None
+
+
+class JoinResponse(Contract):
+    volunteer_id: str
+    created: bool
+
+
+class SampleItem(Contract):
+    id: str
+    kind: SampleKind
+    label: str
+    credit: str
+    url: str
 
 
 class DataAsOf(Contract):

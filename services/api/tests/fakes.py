@@ -251,5 +251,6 @@ def make_case(**overrides):
         "closed_by": None,
         "closed_at": None,
         "history_flags": HistoryFlags(smoke_seen=False),
+        "example": False,
     }
     return Case(**{**fields, **overrides})

@@ -22,6 +22,8 @@ export type EvidenceKind = "photo" | "video" | "audio";
 export type MessageThread = "volunteer" | "brigade" | "ops";
 export type Channel = "web" | "whatsapp";
 export type BulletinSource = "gemini" | "template";
+export type Language = "id" | "en" | "ms" | "fr";
+export type SampleKind = "photo" | "voice" | "area";
 
 export type Subject = "canal_dam" | "burned_peat" | "smoke_scene" | "other";
 export type DamState =
@@ -74,6 +76,7 @@ export type Case = {
   closed_by: string | null;
   closed_at: IsoDateTime | null;
   history_flags: { smoke_seen: boolean };
+  example: boolean;
 };
 
 export type Task = {
@@ -102,6 +105,7 @@ export type Evidence = {
   verdict: Verdict | null;
   location_ok: boolean | null;
   uploaded_by: string;
+  sample: boolean;
 };
 
 export type JsonValue =
@@ -241,6 +245,32 @@ export type Bulletin = {
   model: string | null;
   prompt_version: string;
   created_at: IsoDateTime;
+};
+
+export type ClockState = { now: IsoDateTime; offset_seconds: number; judge_mode: boolean };
+
+export type CaseSummary = {
+  case: Case;
+  next_deadline_at: IsoDateTime | null;
+  task_status: TaskStatus | null;
+};
+
+export type JoinRequest = {
+  invite_code: string;
+  name: string;
+  home: GeoPoint;
+  language: Language;
+  whatsapp: string | null;
+};
+
+export type JoinResponse = { volunteer_id: string; created: boolean };
+
+export type SampleItem = {
+  id: string;
+  kind: SampleKind;
+  label: string;
+  credit: string;
+  url: string;
 };
 
 export type PublicSummary = {

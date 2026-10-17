@@ -11,7 +11,8 @@
     "opened_at": "2026-07-20T08:05:00+07:00",
     "closed_by": null,
     "closed_at": null,
-    "history_flags": { "smoke_seen": false }
+    "history_flags": { "smoke_seen": false },
+    "example": true
   },
   "tasks": [
     {
@@ -64,7 +65,8 @@
         "needs_human": false
       },
       "location_ok": true,
-      "uploaded_by": "vol-ari"
+      "uploaded_by": "vol-ari",
+      "sample": false
     },
     {
       "id": "ev-0002",
@@ -88,7 +90,8 @@
         "needs_human": false
       },
       "location_ok": null,
-      "uploaded_by": "vol-ari"
+      "uploaded_by": "vol-ari",
+      "sample": false
     }
   ],
   "agent_runs": [
