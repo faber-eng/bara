@@ -1,0 +1,13 @@
+{
+  "criteria": {
+    "tool_trajectory_subset_args": 1.0
+  },
+  "custom_metrics": {
+    "tool_trajectory_subset_args": {
+      "code_config": {
+        "name": "evals.agent_eval.metric.trajectory_subset_args"
+      },
+      "description": "Tool calls match the expected calls in exact order; only the args named in the expected call are compared."
+    }
+  }
+}
