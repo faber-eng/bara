@@ -59,7 +59,7 @@ function LandingScreen() {
   return (
     <div className="landing">
       <section className="landing-hero">
-        <p className="eyebrow">Peat fires, Riau, Indonesia</p>
+        <p className="eyebrow">Peat fire prevention · tested on Riau data</p>
         <h1 className="screen-title">
           Peat fires burn for weeks. Bara tells crews where to act first.
         </h1>
