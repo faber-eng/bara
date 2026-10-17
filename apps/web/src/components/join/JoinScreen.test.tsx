@@ -163,4 +163,23 @@ describe("join screen", () => {
       whatsapp: "+6281234567890",
     });
   });
+
+  it("sends the UI language when the message language is left untouched", async () => {
+    auth.user = googleUser;
+    stubGps();
+    const fetchMock = stubApi({
+      "POST /api/join": () => Response.json({ volunteer_id: "uid-8", created: true }),
+    });
+    renderApp("/join");
+    await screen.findByLabelText("Kode undangan");
+    fillForm("RIAU-2026");
+    fireEvent.change(screen.getByLabelText(/WhatsApp/), { target: { value: "+62 812-3456-7890" } });
+    await chooseGps();
+
+    fireEvent.click(screen.getByRole("button", { name: "Gabung" }));
+
+    await waitFor(() => expect(callsTo(fetchMock, "POST /api/join")).toHaveLength(1));
+    const call = callsTo(fetchMock, "POST /api/join")[0];
+    expect(JSON.parse(String(initOf(call).body)).language).toBe("id");
+  });
 });

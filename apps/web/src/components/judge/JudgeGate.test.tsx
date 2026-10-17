@@ -34,7 +34,7 @@ describe("judge gate", () => {
 
     await waitFor(() => expect(callsTo(fetchMock, "GET /api/clock")).toHaveLength(1));
     expect(container.querySelector("main.shell-main")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Memuat Bara…");
+    expect(screen.getByRole("status")).toHaveTextContent("Loading Bara…");
     expect(await screen.findByText("API ok")).toBeInTheDocument();
     expect(container.querySelector(".shell")?.lastElementChild).toHaveClass("shell-foot");
   });
@@ -44,13 +44,13 @@ describe("judge gate", () => {
     stubApi({ "GET /api/clock": () => pending.promise });
     renderApp("/");
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Memuat Bara…");
+    expect(await screen.findByRole("status")).toHaveTextContent("Loading Bara…");
     pending.resolve(Response.json(clockOff));
 
     expect(
       await screen.findByRole("heading", { level: 1, name: "Landing and tour" }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Memuat Bara…")).not.toBeInTheDocument();
+    expect(screen.queryByText("Loading Bara…")).not.toBeInTheDocument();
   });
 
   it("does not hang on the loading screen when the clock request fails", async () => {
@@ -60,7 +60,7 @@ describe("judge gate", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Landing and tour" }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Memuat Bara…")).not.toBeInTheDocument();
+    expect(screen.queryByText("Loading Bara…")).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
     expect(container.querySelectorAll("main.shell-main")).toHaveLength(1);
   });
