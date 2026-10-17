@@ -218,15 +218,37 @@ def test_stamp_records_the_build_start_time_in_the_workspace(steps):
 
 @pytest.mark.parametrize(
     ("step_id", "target"),
-    [("deploy-jobs", "jobs bara-drying"), ("deploy-api", "services bara-api")],
+    [
+        ("deploy-jobs", "jobs bara-drying"),
+        ("deploy-jobs", "jobs bara-reignition"),
+        ("deploy-api", "services bara-api"),
+    ],
 )
 def test_each_deploy_runs_the_guard_before_deploying(steps, step_id, target):
     text = command_text(steps[step_id])
+    kind, name = target.split()
     guard = f"bash ci/guard.sh {target} $_REGION $PROJECT_ID"
-    assert guard in text
-    assert text.index(guard) < text.index("gcloud run")
-    assert "--update-labels=build_started=" in text
-    assert text.index("superseded-") < text.index("gcloud run")
+    deploy = text.index(f"gcloud run {deploy_verb(kind)} {name}")
+    assert text.index(guard) < text.index(f"superseded-{name}") < deploy
+    assert "build_started=$$(cat /workspace/build-started)" in text[deploy:]
+
+
+def deploy_verb(kind):
+    if kind == "jobs":
+        return "jobs deploy"
+    return "deploy"
+
+
+def test_job_deploys_stamp_with_labels_since_jobs_deploy_has_no_update_labels(
+    steps,
+):
+    text = command_text(steps["deploy-jobs"])
+    assert text.count("--labels=build_started=") == 2
+    assert "--update-labels" not in text
+
+
+def test_the_api_deploy_keeps_its_other_labels(steps):
+    assert "--update-labels=build_started=" in command_text(steps["deploy-api"])
 
 
 def test_hosting_is_guarded_and_skips_when_the_api_was_superseded(steps):
