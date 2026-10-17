@@ -5,6 +5,7 @@ from typing import Protocol
 from adapters.firestore_repos import (
     AgentRunRepository,
     CaseRepository,
+    EscalationRepository,
     EvidenceRepository,
     TaskRepository,
 )
@@ -34,6 +35,7 @@ class CaseQueries:
         tasks: TaskRepository,
         evidence: EvidenceRepository,
         runs: AgentRunRepository,
+        escalations: EscalationRepository,
         signer: EvidenceSigner,
         clock: Clock,
     ):
@@ -42,6 +44,7 @@ class CaseQueries:
         self._tasks = tasks
         self._evidence = evidence
         self._runs = runs
+        self._escalations = escalations
         self._clock = clock
 
     def summaries(self, region: str | None, status: str | None) -> list[CaseSummary]:
@@ -67,7 +70,9 @@ class CaseQueries:
             tasks=tasks,
             evidence=[self._signed(item) for item in evidence],
             agent_runs=runs,
-            timeline=build_timeline(case, tasks, evidence, runs),
+            timeline=build_timeline(
+                case, tasks, evidence, runs, self._escalations.for_case(case_id)
+            ),
         )
 
     def _signed(self, evidence: Evidence) -> SignedEvidence:

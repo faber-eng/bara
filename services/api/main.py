@@ -291,6 +291,7 @@ def build_case_queries(adapters: Adapters) -> CaseQueries:
         tasks=adapters.tasks,
         evidence=adapters.evidence,
         runs=adapters.agent_runs,
+        escalations=adapters.escalations,
         signer=adapters.storage,
         clock=adapters.clock,
     )
