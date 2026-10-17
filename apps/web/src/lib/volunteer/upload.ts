@@ -1,6 +1,5 @@
 import { completeUpload, requestUpload } from "../api/volunteer";
-import type { UploadTicket } from "../api/volunteerTypes";
-import type { Evidence, EvidenceKind, GeoPoint } from "../contracts";
+import type { Evidence, EvidenceKind, GeoPoint, UploadTicket } from "../contracts";
 import { putFile } from "./putFile";
 
 export type UploadInput = {
@@ -36,7 +35,7 @@ export async function uploadEvidence(input: UploadInput): Promise<UploadResult> 
   await putFile({
     url: ticket.upload_url,
     blob: input.blob,
-    contentType: input.contentType,
+    headers: ticket.headers,
     onProgress: input.onProgress,
   });
   const evidence = await completeUpload(input.volunteerId, ticket.evidence_id, {

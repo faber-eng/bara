@@ -71,7 +71,11 @@ function uploadHandlers(completeBody: unknown) {
   return {
     "GET /api/v/uid-1/inbox": () => Response.json(inboxBody),
     "POST /api/v/uid-1/uploads": () =>
-      Response.json({ evidence_id: "ev-1", upload_url: "https://gcs/put" }),
+      Response.json({
+        evidence_id: "ev-1",
+        upload_url: "https://gcs/put",
+        headers: { "Content-Type": "image/jpeg" },
+      }),
     "POST /api/v/uid-1/evidence/ev-1/complete": () => Response.json(completeBody),
   };
 }
@@ -161,7 +165,10 @@ describe("volunteer screen", () => {
     expect(screen.getByText("Jebol")).toBeInTheDocument();
     expect(screen.queryByText("Sampel")).not.toBeInTheDocument();
     expect(putFile).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "https://gcs/put", contentType: "image/jpeg" }),
+      expect.objectContaining({
+        url: "https://gcs/put",
+        headers: { "Content-Type": "image/jpeg" },
+      }),
     );
     const ticketCall = callsTo(fetchMock, "POST /api/v/uid-1/uploads")[0];
     expect(JSON.parse(String(initOf(ticketCall).body))).toMatchObject({

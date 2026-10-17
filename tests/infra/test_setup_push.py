@@ -4,11 +4,13 @@ SCRIPT = "infra/setup.sh"
 SERVICE_EXISTS = "run services describe bara-api"
 INVOKER = f"bara-tasks-invoker@{PROJECT}.iam.gserviceaccount.com"
 SUBSCRIPTION = "drying.ranked.push"
+EVIDENCE_SUBSCRIPTION = "evidence.received.push"
 
 EXPECTED_PUSH_ITEMS = [
     ("api-timeout", "600"),
     ("service-role", f"bara-api|{INVOKER}|roles/run.invoker"),
     ("subscription", SUBSCRIPTION),
+    ("subscription", EVIDENCE_SUBSCRIPTION),
 ]
 
 
@@ -43,6 +45,7 @@ def test_dry_run_grants_the_pubsub_agent_its_three_roles(run_script):
         "roles/iam.serviceAccountTokenCreator",
         "roles/pubsub.publisher",
         "roles/pubsub.subscriber",
+        "roles/pubsub.subscriber",
     ]
 
 
@@ -76,7 +79,7 @@ def test_a_real_run_creates_the_push_subscription_with_oidc_ack_deadline_and_dlq
     result = run_script(SCRIPT, "--project", PROJECT, ok_pattern=SERVICE_EXISTS)
 
     created = [c for c in result.calls if "pubsub subscriptions create" in c]
-    assert len(created) == 1
+    assert len(created) == 2
     call = created[0]
     assert call.startswith(f"pubsub subscriptions create {SUBSCRIPTION} ")
     assert "--topic drying.ranked" in call
@@ -84,6 +87,18 @@ def test_a_real_run_creates_the_push_subscription_with_oidc_ack_deadline_and_dlq
     assert "--ack-deadline 600" in call
     assert f"--dead-letter-topic projects/{PROJECT}/topics/bara.dlq" in call
     assert "--max-delivery-attempts 5" in call
+
+
+def test_a_real_run_pushes_evidence_received_to_its_own_endpoint(run_script):
+    result = run_script(SCRIPT, "--project", PROJECT, ok_pattern=SERVICE_EXISTS)
+
+    [call] = [
+        c
+        for c in result.calls
+        if c.startswith(f"pubsub subscriptions create {EVIDENCE_SUBSCRIPTION} ")
+    ]
+    assert "--topic evidence.received" in call
+    assert "/api/events/evidence.received" in call
 
 
 def test_a_real_run_raises_the_api_request_timeout_to_600(run_script):

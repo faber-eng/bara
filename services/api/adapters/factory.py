@@ -17,6 +17,8 @@ from adapters.firestore_repos import (
     CASES,
     MESSAGES,
     TASKS,
+    UPLOADS,
+    VERDICT_CACHE,
     AgentRunRepository,
     CaseRepository,
     CaseworkStore,
@@ -24,10 +26,13 @@ from adapters.firestore_repos import (
     EventLog,
     EvidenceRepository,
     FirestoreClockStore,
+    MessageRepository,
     RankedDamRepository,
     RankingRepository,
     ResetRepository,
     TaskRepository,
+    UploadRepository,
+    VerdictCache,
     VolunteerRepository,
     build_agent_repositories,
 )
@@ -47,8 +52,10 @@ from contracts import (
     Escalation,
     Evidence,
     Message,
+    PendingUpload,
     ProcessedEvent,
     Task,
+    VerdictCacheEntry,
     Volunteer,
 )
 from domain.clock import Clock
@@ -75,6 +82,9 @@ class Adapters:
     rankings: RankingRepository
     ranked_dams: RankedDamRepository
     evidence: EvidenceRepository
+    uploads: UploadRepository
+    messages: MessageRepository
+    verdicts: VerdictCache
     volunteers: VolunteerRepository
     dams: DamRepository
     agent_runs: AgentRunRepository
@@ -151,6 +161,11 @@ def build_adapters(settings: Settings) -> Adapters:
         rankings=agent_repos.rankings,
         ranked_dams=agent_repos.ranked_dams,
         evidence=agent_repos.evidence,
+        uploads=UploadRepository(FirestoreCollection(db, UPLOADS, PendingUpload)),
+        messages=MessageRepository(FirestoreCollection(db, MESSAGES, Message)),
+        verdicts=VerdictCache(
+            FirestoreCollection(db, VERDICT_CACHE, VerdictCacheEntry)
+        ),
         volunteers=agent_repos.volunteers,
         dams=agent_repos.dams,
         agent_runs=agent_repos.agent_runs,

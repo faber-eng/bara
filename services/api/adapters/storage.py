@@ -1,13 +1,21 @@
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import timedelta
 from typing import Protocol
 
 import google.auth
+from google.api_core import exceptions as gax
 from google.auth.transport.requests import Request
 
 MAX_UPLOAD_BYTES = 26214400
 URL_LIFETIME = timedelta(minutes=15)
 LENGTH_RANGE_HEADER = "x-goog-content-length-range"
+
+
+@dataclass(frozen=True)
+class SignedUpload:
+    url: str
+    headers: dict[str, str]
 
 
 class InvalidObjectName(Exception):
@@ -48,12 +56,30 @@ class EvidenceStorage:
         self._bucket = bucket
         self._signing_auth_factory = signing_auth_factory
 
-    def signed_put_url(self, object_name: str) -> str:
-        return self._sign(
+    def signed_put_url(self, object_name: str, content_type: str) -> SignedUpload:
+        length_range = {LENGTH_RANGE_HEADER: f"0,{MAX_UPLOAD_BYTES}"}
+        url = self._sign(
             object_name,
             method="PUT",
-            headers={LENGTH_RANGE_HEADER: f"0,{MAX_UPLOAD_BYTES}"},
+            content_type=content_type,
+            headers=length_range,
         )
+        return SignedUpload(url, {"Content-Type": content_type, **length_range})
+
+    def read(self, object_name: str) -> bytes | None:
+        try:
+            return self._bucket.blob(require_safe_name(object_name)).download_as_bytes()
+        except gax.NotFound:
+            return None
+
+    def gcs_uri(self, object_name: str) -> str:
+        return f"gs://{self._bucket.name}/{require_safe_name(object_name)}"
+
+    def read_uri(self, uri: str) -> bytes | None:
+        prefix = f"gs://{self._bucket.name}/"
+        if not uri.startswith(prefix):
+            raise InvalidObjectName(f"{uri!r} is not in the evidence bucket")
+        return self.read(uri.removeprefix(prefix))
 
     def signed_get_url(self, object_name: str) -> str:
         return self._sign(object_name, method="GET")

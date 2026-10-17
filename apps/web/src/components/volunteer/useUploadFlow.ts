@@ -2,8 +2,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useReducer, useRef } from "react";
 import { fetchSampleFile } from "../../lib/api/samples";
 import { fetchInbox } from "../../lib/api/volunteer";
-import type { UploadTicket } from "../../lib/api/volunteerTypes";
-import type { Evidence, EvidenceKind, GeoPoint, SampleItem } from "../../lib/contracts";
+import type {
+  Evidence,
+  EvidenceKind,
+  GeoPoint,
+  SampleItem,
+  UploadTicket,
+} from "../../lib/contracts";
 import { readDeviceLocation } from "../../lib/geo";
 import { type FailureReason, type FlowState, flowReducer, IDLE } from "../../lib/volunteer/flow";
 import { resizePhoto } from "../../lib/volunteer/image";

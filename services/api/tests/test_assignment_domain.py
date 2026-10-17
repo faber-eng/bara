@@ -39,7 +39,9 @@ def test_the_cloud_tasks_limit_is_the_largest_deadline():
     assert deadline_hours(MAX_DEADLINE_HOURS, "dam_check", DEFAULTS) == 720
 
 
-@pytest.mark.parametrize("status", ["open", "human_review", "overdue", "monitoring"])
+@pytest.mark.parametrize(
+    "status", ["open", "human_review", "overdue", "monitoring", "reviewing"]
+)
 def test_a_case_with_an_assign_edge_becomes_assigned(status):
     assert status_after_assign(status) == "assigned"
 
@@ -48,9 +50,7 @@ def test_an_assigned_case_stays_assigned():
     assert status_after_assign("assigned") == "assigned"
 
 
-@pytest.mark.parametrize(
-    "status", ["reviewing", "resolved_pending_human", "escalated", "closed"]
-)
+@pytest.mark.parametrize("status", ["resolved_pending_human", "escalated", "closed"])
 def test_a_case_without_an_assign_edge_is_rejected(status):
     with pytest.raises(IllegalTransition):
         status_after_assign(status)

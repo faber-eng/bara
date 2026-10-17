@@ -18,6 +18,11 @@ class UnusedAssigner:
         raise AssertionError("not called")
 
 
+class UnusedChecker:
+    async def check(self, task_id, evidence_id):
+        raise AssertionError("not called")
+
+
 def registered_names() -> set[str]:
     tools = build_tools(
         rankings=RankingRepository(lambda region: InMemoryCollection(RankedCell)),
@@ -25,6 +30,7 @@ def registered_names() -> set[str]:
         dams=DamRepository(InMemoryCollection(Dam)),
         volunteers=VolunteerRepository(InMemoryCollection(Volunteer)),
         assigner=UnusedAssigner(),
+        checker=UnusedChecker(),
         radius_m=1_000,
     )
     return {tool_name(tool) for tool in tools}
@@ -48,7 +54,7 @@ def test_instruction_carries_the_never_close_rule_and_the_fraction_glossary():
 
 
 def test_prompt_version():
-    assert PROMPT_VERSION == "agent-v2"
+    assert PROMPT_VERSION == "agent-v3"
 
 
 def test_instruction_steps_end_with_one_assign_task_call():
@@ -59,3 +65,18 @@ def test_instruction_steps_end_with_one_assign_task_call():
 def test_the_agent_never_picks_deadline_hours_and_skips_an_empty_crew():
     assert "Leave deadline_hours out." in INSTRUCTION
     assert "If find_people returns no people, do not call assign_task" in INSTRUCTION
+
+
+def test_an_evidence_run_checks_the_evidence_from_the_event_first():
+    assert (
+        "1. Call check_evidence with the event task_id and evidence_id." in INSTRUCTION
+    )
+
+
+def test_a_broken_dam_gets_a_repair_team():
+    assert 'role "repair_team"' in INSTRUCTION
+    assert 'task_type "dam_repair"' in INSTRUCTION
+
+
+def test_a_verdict_for_a_person_stops_the_run():
+    assert "needs_human is true" in INSTRUCTION

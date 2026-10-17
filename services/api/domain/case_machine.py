@@ -15,7 +15,9 @@ EDGES: Mapping[CaseStatus, frozenset[CaseStatus]] = MappingProxyType(
     {
         "open": frozenset({"assigned", "escalated"}),
         "assigned": frozenset({"reviewing", "overdue"}),
-        "reviewing": frozenset({"resolved_pending_human", "human_review"}),
+        "reviewing": frozenset(
+            {"resolved_pending_human", "human_review", "assigned", "escalated"}
+        ),
         "resolved_pending_human": frozenset({"closed"}),
         "human_review": frozenset({"assigned", "escalated", "closed"}),
         "overdue": frozenset({"assigned", "escalated"}),

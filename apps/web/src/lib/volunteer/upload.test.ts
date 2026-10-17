@@ -21,7 +21,11 @@ describe("uploadEvidence", () => {
     const fetchMock = stubApi({
       "POST /api/v/uid-1/uploads": () => {
         order.push("ticket");
-        return Response.json({ evidence_id: "e1", upload_url: "https://gcs/put" });
+        return Response.json({
+          evidence_id: "e1",
+          upload_url: "https://gcs/put",
+          headers: { "Content-Type": "image/jpeg" },
+        });
       },
       "POST /api/v/uid-1/evidence/e1/complete": () => {
         order.push("complete");
@@ -46,7 +50,11 @@ describe("uploadEvidence", () => {
     expect(order).toEqual(["ticket", "put", "complete"]);
     expect(result).toEqual({ evidenceId: "e1", evidence: null });
     expect(putFile).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "https://gcs/put", blob, contentType: "image/jpeg" }),
+      expect.objectContaining({
+        url: "https://gcs/put",
+        blob,
+        headers: { "Content-Type": "image/jpeg" },
+      }),
     );
     expect(callsTo(fetchMock, "POST /api/v/uid-1/uploads")).toHaveLength(1);
   });
@@ -55,7 +63,11 @@ describe("uploadEvidence", () => {
     vi.mocked(putFile).mockRejectedValue(new Error("403"));
     const fetchMock = stubApi({
       "POST /api/v/uid-1/uploads": () =>
-        Response.json({ evidence_id: "e1", upload_url: "https://gcs/put" }),
+        Response.json({
+          evidence_id: "e1",
+          upload_url: "https://gcs/put",
+          headers: { "Content-Type": "image/jpeg" },
+        }),
     });
 
     await expect(
@@ -89,7 +101,11 @@ describe("uploadEvidence", () => {
       contentType: "image/jpeg",
       sample: false,
       point: null,
-      ticket: { evidence_id: "e1", upload_url: "https://gcs/put" },
+      ticket: {
+        evidence_id: "e1",
+        upload_url: "https://gcs/put",
+        headers: { "Content-Type": "image/jpeg" },
+      },
       onTicket: () => {},
       onProgress: () => {},
     });

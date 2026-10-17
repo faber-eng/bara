@@ -5,7 +5,7 @@ export class UploadTransferError extends Error {
 export type PutFileInput = {
   url: string;
   blob: Blob;
-  contentType: string;
+  headers: Record<string, string>;
   onProgress: (fraction: number) => void;
   signal?: AbortSignal;
 };
@@ -16,11 +16,15 @@ function isSuccess(status: number): boolean {
   return status >= 200 && status < 300;
 }
 
+function applyHeaders(request: XMLHttpRequest, headers: Record<string, string>): void {
+  for (const [name, value] of Object.entries(headers)) request.setRequestHeader(name, value);
+}
+
 export function putFile(input: PutFileInput): Promise<void> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("PUT", input.url);
-    request.setRequestHeader("Content-Type", input.contentType);
+    applyHeaders(request, input.headers);
     request.timeout = PUT_TIMEOUT_MS;
     request.ontimeout = () => reject(new UploadTransferError("Upload timed out"));
     request.upload.onprogress = (event) => {

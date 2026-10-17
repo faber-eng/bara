@@ -1,15 +1,9 @@
-import type { Evidence } from "../contracts";
+import type { CompleteRequest, Evidence, Inbox, UploadRequest, UploadTicket } from "../contracts";
 import { sourceFor } from "../sources";
 import { apiRequest } from "./client";
-import { ResponseShapeError, readArray, readRecord, readString } from "./parse";
+import { ResponseShapeError, readArray, readRecord, readString, readStringRecord } from "./parse";
 import { parseEvidence, parseMessage, parseTask } from "./volunteerParse";
-import type {
-  ChatRequest,
-  CompleteRequest,
-  Inbox,
-  UploadRequest,
-  UploadTicket,
-} from "./volunteerTypes";
+import type { ChatRequest } from "./volunteerTypes";
 
 const COMPLETE_TIMEOUT_MS = 30_000;
 
@@ -41,6 +35,7 @@ export function parseUploadTicket(body: unknown): UploadTicket {
   return {
     evidence_id: readString(record, "evidence_id", "upload ticket"),
     upload_url: readString(record, "upload_url", "upload ticket"),
+    headers: readStringRecord(record, "headers", "upload ticket"),
   };
 }
 

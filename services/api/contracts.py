@@ -483,6 +483,37 @@ class CaseDetail(Contract):
     timeline: list[TimelineEntry]
 
 
+class UploadRequest(Contract):
+    task_id: str
+    kind: EvidenceKind
+    content_type: str
+    size_bytes: Annotated[int, Field(gt=0)]
+    sample: bool
+
+
+class UploadTicket(Contract):
+    evidence_id: str
+    upload_url: str
+    headers: dict[str, str]
+
+
+class CompleteRequest(Contract):
+    point: GeoPoint | None
+    captured_at: AwareDatetime
+
+
+class PendingUpload(Contract):
+    id: str
+    task_id: str
+    case_id: str
+    kind: EvidenceKind
+    content_type: str
+    object_name: str
+    sample: bool
+    uploaded_by: str
+    created_at: AwareDatetime
+
+
 class Inbox(Contract):
     tasks: list[Task]
     messages: list[Message]

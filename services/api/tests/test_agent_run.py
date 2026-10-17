@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import get_args
 
 import pytest
 from google.adk.agents.invocation_context import LlmCallsLimitExceededError
@@ -17,6 +18,7 @@ from adapters.firestore_repos import (
 )
 from adapters.gemini import compose_agent_model
 from bara_agent.agent import build_tools
+from bara_agent.output import ToolName
 from bara_agent.prompts import INSTRUCTION, PROMPT_VERSION
 from bara_agent.run import AgentOutputInvalid, AgentService, CaseNotFound
 from casework.assignment import Assignment
@@ -77,6 +79,11 @@ def happy_script(final: str | None = None) -> list:
         function_call("assign_task", ASSIGN_ARGS, "fc4"),
         final_answer(final or answer()),
     ]
+
+
+class UnusedChecker:
+    async def check(self, task_id, evidence_id):
+        raise AssertionError("not called")
 
 
 class StubAssigner:
@@ -142,6 +149,7 @@ class World:
                 dams=dams,
                 volunteers=VolunteerRepository(volunteers),
                 assigner=self.assigner,
+                checker=UnusedChecker(),
                 radius_m=1_000,
             ),
             cases=CaseRepository(self.cases),
@@ -157,6 +165,11 @@ class World:
 
     def run(self, case_id: str = "c1") -> AgentRun:
         return asyncio.run(self.service.run_case("drying.ranked", case_id, "r1"))
+
+    def run_evidence(self, event: dict) -> AgentRun:
+        return asyncio.run(
+            self.service.run_case("evidence.received", "c1", "r2", event)
+        )
 
     def stored(self) -> AgentRun | None:
         return self._runs_for("c1").get("r1")
@@ -189,14 +202,14 @@ def test_a_run_stores_its_ordered_timed_calls_and_validated_final_json():
     assert isinstance(run.ms, int) and run.ms >= 0
 
 
-def test_the_model_gets_the_instruction_the_schema_and_exactly_the_four_tools():
+def test_the_model_gets_the_instruction_the_schema_and_exactly_the_registered_tools():
     world = World(happy_script())
 
     world.run()
 
     assert INSTRUCTION in str(world.llm.system_instructions[0])
     assert world.llm.response_schemas[0] is not None
-    assert world.llm.tool_names[0] == sorted(ALL_TOOLS)
+    assert world.llm.tool_names[0] == sorted(get_args(ToolName))
 
 
 def run_input_data(world: World) -> tuple[str, dict]:
@@ -217,9 +230,21 @@ def test_the_run_input_fences_the_case_dam_trigger_and_sim_now_as_data():
         "trigger": "drying.ranked",
         "case": make_case().model_dump(mode="json"),
         "dam": make_dam().model_dump(mode="json"),
+        "event": None,
         "now": SIM_NOW.isoformat(),
     }
     assert "top_cells" not in text
+
+
+def test_an_evidence_run_carries_the_event_payload_in_the_run_input():
+    world = World(happy_script())
+    event = {"evidence_id": "e1", "task_id": "t1", "case_id": "c1"}
+
+    world.run_evidence(event)
+
+    _, data = run_input_data(world)
+    assert data["trigger"] == "evidence.received"
+    assert data["event"] == event
 
 
 def test_evidence_naming_an_uncalled_tool_is_stored_with_a_warning(caplog):
