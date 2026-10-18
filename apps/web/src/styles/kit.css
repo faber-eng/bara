@@ -358,7 +358,8 @@ h1, h2, h3, h4 { margin: 0; font-weight: var(--fw-title); line-height: var(--lh-
 .countdown-late { color: var(--danger); }
 
 /* Feedback */
-.banner { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: start; padding: 16px 20px; border-radius: var(--radius-card); font-size: var(--fs-sm); }
+.banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 16px 20px; border-radius: var(--radius-card); font-size: var(--fs-sm); }
+.banner:has(> svg) { grid-template-columns: 22px minmax(0, 1fr) auto; align-items: start; }
 .banner svg { width: 20px; height: 20px; margin-top: 1px; }
 .banner strong { font-weight: 600; }
 .banner-info { background: var(--sky-card); }
