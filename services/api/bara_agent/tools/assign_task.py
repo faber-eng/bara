@@ -1,12 +1,15 @@
 from collections.abc import Callable, Coroutine, Mapping
 from typing import Any, Protocol, get_args
 
+from google.adk.tools.tool_context import ToolContext
+
 from bara_agent.tools.result import ToolResult, tool_error
 from casework.assignment import Assignment, AssignmentRejected, AssignmentRequest
 from casework.messenger import MessengerFailed
 from contracts import TaskType
 
 TASK_TYPES = get_args(TaskType)
+ASSIGNED_KEY = "task_assigned"
 
 
 class Assigner(Protocol):
@@ -27,6 +30,7 @@ class AssignTask:
         assignee_id: str,
         task_type: TaskType,
         instructions_hint: str,
+        tool_context: ToolContext,
         deadline_hours: int | None = None,
     ) -> ToolResult:
         """Assigns a task on the case to one person, sends them the task message
@@ -45,6 +49,9 @@ class AssignTask:
             return tool_error(
                 f"task_type must be one of {', '.join(TASK_TYPES)}, got {task_type!r}"
             )
+        if tool_context.state.get(ASSIGNED_KEY, False):
+            return tool_error("a task is already assigned in this run")
+        tool_context.state[ASSIGNED_KEY] = True
         request = AssignmentRequest(
             case_id=case_id,
             assignee_id=assignee_id,
@@ -55,6 +62,7 @@ class AssignTask:
         try:
             assignment = await self._assigner.assign(request)
         except (AssignmentRejected, MessengerFailed) as error:
+            tool_context.state[ASSIGNED_KEY] = False
             return tool_error(str(error))
         return {
             "task_id": assignment.task.id,

@@ -7,7 +7,7 @@ import pytest
 from bara_agent.tools.assign_task import AssignTask
 from casework.assignment import Assignment, AssignmentRejected
 from casework.messenger import MessengerFailed
-from tests.fakes import make_message, make_task
+from tests.fakes import FakeToolContext, make_message, make_task
 
 DEADLINE = datetime(2026, 10, 20, 12, 0, tzinfo=UTC)
 
@@ -33,14 +33,18 @@ def done() -> Assignment:
     )
 
 
-def call(tool: AssignTask, **overrides):
+def call(tool: AssignTask, context=None, **overrides):
     fields = {
         "case_id": "c1",
         "assignee_id": "v1",
         "task_type": "dam_check",
         "instructions_hint": "Check the left side.",
     }
-    return asyncio.run(tool.assign_task(**{**fields, **overrides}))
+    return asyncio.run(
+        tool.assign_task(
+            **{**fields, **overrides}, tool_context=context or FakeToolContext()
+        )
+    )
 
 
 def test_assign_task_is_an_async_tool_named_assign_task():
@@ -107,3 +111,50 @@ def test_assign_task_summary():
     )
 
     assert summary == "task task-1 due 2026-10-20T12:00:00+00:00"
+
+
+def test_a_second_assign_in_one_run_is_refused_and_creates_nothing():
+    assigner = FakeAssigner(done())
+    tool = AssignTask(assigner)
+    context = FakeToolContext()
+
+    first = call(tool, context)
+    second = call(tool, context, assignee_id="v2")
+
+    assert first["task_id"] == "task-1"
+    assert "a task is already assigned in this run" in str(second["error"])
+    assert len(assigner.requests) == 1
+
+
+def test_a_rejected_assign_does_not_use_up_the_run_slot():
+    outcomes = [AssignmentRejected("no such person"), done()]
+
+    class Flaky:
+        requests = []
+
+        async def assign(self, request):
+            self.requests.append(request)
+            outcome = outcomes.pop(0)
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+
+    tool = AssignTask(Flaky())
+    context = FakeToolContext()
+
+    first = call(tool, context)
+    second = call(tool, context, assignee_id="v2")
+
+    assert "error" in first
+    assert second["task_id"] == "task-1"
+
+
+def test_a_new_agent_run_may_assign_again():
+    assigner = FakeAssigner(done())
+    tool = AssignTask(assigner)
+
+    call(tool, FakeToolContext())
+    again = call(tool, FakeToolContext())
+
+    assert again["task_id"] == "task-1"
+    assert len(assigner.requests) == 2
