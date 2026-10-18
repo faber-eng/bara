@@ -46,7 +46,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: "evidence",
     title: "Volunteer Ari sends evidence",
-    body: "You are now Ari on a phone view. Press Use a sample to send a broken-dam photo. The verdict appears in seconds.",
+    body: "You are now Ari on a phone view. Press Photo, then Use a sample to send a broken-dam photo. The verdict appears in seconds.",
     href: "/v/vol-ari",
     personKey: "vol-ari",
   },
