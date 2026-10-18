@@ -15,7 +15,7 @@ import { EvidenceCard } from "../ops/EvidenceCard";
 import { QueryState } from "../ops/QueryState";
 import { StatusBadge } from "./badges";
 import { DetailActions, DetailLayout, DetailSection, DetailText, FactList } from "./DetailSheet";
-import { chanceText, type FactRow, scoreFact } from "./facts";
+import { chanceText, decisionLine, type FactRow, scoreFact } from "./facts";
 import type { OpsDetail } from "./selection";
 
 const OPEN_TASK_STATUSES: readonly Task["status"][] = ["open", "overdue"];
@@ -87,7 +87,7 @@ function latestDecision(detail: CaseDetail): string | null {
   for (let index = detail.agent_runs.length - 1; index >= 0; index -= 1) {
     const decision = detail.agent_runs[index]?.final_json;
     if (decision !== undefined && decision !== null)
-      return `${decision.decision}: ${decision.reason}`;
+      return decisionLine(decision.decision, decision.reason);
   }
   return null;
 }

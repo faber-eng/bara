@@ -97,3 +97,11 @@ export function componentFacts(
 export function chanceText(chance: number, language: CopyLanguage): string {
   return formatPercent(chance, language);
 }
+
+const SENTENCE_END = /[.!?]$/;
+
+export function decisionLine(decision: string, reason: string): string {
+  const trimmed = decision.trim();
+  if (SENTENCE_END.test(trimmed)) return `${trimmed} ${reason}`;
+  return `${trimmed}: ${reason}`;
+}
