@@ -155,7 +155,7 @@ class TaskAssigner:
         self._commit(
             case, next_status, task, message, tasks_to_reassign(case.status, prior)
         )
-        task = self._schedule(task, reading.offset_seconds)
+        task = self._schedule(task, self._clock.offset_seconds())
         logger.info(
             "task assigned",
             extra=log_fields(

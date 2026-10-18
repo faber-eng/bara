@@ -118,6 +118,7 @@ class World:
             InMemoryClockStore(ClockSettings(offset_seconds=OFFSET, updated_by="t")),
             lambda: REAL_NOW,
         )
+        self.clock = clock
         ids = iter(["task-1", "msg-1", "task-2", "msg-2"])
         new_id = lambda: next(ids)
         self.assigner = TaskAssigner(
@@ -330,6 +331,23 @@ def test_a_failed_commit_writes_nothing_and_schedules_nothing():
     assert world.nothing_written()
     assert world.scheduler.scheduled == []
     assert world.cases.get("c1").status == "open"
+
+
+def test_a_clock_advanced_during_the_model_call_schedules_with_the_new_offset():
+    holder = {}
+
+    def advance():
+        holder["world"].clock.advance(48, "judge")
+
+    world = World(messenger=FakeMessenger(during=advance))
+    holder["world"] = world
+
+    world.assign()
+
+    deadline = SIM_NOW + timedelta(hours=72)
+    real_at = deadline - timedelta(seconds=OFFSET + 48 * 3600)
+    assert world.tasks.get("task-1").deadline_at == deadline
+    assert world.scheduler.scheduled == [("task-1", real_at)]
 
 
 def test_a_case_changed_during_the_model_call_is_rejected_and_kept():
