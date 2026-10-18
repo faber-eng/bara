@@ -165,6 +165,7 @@ class FireQuietHandler:
             ),
             deadline_hours=self._recheck_hours,
             target_cell_id=cell_id,
+            reassigns_overdue=False,
         )
         try:
             await self._assigner.assign(request)
