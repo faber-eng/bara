@@ -123,6 +123,17 @@
   box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
   cursor: pointer;
 }
+@media (max-width: 700px) {
+  body:has(.judge-dock) {
+    --dock-clearance: calc(44px + var(--space-4));
+  }
+  body:has(.judge-dock) .reply-bar {
+    padding-bottom: calc(8px + var(--dock-clearance) + env(safe-area-inset-bottom));
+  }
+  body:has(.judge-dock) .shell-foot {
+    padding-bottom: calc(var(--space-3, 10px) + var(--dock-clearance));
+  }
+}
 .judge-bar {
   display: flex;
   flex-wrap: wrap;
