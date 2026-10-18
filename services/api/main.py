@@ -195,6 +195,7 @@ def build_escalator(adapters: Adapters, gateway: ModelGateway) -> Escalator:
         dams=adapters.dams,
         contacts=adapters.contacts,
         escalations=adapters.escalations,
+        volunteers=adapters.volunteers,
         cells=adapters.cells,
         casework=adapters.casework,
         brief=BriefWriter(gateway),
@@ -380,6 +381,7 @@ def build_case_queries(adapters: Adapters) -> CaseQueries:
         runs=adapters.agent_runs,
         escalations=adapters.escalations,
         messages=adapters.messages,
+        volunteers=adapters.volunteers,
         signer=adapters.storage,
         clock=adapters.clock,
     )

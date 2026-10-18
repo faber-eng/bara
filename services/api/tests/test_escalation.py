@@ -16,6 +16,7 @@ from adapters.firestore_repos import (
     EscalationRepository,
     EvidenceRepository,
     TaskRepository,
+    VolunteerRepository,
 )
 from adapters.storage import InvalidObjectName, SigningUnavailable
 from casework.brief import Brief
@@ -39,6 +40,7 @@ from contracts import (
     GeoPoint,
     Message,
     Task,
+    Volunteer,
 )
 from domain.clock import Clock
 from domain.escalation import FieldSigns, OverdueTask
@@ -145,6 +147,7 @@ class World:
             dams=DamRepository(self.dams),
             contacts=ContactRepository(self.contacts),
             escalations=EscalationRepository(self.escalations),
+            volunteers=VolunteerRepository(InMemoryCollection(Volunteer)),
             cells=FakeCells(),
             casework=casework,
             brief=self.brief,

@@ -1,4 +1,7 @@
+import re
 from datetime import UTC, datetime, timedelta
+
+import pytest
 
 from contracts import AgentDecision, Verdict
 from domain.case_view import (
@@ -17,6 +20,8 @@ from tests.fakes import (
 )
 
 T0 = datetime(2026, 7, 20, 1, 0, tzinfo=UTC)
+NAMES = {"vol-ari": "Ari Wijaya"}
+SNAKE = re.compile(r"\b[a-z0-9]+_[a-z0-9_]+\b")
 
 
 def test_format_local_names_the_day_and_the_zone_of_the_region():
@@ -123,15 +128,16 @@ def test_the_timeline_is_oldest_first_and_covers_case_task_evidence_run_and_clos
         ),
     )
 
-    timeline = build_timeline(case, [task], [evidence], [run], [], [])
+    timeline = build_timeline(case, [task], [evidence], [run], [], [], NAMES)
 
     assert [entry.at for entry in timeline] == sorted(entry.at for entry in timeline)
     texts = [entry.text for entry in timeline]
     assert texts[0].startswith("Case opened")
-    assert any("assign_check" in text for text in texts)
-    assert any("vol-ari" in text for text in texts)
+    assert any("assign check" in text for text in texts)
+    assert any("Ari Wijaya" in text for text in texts)
     assert any("broken" in text for text in texts)
     assert texts[-1] == "Case closed by ops-1"
+    assert not any(SNAKE.search(text) for text in texts)
 
 
 def test_a_failed_run_appears_as_a_failed_run():
@@ -139,7 +145,7 @@ def test_a_failed_run_appears_as_a_failed_run():
 
     texts = [
         e.text
-        for e in build_timeline(make_case(opened_at=at(0)), [], [], [run], [], [])
+        for e in build_timeline(make_case(opened_at=at(0)), [], [], [run], [], [], {})
     ]
 
     assert any("failed" in text.lower() for text in texts)
@@ -148,7 +154,9 @@ def test_a_failed_run_appears_as_a_failed_run():
 def test_evidence_without_a_capture_time_is_left_out_of_the_timeline():
     evidence = make_evidence(captured_at=None, verdict=verdict())
 
-    timeline = build_timeline(make_case(opened_at=at(0)), [], [evidence], [], [], [])
+    timeline = build_timeline(
+        make_case(opened_at=at(0)), [], [evidence], [], [], [], {}
+    )
 
     assert len(timeline) == 1
 
@@ -170,7 +178,9 @@ def test_an_acknowledged_escalation_shows_the_handover_and_the_ack():
         contact_id="contact-daops", created_at=at(5), acknowledged_at=at(7)
     )
 
-    timeline = build_timeline(make_case(opened_at=at(0)), [], [], [], [escalation], [])
+    timeline = build_timeline(
+        make_case(opened_at=at(0)), [], [], [], [escalation], [], {}
+    )
 
     assert [(entry.at, entry.text) for entry in timeline[1:]] == [
         (at(5), "Escalated to brigade contact-daops"),
@@ -181,7 +191,9 @@ def test_an_acknowledged_escalation_shows_the_handover_and_the_ack():
 def test_an_open_escalation_shows_only_the_handover():
     escalation = make_escalation(contact_id="contact-daops", created_at=at(5))
 
-    timeline = build_timeline(make_case(opened_at=at(0)), [], [], [], [escalation], [])
+    timeline = build_timeline(
+        make_case(opened_at=at(0)), [], [], [], [escalation], [], {}
+    )
 
     assert [entry.text for entry in timeline[1:]] == [
         "Escalated to brigade contact-daops"
@@ -197,8 +209,111 @@ def test_a_task_entry_shows_the_due_time_in_wib_not_raw_iso():
         type="patrol_recheck",
     )
 
-    timeline = build_timeline(make_case(opened_at=at(0)), [task], [], [], [], [])
+    timeline = build_timeline(
+        make_case(opened_at=at(0)), [task], [], [], [], [], {"patrol-hana": "Hana"}
+    )
 
-    assert "Task patrol_recheck given to patrol-hana, due Tue 20 Oct, 05:04 WIB" in [
-        entry.text for entry in timeline
+    assert (
+        "Task given to Hana: re-check the burned land, due Tue 20 Oct, 05:04 WIB"
+        in [entry.text for entry in timeline]
+    )
+
+
+def texts_for(case=None, tasks=(), evidence=(), runs=(), names=None):
+    timeline = build_timeline(
+        case or make_case(opened_at=at(0)),
+        list(tasks),
+        list(evidence),
+        list(runs),
+        [],
+        [],
+        NAMES if names is None else names,
+    )
+    return [entry.text for entry in timeline]
+
+
+@pytest.mark.parametrize(
+    "case_type,dam_id,expected",
+    [
+        ("dam_risk", "dam-riau-017", "Case opened: dam at risk, canal dam 017"),
+        ("reignition", None, "Case opened: fire may restart, cell riau-1-1"),
+        ("hotspot", None, "Case opened: hotspot, cell riau-1-1"),
+        ("dam_risk", "dam-x", "Case opened: dam at risk, canal dam dam-x"),
+    ],
+)
+def test_the_case_opened_entry_is_plain(case_type, dam_id, expected):
+    case = make_case(type=case_type, dam_id=dam_id, cell_id="riau-1-1", opened_at=at(0))
+
+    assert texts_for(case)[0] == expected
+
+
+def test_a_task_names_the_person_and_the_plain_task():
+    task = make_task(
+        type="dam_check",
+        assignee_id="vol-ari",
+        created_at=at(1),
+        deadline_at=datetime(2026, 10, 21, 3, 59, tzinfo=UTC),
+        done_at=at(3),
+    )
+
+    assert texts_for(tasks=[task])[1:] == [
+        "Task given to Ari Wijaya: check the canal dam, due Wed 21 Oct, 10:59 WIB",
+        "Task done: check the canal dam",
     ]
+
+
+@pytest.mark.parametrize(
+    "assignee,name",
+    [("vol-gunawan", "Gunawan"), ("patrol-hana", "Patrol Hana"), ("ops", "Ops")],
+)
+def test_a_person_without_a_name_is_named_from_the_id(assignee, name):
+    task = make_task(type="dam_repair", assignee_id=assignee, created_at=at(1))
+
+    assert texts_for(tasks=[task], names={})[1].startswith(
+        f"Task given to {name}: repair the canal dam, due"
+    )
+
+
+@pytest.mark.parametrize(
+    "kind,state,expected",
+    [
+        ("photo", "broken", "Photo checked: dam broken, smoke none"),
+        ("video", "not_applicable", "Video checked: dam not applicable, smoke none"),
+        ("audio", "unknown", "Voice note checked: dam unknown, smoke none"),
+    ],
+)
+def test_checked_evidence_is_plain(kind, state, expected):
+    evidence = make_evidence(
+        kind=kind, captured_at=at(4), verdict=verdict(dam_state=state)
+    )
+
+    assert texts_for(evidence=[evidence])[1] == expected
+
+
+def test_unchecked_evidence_says_it_was_received():
+    evidence = make_evidence(kind="audio", captured_at=at(4), verdict=None)
+
+    assert texts_for(evidence=[evidence])[1] == "Voice note received"
+
+
+def test_an_agent_decision_reads_as_one_plain_line():
+    run = make_agent_run(
+        started_at=at(2),
+        final_json=AgentDecision(
+            decision="Wait for the volunteer's photo.",
+            reason="The task is open; assign_task already ran.",
+            evidence=[],
+            next_check_at=None,
+        ),
+    )
+
+    assert texts_for(runs=[run])[1] == (
+        "Agent decision: wait for the volunteer's photo. "
+        "The task is open; assign task already ran."
+    )
+
+
+def test_a_failed_run_names_its_trigger_in_plain_words():
+    run = make_agent_run(started_at=at(2), final_json=None, trigger="task.overdue")
+
+    assert texts_for(runs=[run])[1] == "Agent run failed (task overdue)"
