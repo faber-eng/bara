@@ -12,7 +12,7 @@ from casework.rank_explanation import (
     RankExplainer,
     render_facts,
 )
-from contracts import RankedCell, RankExplanation
+from contracts import ExplanationPoint, RankedCell, RankExplanation
 from domain.rank_explanation import (
     ExplanationRejected,
     check_explanation,
@@ -37,6 +37,42 @@ GOOD_TEXT = (
 GOOD_CITED = {
     "drying_score": 90.5,
     "s1_anom_db": -4.2,
+    "canal_dist_m": 140.0,
+}
+
+
+WEIGHTS = {
+    "s1_anom_db": 0.45,
+    "rain_deficit_pct": 0.30,
+    "canal_dist_m": 0.15,
+    "peat_class": 0.10,
+}
+SUMMARY = f"This area is {LEAD} (score 90.5 of 100)."
+POINTS = [
+    (
+        "s1_anom_db",
+        "raises",
+        (
+            "The radar dryness signal is -4.2 dB, so the peat is drier than usual, "
+            "which pushes the score up."
+        ),
+    ),
+    (
+        "rain_deficit_pct",
+        "raises",
+        "It had 31% less rain than normal, which pushes the score up.",
+    ),
+    (
+        "canal_dist_m",
+        "raises",
+        "A canal 140 m away drains the peat, which pushes the score up.",
+    ),
+]
+REPLY_TEXT = " ".join([SUMMARY, *(text for _, _, text in POINTS)])
+REPLY_CITED = {
+    "drying_score": 90.5,
+    "s1_anom_db": -4.2,
+    "rain_deficit_pct": 31,
     "canal_dist_m": 140.0,
 }
 
@@ -84,10 +120,15 @@ def test_a_text_without_cited_numbers_is_rejected():
         check(text="The cell is drying fast.", cited={})
 
 
-def reply(text=GOOD_TEXT, cited=None):
-    cited = GOOD_CITED if cited is None else cited
+def reply(summary=SUMMARY, points=None, cited=None):
+    cited = REPLY_CITED if cited is None else cited
+    points = POINTS if points is None else points
     body = {
-        "text": text,
+        "summary": summary,
+        "points": [
+            {"field": field, "effect": effect, "text": text}
+            for field, effect, text in points
+        ],
         "cited": [{"field": key, "value": value} for key, value in cited.items()],
     }
     return types.GenerateContentResponse(
@@ -153,6 +194,7 @@ class World:
             model=self.model,
             facts=self.facts,
             rankings=RankingRepository(lambda region: self.collection),
+            weights=WEIGHTS,
         )
 
     def explain(self, cell_id="riau-1-1"):
@@ -168,28 +210,35 @@ def test_a_valid_reply_is_returned_and_stored_on_the_ranked_cell():
     explanation = world.explain()
 
     assert explanation == RankExplanation(
-        text=GOOD_TEXT, cited=GOOD_CITED, prompt_version=EXPLAIN_PROMPT_VERSION
+        text=REPLY_TEXT,
+        cited=REPLY_CITED,
+        prompt_version=EXPLAIN_PROMPT_VERSION,
+        summary=SUMMARY,
+        points=tuple(
+            ExplanationPoint(field=field, effect=effect, text=text)
+            for field, effect, text in POINTS
+        ),
     )
     assert world.stored() == explanation
     assert world.facts.calls == ["riau-1-1"]
     role, contents, config = world.model.calls[0]
-    assert role == "fast"
+    assert role == "reasoning"
     assert "<<<FACTS" in contents
     assert "90.5" in contents
     assert config.response_mime_type == "application/json"
 
 
 def test_an_invalid_reply_is_retried_once_and_the_second_is_stored():
-    world = World([reply(text=GOOD_TEXT + " It rained 12 mm."), reply()])
+    world = World([reply(summary=SUMMARY + " It rained 12 mm."), reply()])
 
     explanation = world.explain()
 
-    assert explanation.text == GOOD_TEXT
+    assert explanation.text == REPLY_TEXT
     assert len(world.model.calls) == 2
 
 
 def test_two_invalid_replies_give_null_and_a_log_and_store_nothing(caplog):
-    bad = reply(cited={**GOOD_CITED, "drying_score": 99.0})
+    bad = reply(cited={**REPLY_CITED, "drying_score": 99.0})
     world = World([bad, bad])
 
     with caplog.at_level(logging.WARNING):
@@ -203,8 +252,8 @@ def test_two_invalid_replies_give_null_and_a_log_and_store_nothing(caplog):
     assert "explain_rank_failed" in events
 
 
-def test_more_than_three_sentences_is_retried_then_null():
-    long = reply(text=GOOD_TEXT + " One. Two.")
+def test_a_summary_of_more_than_one_sentence_is_retried_then_null():
+    long = reply(summary=SUMMARY + " One. Two.")
     world = World([long, long])
 
     assert world.explain() is None
@@ -229,7 +278,7 @@ def test_the_same_cell_and_week_is_never_generated_twice():
 
 
 def test_a_failed_cell_and_week_is_not_retried_on_the_next_call():
-    bad = reply(text="No numbers here at all.", cited={})
+    bad = reply(summary="No numbers here at all.", points=[], cited={})
     world = World([bad, bad])
 
     world.explain()
@@ -241,7 +290,7 @@ def test_a_failed_cell_and_week_is_not_retried_on_the_next_call():
 def test_a_cell_without_a_ranking_document_still_returns_the_explanation():
     world = World([reply()], ranked=False)
 
-    assert world.explain().text == GOOD_TEXT
+    assert world.explain().text == REPLY_TEXT
 
 
 def test_an_unknown_cell_returns_null_without_a_model_call():
@@ -261,7 +310,7 @@ def test_a_ranking_document_of_another_week_is_left_alone():
 
 
 def test_the_prompt_version_is_named():
-    assert EXPLAIN_PROMPT_VERSION == "explain-v3"
+    assert EXPLAIN_PROMPT_VERSION == "explain-v4"
 
 
 def test_an_integer_written_for_a_whole_value_passes():
@@ -310,7 +359,7 @@ def test_a_field_cited_twice_is_retried():
     )
     world = World([doubled, reply()])
 
-    assert world.explain().text == GOOD_TEXT
+    assert world.explain().text == REPLY_TEXT
     assert len(world.model.calls) == 2
 
 
@@ -320,7 +369,7 @@ def test_a_model_error_is_not_remembered_for_the_week():
     )
 
     assert world.explain() is None
-    assert world.explain().text == GOOD_TEXT
+    assert world.explain().text == REPLY_TEXT
 
 
 def test_two_requests_at_once_make_one_model_call():
@@ -348,7 +397,7 @@ def test_a_store_failure_still_returns_the_explanation(caplog):
     with caplog.at_level(logging.ERROR):
         explanation = world.explain()
 
-    assert explanation.text == GOOD_TEXT
+    assert explanation.text == REPLY_TEXT
     events = [r.fields["event"] for r in caplog.records if hasattr(r, "fields")]
     assert "explain_rank_store_failed" in events
 
@@ -488,16 +537,16 @@ def test_a_distance_under_a_kilometre_is_whole_metres():
     assert written_for({"canal_dist_m": 139.6})["canal_dist_m"] == "140 m"
 
 
-def test_the_explain_call_thinks_at_the_lowest_level():
+def test_the_explain_call_thinks_at_the_low_level():
     from casework.rank_explanation import generation_config
 
-    level = generation_config().thinking_config.thinking_level
+    level = generation_config("instruction").thinking_config.thinking_level
 
-    assert level == types.ThinkingLevel.MINIMAL
+    assert level == types.ThinkingLevel.LOW
 
 
 def test_the_facts_block_names_each_fact_in_plain_words_with_its_written_form():
-    block = render_facts("riau-1-1", shown_values(LIVE, "riau"))
+    block = render_facts("riau-1-1", shown_values(LIVE, "riau"), [])
 
     assert "radar dryness signal" in block
     assert "distance to the nearest canal" in block
@@ -578,3 +627,35 @@ def test_the_explainer_reads_facts_from_the_real_area_facts_tool():
 
     assert not inspect.iscoroutinefunction(GetAreaFacts.facts)
     assert callable(AreaFacts.facts)
+
+
+def test_a_point_that_contradicts_the_data_is_retried():
+    flipped = [(POINTS[0]), ("rain_deficit_pct", "lowers", POINTS[1][2]), POINTS[2]]
+    world = World([reply(points=flipped), reply()])
+
+    assert world.explain().text == REPLY_TEXT
+    assert len(world.model.calls) == 2
+
+
+def test_a_reply_that_skips_a_factor_is_retried():
+    world = World([reply(points=POINTS[:2]), reply()])
+
+    assert world.explain().text == REPLY_TEXT
+    assert len(world.model.calls) == 2
+
+
+def test_the_facts_carry_each_factor_effect_and_weight():
+    world = World([reply()])
+    world.explain()
+
+    _, contents, config = world.model.calls[0]
+    data = json.loads(contents.split("<<<FACTS")[1].split("FACTS>>>")[0])
+    factors = [fact for fact in data["facts"] if "effect" in fact]
+    assert [(f["field"], f["effect"], f["weight_pct"]) for f in factors] == [
+        ("s1_anom_db", "raises", 45),
+        ("rain_deficit_pct", "raises", 30),
+        ("canal_dist_m", "raises", 15),
+    ]
+    assert "the radar dryness signal 45%, rain compared with normal 30%" in (
+        config.system_instruction
+    )

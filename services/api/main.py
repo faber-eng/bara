@@ -44,6 +44,7 @@ from casework.trigger_gate import TriggerGate
 from config import Settings, full_flow_region, load_settings, region_timezones
 from domain.area_cache import AreaRankingCache
 from domain.scenario import load_scenario
+from ee_lib.config import load_data_config
 from events import DryingRankedHandler, EventDispatcher
 from evidence_events import EvidenceReceivedHandler
 from fire_events import FireQuietHandler
@@ -403,6 +404,16 @@ def build_run_streamer(adapters: Adapters) -> RunStreamer:
     return RunStreamer(cases=adapters.cases, runs=adapters.agent_runs, now=utcnow)
 
 
+def drying_weights(settings: Settings) -> dict[str, float]:
+    weights = load_data_config(settings.config_dir).drying.weights
+    return {
+        "s1_anom_db": weights.s1_anomaly,
+        "rain_deficit_pct": weights.rain_deficit,
+        "canal_dist_m": weights.canal_proximity,
+        "peat_class": weights.peat_class,
+    }
+
+
 def build_rank_explainer(
     settings: Settings, adapters: Adapters, gateway: ModelGateway
 ) -> RankExplainer:
@@ -410,6 +421,7 @@ def build_rank_explainer(
         model=gateway,
         facts=GetAreaFacts(adapters.cells, adapters.dams, settings.grid_cell_m),
         rankings=adapters.rankings,
+        weights=drying_weights(settings),
     )
 
 

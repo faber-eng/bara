@@ -273,10 +273,21 @@ class RankingComponents(Contract):
     peat_class: Literal[1, 2]
 
 
+ExplanationEffect = Literal["raises", "lowers", "small"]
+
+
+class ExplanationPoint(Contract):
+    field: str
+    effect: ExplanationEffect
+    text: str
+
+
 class RankExplanation(Contract):
     text: str
     cited: dict[str, Scalar]
     prompt_version: str | None = None
+    summary: str | None = None
+    points: tuple[ExplanationPoint, ...] = ()
 
 
 class RankedCell(Contract):

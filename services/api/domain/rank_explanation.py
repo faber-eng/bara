@@ -1,11 +1,12 @@
 import math
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 
-from contracts import RankExplanation
+from contracts import ExplanationEffect, RankExplanation
+from ee_lib.canals import CANAL_DECAY_M
 
-EXPLAIN_PROMPT_VERSION = "explain-v3"
+EXPLAIN_PROMPT_VERSION = "explain-v4"
 METRES_PER_KM = 1000
 NUMBER = re.compile(r"(?<![\w.-])(-?\d+(?:\.\d+)?)(?:st|nd|rd|th)?(?![\w])")
 EXACT_TOLERANCE = 1e-9
@@ -24,6 +25,8 @@ FIELDS = (
     "peat_class",
 )
 
+DRIVERS = ("s1_anom_db", "rain_deficit_pct", "canal_dist_m")
+
 
 FIELD_WORDS = {
     "drying_score": "drying score",
@@ -38,6 +41,56 @@ FIELD_WORDS = {
 
 class ExplanationRejected(Exception):
     pass
+
+
+@dataclass(frozen=True)
+class Driver:
+    field: str
+    effect: ExplanationEffect
+    weight_pct: int
+
+
+def signed_effect(rounded: float) -> ExplanationEffect:
+    if rounded > 0:
+        return "raises"
+    if rounded < 0:
+        return "lowers"
+    return "small"
+
+
+def driver_effect(field: str, value: float) -> ExplanationEffect:
+    if field == "s1_anom_db":
+        return signed_effect(-round(value, 1))
+    if field == "rain_deficit_pct":
+        return signed_effect(round(value * 100))
+    if field == "canal_dist_m":
+        return "raises" if value <= CANAL_DECAY_M else "small"
+    raise ValueError(f"{field} is not a drying driver")
+
+
+def drivers_of(
+    values: Mapping[str, float], weights: Mapping[str, float]
+) -> list[Driver]:
+    present = [field for field in DRIVERS if field in values]
+    found = [
+        Driver(field, driver_effect(field, values[field]), round(weights[field] * 100))
+        for field in present
+    ]
+    return sorted(found, key=lambda driver: -driver.weight_pct)
+
+
+def check_points(points: Sequence[tuple[str, str]], expected: Sequence[Driver]) -> None:
+    wanted = [driver.field for driver in expected]
+    given = [field for field, _ in points]
+    if given != wanted:
+        raise ExplanationRejected(
+            f"points must be {', '.join(wanted)} in that order, got {', '.join(given)}"
+        )
+    for (field, effect), driver in zip(points, expected, strict=True):
+        if effect != driver.effect:
+            raise ExplanationRejected(
+                f"{field} effect is {effect}, the data says {driver.effect}"
+            )
 
 
 @dataclass(frozen=True)

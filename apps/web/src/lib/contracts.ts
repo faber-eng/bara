@@ -181,10 +181,21 @@ export type RankingComponents = {
   peat_class: 1 | 2;
 };
 
+export const EXPLANATION_EFFECTS = ["raises", "lowers", "small"] as const;
+export type ExplanationEffect = (typeof EXPLANATION_EFFECTS)[number];
+
+export type ExplanationPoint = {
+  field: string;
+  effect: ExplanationEffect;
+  text: string;
+};
+
 export type RankExplanation = {
   text: string;
   cited: { [field: string]: Scalar };
   prompt_version?: string | null;
+  summary?: string | null;
+  points?: ExplanationPoint[];
 };
 
 export type RankedCell = {
