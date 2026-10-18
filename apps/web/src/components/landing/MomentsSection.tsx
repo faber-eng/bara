@@ -1,6 +1,6 @@
 import type { LandingCopy, LandingMoment } from "../../lib/copy/landing";
 
-const TITLE_ID = "landing-moments-title";
+const TITLE_ID = "landing-solution-title";
 
 type MomentProps = { moment: LandingMoment; tone: "tile-sage" | "tile-peach" };
 
@@ -8,16 +8,12 @@ function Moment({ moment, tone }: MomentProps) {
   return (
     <article className={`tile ${tone} landing-moment`}>
       <h3 className="serif landing-moment-title">{moment.when}</h3>
-      <p className="landing-chips">
-        <span className="chip chip-plain">{moment.signal}</span>
-        <span className="chip chip-plain landing-chip-action">{moment.action}</span>
-      </p>
       <p>{moment.body}</p>
     </article>
   );
 }
 
-export function MomentsSection({ copy }: { copy: LandingCopy["moments"] }) {
+export function MomentsSection({ copy }: { copy: LandingCopy["solution"] }) {
   return (
     <section className="landing-moments" aria-labelledby={TITLE_ID}>
       <div className="wrap">

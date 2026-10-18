@@ -5,13 +5,7 @@ import { TOUR_STEPS } from "../../lib/tour/steps";
 import { finishTour, goToStep, skipTour } from "../../lib/tour/store";
 import { renderApp, stubApi } from "../../test-utils";
 
-const SECTION_TITLES = [
-  "Wet peat is safe. Dry peat is fuel.",
-  "Before the dry season, and after a fire looks out.",
-  "Five steps, from a satellite signal to a person with a task.",
-  "What we measured, and where it falls short.",
-  "Tested on data. Not yet in the field.",
-];
+const SECTION_TITLES = ["Why dry peat burns", "What Bara does", "Why we built it", "See it work"];
 
 function internalHrefs(): string[] {
   const hrefs = Array.from(document.querySelectorAll("main a")).map((link) =>
@@ -57,17 +51,49 @@ describe("landing pamphlet", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows which steps the AI does and which people do", async () => {
+  it("tells the two moments once", async () => {
     stubApi({});
     renderApp("/");
 
-    const loop = await screen.findByRole("list", { name: "The five steps" });
-    const steps = within(loop).getAllByRole("listitem");
-    expect(steps).toHaveLength(5);
-    for (const step of steps) {
-      expect(within(step).getByText("AI does")).toBeInTheDocument();
-      expect(within(step).getByText("People do")).toBeInTheDocument();
-    }
+    const solution = await screen.findByRole("region", { name: SECTION_TITLES[1] });
+    expect(
+      within(solution)
+        .getAllByRole("heading", { level: 3 })
+        .map((h) => h.textContent),
+    ).toEqual(["Before the dry season", "After a fire looks out"]);
+  });
+
+  it("has no loop, proof or where-it-runs section", async () => {
+    stubApi({});
+    renderApp("/");
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.queryByRole("list", { name: "The five steps" })).not.toBeInTheDocument();
+    expect(screen.queryByText("2.68x")).not.toBeInTheDocument();
+    expect(screen.queryByText(/field programme/)).not.toBeInTheDocument();
+  });
+
+  it("closes with a tour button and a link to the public page", async () => {
+    stubApi({});
+    const { router } = renderApp("/");
+
+    const closing = await screen.findByRole("region", { name: SECTION_TITLES[3] });
+    expect(within(closing).getByRole("link", { name: "Open the public page" })).toHaveAttribute(
+      "href",
+      "/public",
+    );
+    fireEvent.click(within(closing).getByRole("button", { name: "Take the tour" }));
+
+    expect(await screen.findByText(`Step 1 of ${TOUR_STEPS.length}`)).toBeInTheDocument();
+    expect(router.history.location.pathname).toBe("/public");
+  });
+
+  it("says the work is tested on data, not yet in the field", async () => {
+    stubApi({});
+    renderApp("/");
+
+    const why = await screen.findByRole("region", { name: SECTION_TITLES[2] });
+    expect(within(why).getByText(/not yet in the field/)).toBeInTheDocument();
   });
 
   it("keeps the tour buttons and their actions", async () => {
@@ -95,47 +121,10 @@ describe("landing pamphlet", () => {
     ).toBeInTheDocument();
   });
 
-  it("states the eval numbers with their sample sizes", async () => {
-    stubApi({});
-    renderApp("/");
-
-    const proof = await screen.findByRole("region", { name: SECTION_TITLES[3] });
-    expect(within(proof).getByText("2.68x")).toBeInTheDocument();
-    expect(within(proof).getByText("2.36x")).toBeInTheDocument();
-    expect(within(proof).getByText("3,573")).toBeInTheDocument();
-    expect(within(proof).getByText("82.5%")).toBeInTheDocument();
-    expect(within(proof).getByText("n = 40 photos")).toBeInTheDocument();
-    expect(within(proof).getByText("9 of 9")).toBeInTheDocument();
-    expect(within(proof).getByRole("link", { name: "How well it works" })).toHaveAttribute(
-      "href",
-      "/public",
-    );
-  });
-
-  it("says the re-ignition model does not beat the simple rule", async () => {
-    stubApi({});
-    renderApp("/");
-
-    expect(
-      await screen.findByText(
-        "The re-ignition model does not beat a simple rule yet. On the test fires it scored AUC 0.662; ranking by days of detection scored 0.708. Only 13 of 118 fires came back, so the gap is inside the noise. We show both.",
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("says where it runs and that there is no field programme", async () => {
-    stubApi({});
-    renderApp("/");
-
-    expect(await screen.findByText(/We do not run a field programme there\./)).toBeInTheDocument();
-    expect(screen.getByText("Drying ranking and map only.")).toBeInTheDocument();
-    expect(screen.getByText(/CC BY-NC-SA 4\.0/)).toBeInTheDocument();
-  });
-
   it("links only to routes that exist", async () => {
     stubApi({});
     const { router } = renderApp("/");
-    await screen.findByRole("navigation", { name: "Open a screen" });
+    await screen.findByRole("heading", { level: 1 });
 
     const hrefs = internalHrefs();
     expect(hrefs.length).toBeGreaterThan(0);
@@ -165,8 +154,9 @@ describe("landing pamphlet", () => {
         name: "Bara menemukan gambut yang mulai kering dan mengirim orang untuk mengeceknya sebelum terbakar.",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Hanya peringkat kering dan peta.")).toBeInTheDocument();
-    expect(screen.getByText(/AUC model 0,662/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Kenapa kami membuatnya" }),
+    ).toBeInTheDocument();
   });
 
   it("switches language from the toggle", async () => {
@@ -178,7 +168,7 @@ describe("landing pamphlet", () => {
     expect(
       await screen.findByRole("heading", {
         level: 2,
-        name: "Gambut basah aman. Gambut kering jadi bahan bakar.",
+        name: "Kenapa gambut kering mudah terbakar",
       }),
     ).toBeInTheDocument();
   });
