@@ -7,7 +7,7 @@ import { useCopyLanguage } from "../../lib/copy/language";
 import { type VolunteerCopy, volunteerCopy } from "../../lib/copy/volunteer";
 import { LanguageToggle } from "../LanguageToggle";
 import { InlineLoading } from "../LoadingPanel";
-import { ChatThread, type ThreadEntry, threadEntries } from "./ChatThread";
+import { ChatThread, type SentEntry, threadEntries } from "./ChatThread";
 import { inboxQuery } from "./inboxQuery";
 import { OutboxStatus } from "./OutboxStatus";
 import { ReplyBar } from "./ReplyBar";
@@ -33,17 +33,24 @@ type InboxViewProps = {
 
 function InboxView({ copy, volunteerId, inbox, nowMs }: InboxViewProps) {
   const language = useCopyLanguage();
-  const [sent, setSent] = useState<ThreadEntry[]>([]);
+  const [sent, setSent] = useState<SentEntry[]>([]);
   const openTasks = inbox.tasks.filter(isShown);
   const entries = threadEntries(inbox.messages, sent, language);
 
-  function handleSent(text: string) {
-    setSent((previous) => [...previous, { id: `sent-${previous.length}`, mine: true, text }]);
+  function handleSent(text: string, receivedCount: number) {
+    const entry: SentEntry = {
+      id: `sent-${sent.length}`,
+      mine: true,
+      text,
+      at: new Date().toISOString(),
+      after: receivedCount,
+    };
+    setSent((previous) => [...previous, entry]);
   }
 
   return (
     <>
-      <ChatThread copy={copy} entries={entries} />
+      <ChatThread copy={copy} language={language} entries={entries} />
       {openTasks.length === 0 && (
         <div className="empty-box">
           <h2>{copy.emptyTitle}</h2>
@@ -60,7 +67,12 @@ function InboxView({ copy, volunteerId, inbox, nowMs }: InboxViewProps) {
           nowMs={nowMs}
         />
       ))}
-      <ReplyBar copy={copy} volunteerId={volunteerId} onSent={handleSent} />
+      <ReplyBar
+        copy={copy}
+        volunteerId={volunteerId}
+        receivedCount={inbox.messages.length}
+        onSent={handleSent}
+      />
     </>
   );
 }
