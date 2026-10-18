@@ -199,3 +199,11 @@ def test_the_stored_model_is_the_one_that_answered():
     world = World([answered])
 
     assert world.write().model == "gemini-2.5-flash"
+
+
+def test_the_bulletin_call_thinks_at_the_lowest_level():
+    from casework.bulletin import generation_config
+
+    level = generation_config().thinking_config.thinking_level
+
+    assert level == types.ThinkingLevel.MINIMAL

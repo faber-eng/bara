@@ -1,14 +1,18 @@
 import math
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from contracts import RankExplanation
 
-EXPLAIN_PROMPT_VERSION = "explain-v2"
+EXPLAIN_PROMPT_VERSION = "explain-v3"
 METRES_PER_KM = 1000
-NUMBER = re.compile(r"(?<![\w.-])-?\d+(?:\.\d+)?(?![\w])")
+NUMBER = re.compile(r"(?<![\w.-])(-?\d+(?:\.\d+)?)(?:st|nd|rd|th)?(?![\w])")
 EXACT_TOLERANCE = 1e-9
+SCORE_SCALE = "of 100"
+LEAD_FIELD = "rank"
+ORDINAL_SUFFIXES = {1: "st", 2: "nd", 3: "rd"}
+TEEN_ORDINALS = range(11, 14)
 
 FIELDS = (
     "drying_score",
@@ -26,7 +30,7 @@ FIELD_WORDS = {
     "rank": "rank this week",
     "s1_anom_db": "radar dryness signal",
     "rain_30d_mm": "rainfall over the past month",
-    "rain_deficit_pct": "rain deficit",
+    "rain_deficit_pct": "rain over the past month compared with normal",
     "canal_dist_m": "distance to the nearest canal",
     "peat_class": "peat class",
 }
@@ -41,9 +45,12 @@ class Shown:
     number: float
     digits: str
     unit: str
+    phrase: str | None = None
 
     @property
     def written(self) -> str:
+        if self.phrase is not None:
+            return self.phrase
         if self.unit in ("", "%"):
             return f"{self.digits}{self.unit}"
         return f"{self.digits} {self.unit}"
@@ -83,11 +90,43 @@ def shown_distance(metres: float) -> Shown:
 
 
 def shown_score(value: float) -> Shown:
-    return shown_decimal(value, "")
+    shown = shown_decimal(value, "")
+    return replace(shown, phrase=f"{shown.digits} {SCORE_SCALE}")
 
 
 def shown_count(value: float) -> Shown:
     return shown_whole(value, "")
+
+
+def ordinal(number: int) -> str:
+    if number % 100 in TEEN_ORDINALS:
+        return f"{number}th"
+    return f"{number}{ORDINAL_SUFFIXES.get(number % 10, 'th')}"
+
+
+def rank_phrase(rank: int, region: str) -> str:
+    place = f"in {region.title()} this week"
+    if rank == 1:
+        return f"drying faster than any other area {place}"
+    return f"the {ordinal(rank)} fastest-drying area {place}"
+
+
+def shown_rank(value: float, region: str) -> Shown:
+    shown = shown_count(value)
+    return replace(shown, phrase=rank_phrase(int(shown.number), region))
+
+
+def rain_phrase(shown: Shown, fraction: float) -> str:
+    if shown.number == 0:
+        return f"rain close to normal ({shown.written} difference)"
+    if fraction > 0:
+        return f"{shown.written} less rain than normal"
+    return f"{shown.written} more rain than normal"
+
+
+def shown_rain_deficit(fraction: float) -> Shown:
+    shown = shown_percent(abs(fraction))
+    return replace(shown, phrase=rain_phrase(shown, fraction))
 
 
 def shown_decibels(value: float) -> Shown:
@@ -104,17 +143,22 @@ def shown_percent(fraction: float) -> Shown:
 
 SHOWERS = {
     "drying_score": shown_score,
-    "rank": shown_count,
     "s1_anom_db": shown_decibels,
     "rain_30d_mm": shown_millimetres,
-    "rain_deficit_pct": shown_percent,
+    "rain_deficit_pct": shown_rain_deficit,
     "canal_dist_m": shown_distance,
     "peat_class": shown_count,
 }
 
 
-def shown_values(values: Mapping[str, float]) -> dict[str, Shown]:
-    return {field: SHOWERS[field](value) for field, value in values.items()}
+def shown_value(field: str, value: float, region: str) -> Shown:
+    if field == LEAD_FIELD:
+        return shown_rank(value, region)
+    return SHOWERS[field](value)
+
+
+def shown_values(values: Mapping[str, float], region: str) -> dict[str, Shown]:
+    return {field: shown_value(field, value, region) for field, value in values.items()}
 
 
 def matches_value(token: str, value: float) -> bool:
@@ -122,7 +166,7 @@ def matches_value(token: str, value: float) -> bool:
 
 
 def numbers_in(text: str, cell_id: str) -> list[str]:
-    return NUMBER.findall(text.replace(cell_id, " "))
+    return NUMBER.findall(text.replace(cell_id, " ").replace(SCORE_SCALE, " "))
 
 
 def check_cited(cited: Mapping[str, float], facts: Mapping[str, float]) -> None:
@@ -155,9 +199,28 @@ def check_units(text: str, cited: Mapping[str, float], shown: Mapping[str, Shown
             raise ExplanationRejected(f"cited {field} is not written with {fact.unit}")
 
 
+def phrased_fields(cited: Mapping[str, float], shown: Mapping[str, Shown]) -> set[str]:
+    fields = set(cited)
+    if LEAD_FIELD in shown:
+        fields.add(LEAD_FIELD)
+    return {field for field in fields if shown[field].phrase is not None}
+
+
+def check_phrases(
+    text: str, cited: Mapping[str, float], shown: Mapping[str, Shown]
+) -> None:
+    lowered = text.lower()
+    for field in sorted(phrased_fields(cited, shown)):
+        if shown[field].written.lower() not in lowered:
+            raise ExplanationRejected(
+                f'{field} is not written as "{shown[field].written}"'
+            )
+
+
 def check_explanation(
     text: str, cited: Mapping[str, float], shown: Mapping[str, Shown], cell_id: str
 ) -> None:
     check_cited(cited, {field: fact.number for field, fact in shown.items()})
     check_numbers(text, cited, cell_id)
     check_units(text, cited, shown)
+    check_phrases(text, cited, shown)

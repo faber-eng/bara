@@ -11,6 +11,7 @@ from google.genai import errors, types
 from pydantic import BaseModel, Field, ValidationError
 
 from adapters.firestore_repos import BulletinRepository
+from adapters.gemini import minimal_thinking
 from casework.messenger import sentence_count
 from config import Role
 from contracts import Bulletin, CitedValue, PublicSummary
@@ -113,6 +114,7 @@ def generation_config() -> types.GenerateContentConfig:
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
         response_schema=BulletinOutput,
+        thinking_config=minimal_thinking(),
     )
 
 
