@@ -60,13 +60,20 @@ async function withStore<T>(
   }
 }
 
+let lastQueuedAt = 0;
+
+function nextQueuedAt(): number {
+  lastQueuedAt = Math.max(Date.now(), lastQueuedAt + 1);
+  return lastQueuedAt;
+}
+
 export async function addOutboxItem(item: NewOutboxItem): Promise<string> {
   const id = crypto.randomUUID();
   const { blob, ...rest } = item;
   const stored: StoredItem = {
     ...rest,
     id,
-    queuedAt: Date.now(),
+    queuedAt: nextQueuedAt(),
     bytes: await blob.arrayBuffer(),
     blobType: blob.type,
   };
