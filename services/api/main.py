@@ -264,6 +264,7 @@ def build_agent_service(
     gateway: ModelGateway,
     checker: EvidenceChecker,
     escalator: Escalator,
+    area_ranker: AreaRanker,
 ) -> AgentService:
     return AgentService(
         model=build_agent_model(settings),
@@ -276,6 +277,7 @@ def build_agent_service(
             checker=checker,
             escalator=escalator,
             reviewer=build_review_desk(settings, adapters, gateway, escalator),
+            area_ranker=area_ranker,
             radius_m=settings.grid_cell_m,
         ),
         cases=adapters.cases,
@@ -499,8 +501,14 @@ def create_app() -> FastAPI:
     )
     checker = build_checker(settings, app.state.adapters, gateway)
     escalator = build_escalator(app.state.adapters, gateway)
+    app.state.area_ranker = build_area_ranker(settings)
     app.state.agent = build_agent_service(
-        settings, app.state.adapters, gateway, checker, escalator
+        settings,
+        app.state.adapters,
+        gateway,
+        checker,
+        escalator,
+        app.state.area_ranker,
     )
     app.state.dispatcher = build_dispatcher(
         settings,
@@ -535,6 +543,5 @@ def create_app() -> FastAPI:
     )
     app.state.public_queries = public_queries
     app.state.tiles = build_tiles(settings, app.state.adapters)
-    app.state.area_ranker = build_area_ranker(settings)
     app.state.utcnow = utcnow
     return app

@@ -788,3 +788,13 @@ def make_public_summary(**overrides):
         ),
     }
     return PublicSummary(**{**fields, **overrides})
+
+
+class UnusedAreaRanker:
+    async def rank_within_deadline(self, uid, raw):
+        raise AssertionError("the area ranker must not be called")
+
+
+class FakeToolContext:
+    def __init__(self):
+        self.state = {}

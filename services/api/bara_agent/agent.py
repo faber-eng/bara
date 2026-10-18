@@ -21,6 +21,7 @@ from bara_agent.tools.get_area_facts import GetAreaFacts
 from bara_agent.tools.rank_areas import RankAreas
 from bara_agent.tools.request_human_review import RequestHumanReview, ReviewSource
 from bara_agent.tools.result import ToolResult
+from bara_agent.tools.run_area_ranking import AreaRankingSource, RunAreaRanking
 
 
 class AgentTool(Protocol):
@@ -58,6 +59,7 @@ def build_tools(
     checker: Checker,
     escalator: EscalationSource,
     reviewer: ReviewSource,
+    area_ranker: AreaRankingSource,
     radius_m: float,
 ) -> list[AgentTool]:
     return [
@@ -68,4 +70,5 @@ def build_tools(
         CheckEvidence(checker),
         Escalate(escalator),
         RequestHumanReview(reviewer),
+        RunAreaRanking(area_ranker),
     ]

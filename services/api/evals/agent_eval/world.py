@@ -10,7 +10,15 @@ from adapters.firestore_repos import (
 from bara_agent.agent import AgentTool, build_tools
 from casework.assignment import Assignment, AssignmentRequest
 from casework.evidence_check import CheckedEvidence, UnknownEvidence
-from contracts import Dam, Escalation, GeoPoint, RankedCell, Volunteer
+from contracts import (
+    AreaCell,
+    AreaRanking,
+    Dam,
+    Escalation,
+    GeoPoint,
+    RankedCell,
+    Volunteer,
+)
 from evals.agent_eval.scenarios import NOW, Scenario
 from tests.fakes import InMemoryCollection, make_escalation, make_message, make_task
 
@@ -70,6 +78,28 @@ class AcceptingEscalator:
         )
 
 
+class FixedAreaRanker:
+    async def rank_within_deadline(self, uid: str, raw: object) -> AreaRanking:
+        return AreaRanking(
+            status="ranked",
+            region="riau",
+            week="2026-W42",
+            polygon_hash="a" * 64,
+            area_km2=96.2,
+            peat_cells=88,
+            cells=[
+                AreaCell(
+                    cell_id="riau-area-1",
+                    centroid=GeoPoint(lat=0.52, lon=102.03),
+                    drying_score=83.4,
+                    rank=1,
+                )
+            ],
+            tile_url_template=None,
+            cached=False,
+        )
+
+
 class AcceptingReviewer:
     def request(self, case_id: str, reason: str) -> None:
         return None
@@ -123,5 +153,6 @@ def build_world_tools(
         checker=FixedChecker(checked),
         escalator=AcceptingEscalator(),
         reviewer=AcceptingReviewer(),
+        area_ranker=FixedAreaRanker(),
         radius_m=radius_m,
     )

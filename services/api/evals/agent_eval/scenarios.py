@@ -22,6 +22,7 @@ NOW = datetime(2026, 10, 18, 3, 0, tzinfo=UTC)
 OPENED_AT = NOW - timedelta(days=3)
 EVIDENCE_TRIGGER = "evidence.received"
 OVERDUE_TRIGGER = "task.overdue"
+AREA_TRIGGER = "area.check"
 LOW_DRYING = 41.0
 HIGH_DRYING = 91.0
 REVIEW_DRYING = 72.0
@@ -337,6 +338,38 @@ def location_mismatch_goes_to_review() -> Scenario:
     )
 
 
+def drawn_square(west: float, south: float, side: float) -> dict[str, object]:
+    east, north = round(west + side, 4), round(south + side, 4)
+    ring = [[west, south], [east, south], [east, north], [west, north], [west, south]]
+    return {"type": "Polygon", "coordinates": [ring]}
+
+
+def area_check_ranks_the_drawn_area() -> Scenario:
+    slug = "area_check_ranks_the_drawn_area"
+    point = centroid(9)
+    dam = scenario_dam(slug, point)
+    case = make_case(
+        id=case_id(slug),
+        cell_id=cell_id(9),
+        dam_id=dam.id,
+        risk=CaseRisk(drying_score=LOW_DRYING, p_reignite=None),
+        opened_at=OPENED_AT,
+    )
+    area = drawn_square(102.0, 0.5, 0.09)
+    return Scenario(
+        id=slug,
+        trigger=AREA_TRIGGER,
+        case=case,
+        centroid=point,
+        dam=dam,
+        event={"case_id": case.id, "area": area},
+        people=(),
+        expected=(
+            ExpectedCall("run_area_ranking", {"coordinates": area["coordinates"]}),
+        ),
+    )
+
+
 def build_scenarios() -> list[Scenario]:
     return [
         dam_broken_assigns_repair(),
@@ -347,4 +380,5 @@ def build_scenarios() -> list[Scenario]:
         second_overdue_escalates(),
         recheck_smoke_escalates(),
         location_mismatch_goes_to_review(),
+        area_check_ranks_the_drawn_area(),
     ]

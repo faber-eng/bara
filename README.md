@@ -130,7 +130,7 @@ Full tables, method and the per-case results are in [`docs/EVAL.md`](./docs/EVAL
 | Re-ignition model, test split (118 events, 13 positives) | AUC 0.662 for `reignition_v1`; the detection-days baseline scores 0.708 and wins |
 | Photo verdicts (n = 40) | `dam_state` 82.5%, `smoke` 80%, `subject` 75% |
 | Voice verdicts (n = 10) | `subject` 100%, `dam_state` 100% |
-| ADK agent cases | 8 of 8 pass |
+| ADK agent cases | 9 of 9 pass |
 
 The 2026 lift and the re-ignition result are weak. EVAL.md says so and explains why.
 

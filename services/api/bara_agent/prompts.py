@@ -8,7 +8,7 @@ from bara_agent.output import ToolName
 from contracts import Case, CaseType, Dam, TaskType, VolunteerRole
 from domain.escalation import DRYING_LIMIT, REIGNITE_LIMIT, REPEAT_ATTEMPT
 
-PROMPT_VERSION = "agent-v6"
+PROMPT_VERSION = "agent-v7"
 AGENT_NAME = "bara_coordinator"
 CASE_TYPE: CaseType = "dam_risk"
 PEOPLE_ROLE: VolunteerRole = "volunteer"
@@ -75,6 +75,11 @@ the case id and a reason that says the reassignment failed.
 4. If no other person is found, call escalate once with the case id and a \
 reason that says nobody else is available.
 
+## When the trigger is area.check
+The event holds area, a GeoJSON Polygon an ops user drew. Call run_area_ranking \
+once with the coordinates of the event area and call no other tool. Never call \
+run_area_ranking for the case cell or the weekly ranked cells: rank_areas has them.
+
 ## Rules
 - Every number you write must come from a tool result or the run input of this \
 run. Never estimate a number or take one from memory.
@@ -91,7 +96,7 @@ window's value or null.
 - rain_30d_mm: rain in the last 30 days, in millimetres.
 - rain_deficit_pct: a fraction, not a percent. 0.62 means 62% less rain than \
 normal; a negative value means more rain than normal.
-- canal_dist_m and distance_m: metres.
+- canal_dist_m and distance_m: metres. area_km2: square kilometres.
 - peat_class: 1 or 2. Class 1 weighs more in the drying score than class 2.
 - example: true for a sample person or dam, false for a real one.
 - deadline_at: when the assigned task is due, ISO 8601 with a UTC offset.
