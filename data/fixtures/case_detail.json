@@ -142,6 +142,7 @@
       "status": "done"
     }
   ],
+  "assignee_names": { "vol-ari": "Ari", "team-sari": "Sari" },
   "timeline": [
     { "at": "2026-07-20T08:05:00+07:00", "text": "Case opened. Ari asked to check the dam by 23 Jul." },
     { "at": "2026-07-20T10:42:00+07:00", "text": "Dam reported broken in riau-0412." },

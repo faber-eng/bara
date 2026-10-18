@@ -168,7 +168,7 @@ describe("CaseItemDetail", () => {
       timeLeft.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(action.compareDocumentPosition(why) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText(/^Assigned to /)).toBeInTheDocument();
+    expect(screen.getByText("Assigned to Sari")).toBeInTheDocument();
     expect(screen.getByText("What it is").closest("details")).not.toHaveAttribute("open");
   });
 

@@ -88,6 +88,7 @@ class CaseQueries:
         )
         evidence = sorted(self._evidence.for_cases([case_id]), key=lambda item: item.id)
         runs = self._runs.for_case(case_id)
+        names = self._volunteers.names(assignee_ids(tasks))
         return CaseDetail(
             case=case,
             tasks=tasks,
@@ -100,8 +101,9 @@ class CaseQueries:
                 runs,
                 self._escalations.for_case(case_id),
                 self._messages.notes_for_case(case_id),
-                self._volunteers.names(assignee_ids(tasks)),
+                names,
             ),
+            assignee_names=names,
         )
 
     def _signed(self, evidence: Evidence) -> SignedEvidence:

@@ -729,6 +729,23 @@ def test_case_detail_timeline_names_the_assignee(settings):
     assert any(text.startswith("Task given to Ari Wijaya: ") for text in texts)
 
 
+def test_case_detail_sends_assignee_names_and_skips_unknown_ids(settings):
+    world = World()
+    world.add_case("c1", status="monitoring", opened_at=REAL_NOW)
+    world.volunteers.put("vol-ari", make_volunteer(id="vol-ari", name="Ari"))
+    for task_id, assignee in (("t1", "vol-ari"), ("t2", "team-ghost")):
+        world.tasks.put(
+            task_id,
+            make_task(
+                id=task_id, case_id="c1", assignee_id=assignee, created_at=REAL_NOW
+            ),
+        )
+
+    body = world.client(settings).get("/api/cases/c1", headers=OPS).json()
+
+    assert body["assignee_names"] == {"vol-ari": "Ari"}
+
+
 def test_case_detail_timeline_shows_the_brigade_ack(settings):
     world = World()
     world.add_case("c1", status="monitoring", opened_at=REAL_NOW)
