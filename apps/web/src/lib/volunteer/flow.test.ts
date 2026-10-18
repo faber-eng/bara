@@ -85,4 +85,14 @@ describe("flowReducer", () => {
   it("starts a recording only after preparing", () => {
     expect(flowReducer(IDLE, { type: "recording_started" })).toBe(IDLE);
   });
+
+  it("asks for the microphone, then allows it, then records", () => {
+    const asked = run([{ type: "preparing" }, { type: "mic_gate_opened" }]);
+    expect(asked).toEqual({ step: "mic_gate", allowed: false });
+    const allowed = flowReducer(asked, { type: "mic_allowed" });
+    expect(allowed).toEqual({ step: "mic_gate", allowed: true });
+    expect(run([{ type: "preparing" }, { type: "recording_started" }], allowed)).toEqual({
+      step: "recording",
+    });
+  });
 });

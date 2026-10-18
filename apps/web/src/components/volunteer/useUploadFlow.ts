@@ -10,6 +10,11 @@ import { resizePhoto } from "../../lib/volunteer/image";
 import { addOutboxItem } from "../../lib/volunteer/outbox";
 import {
   baseContentType,
+  MicError,
+  type MicErrorKind,
+  micKindOf,
+  readMicPermission,
+  requestMicrophoneAccess,
   startVoiceRecording,
   type VoiceRecorder,
 } from "../../lib/volunteer/recorder";
@@ -33,6 +38,8 @@ export type UploadFlow = {
   sendPhoto: () => Promise<void>;
   chooseSample: (item: SampleItem) => Promise<void>;
   chooseVideo: (file: Blob) => Promise<void>;
+  askMicrophone: () => Promise<void>;
+  allowMicrophone: () => Promise<void>;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
   retry: () => Promise<void>;
@@ -51,6 +58,18 @@ const VIDEO_FAILURES: Record<VideoRefusal, FailureReason> = {
   size: "video_big",
   long: "video_long",
 };
+
+const MIC_FAILURES: Record<MicErrorKind, FailureReason> = {
+  denied: "mic_denied",
+  no_device: "mic_no_device",
+  busy: "mic_busy",
+  unsupported: "mic_unsupported",
+  recorder_failed: "mic_failed",
+};
+
+function micFailureOf(error: unknown): FailureReason {
+  return MIC_FAILURES[error instanceof MicError ? error.kind : micKindOf(error)];
+}
 
 function newPending(blob: Blob, kind: EvidenceKind, sample: boolean): Pending {
   return { blob, kind, sample, ticket: null, capturedAt: new Date().toISOString() };
@@ -215,8 +234,26 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
       }
       recorder.current = started;
       dispatch({ type: "recording_started" });
-    } catch {
-      fail("mic");
+    } catch (error) {
+      fail(micFailureOf(error));
+    }
+  }
+
+  async function askMicrophone() {
+    dispatch({ type: "preparing" });
+    const permission = await readMicPermission();
+    if (cancelled.current) return;
+    if (permission === "denied") fail("mic_denied");
+    else if (permission === "granted") await startRecording();
+    else dispatch({ type: "mic_gate_opened" });
+  }
+
+  async function allowMicrophone() {
+    try {
+      await requestMicrophoneAccess();
+      dispatch({ type: "mic_allowed" });
+    } catch (error) {
+      fail(micFailureOf(error));
     }
   }
 
@@ -228,8 +265,8 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
       const blob = await active.stop();
       if (blob.size === 0) throw new Error("The recording is empty");
       await send(newPending(blob, "audio", false));
-    } catch {
-      fail("mic");
+    } catch (error) {
+      fail(micFailureOf(error));
     }
   }
 
@@ -248,6 +285,8 @@ export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
     sendPhoto,
     chooseSample,
     chooseVideo,
+    askMicrophone,
+    allowMicrophone,
     startRecording,
     stopRecording,
     retry,

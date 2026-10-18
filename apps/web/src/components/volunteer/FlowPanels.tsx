@@ -109,7 +109,11 @@ const FAILURE_TEXT: Record<FailureReason, (copy: VolunteerCopy) => string> = {
   prepare: (copy) => copy.prepareFailed,
   upload: (copy) => copy.uploadFailed,
   read: (copy) => copy.readFailed,
-  mic: (copy) => copy.micDenied,
+  mic_denied: (copy) => copy.micDenied,
+  mic_no_device: (copy) => copy.micNoDevice,
+  mic_busy: (copy) => copy.micBusy,
+  mic_unsupported: (copy) => copy.micUnsupported,
+  mic_failed: (copy) => copy.micFailed,
   video_long: (copy) => copy.videoTooLong,
   video_big: (copy) => copy.videoTooBig,
   video_type: (copy) => copy.videoType,
@@ -132,6 +136,33 @@ export function FailurePanel({ copy, reason, onRetry, onReset }: FailureProps) {
         </button>
       )}
       <button type="button" className="btn btn-secondary btn-block" onClick={onReset}>
+        {copy.back}
+      </button>
+    </div>
+  );
+}
+
+type MicGateProps = CopyProps & {
+  allowed: boolean;
+  onAllow: () => void;
+  onRecord: () => void;
+  onBack: () => void;
+};
+
+export function MicGatePanel({ copy, allowed, onAllow, onRecord, onBack }: MicGateProps) {
+  return (
+    <div className="flow-panel">
+      <p className="proto-note">{allowed ? copy.recordingHint : copy.micAllowHint}</p>
+      {allowed ? (
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={onRecord}>
+          {copy.recordVoice}
+        </button>
+      ) : (
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={onAllow}>
+          {copy.micAllow}
+        </button>
+      )}
+      <button type="button" className="btn btn-secondary btn-block" onClick={onBack}>
         {copy.back}
       </button>
     </div>

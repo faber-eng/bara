@@ -7,6 +7,7 @@ import { kindsForTask, type PickKind, sentKindsFor } from "../../lib/volunteer/e
 import { EvidenceRow } from "./EvidenceRow";
 import {
   FailurePanel,
+  MicGatePanel,
   PhotoPreview,
   QueuedPanel,
   ReadingPanel,
@@ -64,6 +65,17 @@ export function CapturePanel({
       />
     );
   }
+  if (state.step === "mic_gate") {
+    return (
+      <MicGatePanel
+        copy={copy}
+        allowed={state.allowed}
+        onAllow={() => void flow.allowMicrophone()}
+        onRecord={() => void flow.startRecording()}
+        onBack={flow.reset}
+      />
+    );
+  }
   if (state.step === "recording") {
     return <VoiceRecording copy={copy} onStop={() => void flow.stopRecording()} />;
   }
@@ -103,7 +115,7 @@ export function CapturePanel({
 
   function handleAction(kind: PickKind) {
     if (kind === "photo") fileInput.current?.click();
-    if (kind === "voice") void flow.startRecording();
+    if (kind === "voice") void flow.askMicrophone();
     if (kind === "video") videoInput.current?.click();
   }
 
