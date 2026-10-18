@@ -27,6 +27,7 @@ import {
   readRecord,
   readString,
   readStringArray,
+  readStringRecord,
 } from "./parse";
 
 const TASK_TYPES = ["dam_check", "dam_repair", "patrol_recheck"] as const;
@@ -157,6 +158,7 @@ export function parseCaseDetail(body: unknown): CaseDetail {
     evidence: readArray(record.evidence, "case detail.evidence").map(parseEvidence),
     agent_runs: readArray(record.agent_runs, "case detail.agent_runs").map(parseAgentRun),
     timeline: readArray(record.timeline, "case detail.timeline").map(parseTimelineEntry),
+    assignee_names: readStringRecord(record, "assignee_names", "case detail"),
   };
 }
 
@@ -165,7 +167,14 @@ async function loadFixtureDetail(caseId: string): Promise<CaseDetail> {
   if (summary === undefined) throw new ApiError(`GET /api/cases/${caseId} returned 404`, 404);
   const full = parseCaseDetail((await import("@fixtures/case_detail.json")).default);
   if (full.case.id !== caseId) {
-    return { case: summary.case, tasks: [], evidence: [], agent_runs: [], timeline: [] };
+    return {
+      case: summary.case,
+      tasks: [],
+      evidence: [],
+      agent_runs: [],
+      timeline: [],
+      assignee_names: {},
+    };
   }
   return { ...full, case: summary.case };
 }

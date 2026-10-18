@@ -18,6 +18,17 @@ describe("parseCaseDetail", () => {
     expect(parsed.timeline).toHaveLength(3);
   });
 
+  it("reads the assignee names", () => {
+    expect(parseCaseDetail(detail).assignee_names).toEqual({
+      "vol-ari": "Ari",
+      "team-sari": "Sari",
+    });
+  });
+
+  it("rejects a name that is not text", () => {
+    expect(() => parseCaseDetail({ ...detail, assignee_names: { "vol-ari": 4 } })).toThrow();
+  });
+
   it("keeps tool call args as JSON", () => {
     const call = parseCaseDetail(detail).agent_runs[0]?.tool_calls[3];
     expect(call?.args).toEqual({

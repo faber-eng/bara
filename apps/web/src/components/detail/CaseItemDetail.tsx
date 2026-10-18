@@ -5,6 +5,7 @@ import { allCellsQuery, clockQuery } from "../../lib/api/queries";
 import type { CaseDetail, Task } from "../../lib/contracts";
 import { type DetailCopy, detailCopy } from "../../lib/copy/detail";
 import { type CopyLanguage, useCopyLanguage } from "../../lib/copy/language";
+import { assigneeName } from "../../lib/ops/assigneeName";
 import { canCloseCase } from "../../lib/ops/caseDrawer";
 import { ruleEscalationEntries } from "../../lib/ops/timelineOrigin";
 import { useCaseDetail } from "../../lib/ops/useCaseDetail";
@@ -95,7 +96,10 @@ function useCaseRows({ detail, copy, language }: CaseFactsProps): FactRow[] {
 function CaseKeyFact({ detail, copy }: { detail: CaseDetail; copy: DetailCopy }) {
   const task = nextOpenTask(detail.tasks);
   const timeLeft = useTimeLeft(task, copy);
-  const caption = task === null ? undefined : copy.case.assignedTo(task.assignee_id);
+  const caption =
+    task === null
+      ? undefined
+      : copy.case.assignedTo(assigneeName(detail.assignee_names, task.assignee_id));
   return <DetailKeyFact label={copy.facts.timeLeft} value={timeLeft} caption={caption} />;
 }
 

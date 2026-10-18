@@ -263,6 +263,7 @@ export type CaseDetail = {
   evidence: Evidence[];
   agent_runs: AgentRun[];
   timeline: TimelineEntry[];
+  assignee_names: Record<string, string>;
 };
 
 export type CitedValue = { field: string; value: Scalar | null };

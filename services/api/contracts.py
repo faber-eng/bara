@@ -522,6 +522,7 @@ class CaseDetail(Contract):
     evidence: list[SignedEvidence]
     agent_runs: list[AgentRun]
     timeline: list[TimelineEntry]
+    assignee_names: dict[str, str]
 
 
 class UploadRequest(Contract):
