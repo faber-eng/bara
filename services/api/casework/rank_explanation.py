@@ -22,6 +22,7 @@ from domain.rank_explanation import (
     ExplanationRejected,
     Shown,
     check_explanation,
+    check_point_text,
     check_points,
     drivers_of,
     known_values,
@@ -38,6 +39,12 @@ EFFECT_WORDS = {
     "raises": "pushes the score up",
     "lowers": "holds the score down",
     "small": "adds little to the score",
+}
+
+EFFECT_LABELS = {
+    "raises": "Pushes the score up",
+    "lowers": "Holds the score down",
+    "small": "Adds little",
 }
 
 INSTRUCTION = """\
@@ -67,11 +74,10 @@ brackets as "(score" plus its "written" words plus ")".
 2. "points": one entry for each factor fact that has an "effect", in the \
 order the facts list them (largest weight first). Each entry has "field", \
 "effect" (copied from the fact) and "text": one short sentence that copies \
-the factor's "written" words, says what it means on the ground, and ends \
-with the effect's words: {raises_q}, {lowers_q} or {small_q}. A point never \
-says a factor raises the score when its effect is "lowers" or "small", and \
-never the other way round. When a factor holds the score down, the area is \
-still ranked where it is: the stronger factors outweigh it.
+the factor's "written" words and says what it means for the peat on the \
+ground, in the direction of its effect. The screen shows the effect as a \
+label in front of the sentence, so the sentence never says the effect \
+again: never use the word "score", "raises", "lowers" or "pushes".
 3. "cited": one entry for each fact whose digits appear in the summary or \
 the points, with "field" (one of {fields}) and "value" (the fact's \
 "number"). A fact whose written words hold no digits is not cited.
@@ -94,12 +100,11 @@ summary: "This area is the 3rd fastest-drying area in Jambi this week (score \
 88.4 of 100)."
 points: [
 {{"field": "s1_anom_db", "effect": "raises", "text": "The radar dryness \
-signal is -3.6 dB, so the peat surface is drier than usual, which pushes the \
-score up."}},
+signal is -3.6 dB, so the peat surface is drier than usual."}},
 {{"field": "rain_deficit_pct", "effect": "lowers", "text": "It had 12% more \
-rain than normal, which wets the peat and holds the score down."}},
+rain than normal, which keeps the peat wetter."}},
 {{"field": "canal_dist_m", "effect": "raises", "text": "A canal only 95 m \
-away drains the peat, which pushes the score up."}}]
+away drains the peat."}}]
 cited: [{{"field": "rank", "value": 3}}, {{"field": "drying_score", "value": \
 88.4}}, {{"field": "s1_anom_db", "value": -3.6}}, {{"field": \
 "rain_deficit_pct", "value": 12}}, {{"field": "canal_dist_m", "value": 95}}]
@@ -129,9 +134,6 @@ def system_instruction(weights: Mapping[str, float]) -> str:
         raises=EFFECT_WORDS["raises"],
         lowers=EFFECT_WORDS["lowers"],
         small=EFFECT_WORDS["small"],
-        raises_q=f'"{EFFECT_WORDS["raises"]}"',
-        lowers_q=f'"{EFFECT_WORDS["lowers"]}"',
-        small_q=f'"{EFFECT_WORDS["small"]}"',
         fields=", ".join(FIELDS),
     )
 
@@ -229,6 +231,10 @@ def parse_output(response: types.GenerateContentResponse) -> ExplainOutput:
         raise ExplanationRejected(f"the reply is not the schema: {error}") from None
 
 
+def labelled(point: PointEntry) -> str:
+    return f"{EFFECT_LABELS[point.effect]}: {point.text}"
+
+
 def read_reply(
     response: types.GenerateContentResponse,
     shown: dict[str, Shown],
@@ -239,11 +245,12 @@ def read_reply(
     require_one_sentence(output.summary, "summary")
     for point in output.points:
         require_one_sentence(point.text, f"{point.field} point")
+        check_point_text(point.field, point.text)
     check_points([(point.field, point.effect) for point in output.points], drivers)
     cited = {entry.field: entry.value for entry in output.cited}
     if len(cited) != len(output.cited):
         raise ExplanationRejected("a field is cited twice")
-    text = " ".join([output.summary, *(point.text for point in output.points)])
+    text = " ".join([output.summary, *(labelled(point) for point in output.points)])
     check_explanation(text, cited, shown, cell_id)
     points = tuple(
         ExplanationPoint(field=point.field, effect=point.effect, text=point.text)
