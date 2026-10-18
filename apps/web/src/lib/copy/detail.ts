@@ -199,7 +199,7 @@ const EN: DetailCopy = {
   caseTypes: { dam_risk: "Dam risk", reignition: "Re-ignition risk", hotspot: "Hotspot" },
   caseWhat: {
     dam_risk:
-      "A canal dam sits in a peat area that is drying fast. Someone checks the dam before the peat dries out.",
+      "A canal dam sits in a peat area that is drying fast. Someone checks the dam so teams can act before the peat dries out.",
     reignition:
       "A fire here went quiet, but burned peat can smoulder underground and catch fire again. Someone patrols the area.",
     hotspot: "Satellites saw heat here. Someone checks whether the peat is burning.",
@@ -272,7 +272,7 @@ const EN: DetailCopy = {
     title: (id) => `Area ${id}`,
     what: `This square is ${EN_CELL}. Bara ranks it each week by how fast it is drying.`,
     whyMissing:
-      "Dry peat burns easily and is hard to put out. The numbers below show why it ranks here.",
+      "Dry peat burns more easily and is hard to put out. The numbers below show why it ranks here.",
     openCase: "Open its case",
     zoom: "Zoom to area",
     openCaseNote: "Open case: someone is checking this area.",
@@ -296,8 +296,8 @@ const EN: DetailCopy = {
   },
   dam: {
     title: (id) => `Canal dam ${id}`,
-    what: `This circle is ${EN_DAM}. A canal dam holds water in the peat.`,
-    why: "A broken or damaged dam drains the canal, so the peat around it dries faster.",
+    what: `This circle is ${EN_DAM}. A canal dam raises the water in the canal so nearby peat stays moist.`,
+    why: "A broken or damaged dam lets water drain away, so the peat around it can dry faster.",
     showArea: "Show the area",
     openCase: "Open its case",
     missing: "This dam is not in this week's ranking.",
@@ -400,7 +400,7 @@ const ID: DetailCopy = {
   },
   caseWhat: {
     dam_risk:
-      "Ada sekat kanal di petak gambut yang cepat mengering. Seseorang mengecek sekatnya sebelum gambutnya kering.",
+      "Ada sekat kanal di petak gambut yang cepat mengering. Seseorang mengecek sekatnya agar tim sempat bertindak sebelum gambutnya kering.",
     reignition:
       "Api di sini sudah padam, tapi gambut bekas terbakar bisa membara di bawah tanah lalu menyala lagi. Seseorang berpatroli di area ini.",
     hotspot: "Satelit menangkap panas di sini. Seseorang mengecek apakah gambutnya terbakar.",
@@ -475,7 +475,7 @@ const ID: DetailCopy = {
     title: (id) => `Petak ${id}`,
     what: `Kotak ini adalah ${ID_CELL}. Tiap minggu Bara mengurutkannya menurut kecepatan keringnya.`,
     whyMissing:
-      "Gambut kering mudah terbakar dan sulit dipadamkan. Angka di bawah menunjukkan kenapa petak ini ada di peringkat ini.",
+      "Gambut kering lebih mudah terbakar dan sulit dipadamkan. Angka di bawah menunjukkan kenapa petak ini ada di peringkat ini.",
     openCase: "Buka kasusnya",
     zoom: "Perbesar ke petak",
     openCaseNote: "Kasus terbuka: ada orang yang sedang mengecek area ini.",
@@ -495,8 +495,8 @@ const ID: DetailCopy = {
   },
   dam: {
     title: (id) => `Sekat kanal ${id}`,
-    what: `Lingkaran ini adalah ${ID_DAM}. Sekat kanal menahan air di dalam gambut.`,
-    why: "Sekat yang jebol atau rusak membuat air kanal terbuang, jadi gambut di sekitarnya lebih cepat kering.",
+    what: `Lingkaran ini adalah ${ID_DAM}. Sekat kanal menaikkan muka air di kanal supaya gambut di dekatnya tetap lembap.`,
+    why: "Sekat yang jebol atau rusak membuat air kanal terbuang, sehingga gambut di sekitarnya bisa lebih cepat kering.",
     showArea: "Lihat petaknya",
     openCase: "Buka kasusnya",
     missing: "Sekat ini tidak ada di peringkat minggu ini.",
@@ -517,7 +517,7 @@ const ID: DetailCopy = {
     chip: "Perlu dicek",
     decision: "Perlu keputusan",
     keyLine: "Gemini sudah membaca bukti. Seseorang memilih langkah berikutnya.",
-    what: "Relawan mengirim bukti untuk kasus ini. Gemini sudah membacanya, dan seseorang harus memastikan langkah berikutnya.",
+    what: "Relawan mengirim bukti untuk kasus ini. Gemini sudah membacanya, dan seseorang harus menentukan langkah berikutnya.",
     unsure: "Gemini belum yakin, jadi orang yang mengecek",
     sure: "Gemini cukup yakin, tapi kasus ini tetap perlu dicek orang",
     confidence: "Keyakinan Gemini",

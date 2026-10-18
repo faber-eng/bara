@@ -5,7 +5,12 @@ import { TOUR_STEPS } from "../../lib/tour/steps";
 import { finishTour, goToStep, skipTour } from "../../lib/tour/store";
 import { renderApp, stubApi } from "../../test-utils";
 
-const SECTION_TITLES = ["Why dry peat burns", "What Bara does", "Why we built it", "See it work"];
+const SECTION_TITLES = [
+  "Why drying peat is a fire risk",
+  "What Bara does",
+  "Why we built it",
+  "See it work",
+];
 
 function internalHrefs(): string[] {
   const hrefs = Array.from(document.querySelectorAll("main a")).map((link) =>
@@ -29,7 +34,7 @@ describe("landing pamphlet", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Bara finds drying peat and sends a person to check it before it burns.",
+        name: "Bara finds peat that is drying faster than normal and sends a person to check.",
       }),
     ).toBeInTheDocument();
     const titles = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
@@ -44,10 +49,10 @@ describe("landing pamphlet", () => {
     renderApp("/");
 
     expect(
-      await screen.findByRole("img", { name: "Dam works: water stays high, peat stays wet" }),
+      await screen.findByRole("img", { name: "Dam works: water stays high, peat stays moist" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("img", { name: "Dam broken: water drains, top peat dries" }),
+      screen.getByRole("img", { name: "Dam broken: water drains away, top peat dries" }),
     ).toBeInTheDocument();
   });
 
@@ -151,7 +156,7 @@ describe("landing pamphlet", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Bara menemukan gambut yang mulai kering dan mengirim orang untuk mengeceknya sebelum terbakar.",
+        name: "Bara menemukan gambut yang mengering lebih cepat dari biasanya, lalu mengirim orang untuk mengeceknya.",
       }),
     ).toBeInTheDocument();
     expect(
@@ -168,7 +173,7 @@ describe("landing pamphlet", () => {
     expect(
       await screen.findByRole("heading", {
         level: 2,
-        name: "Kenapa gambut kering mudah terbakar",
+        name: "Kenapa gambut yang mengering berisiko terbakar",
       }),
     ).toBeInTheDocument();
   });
