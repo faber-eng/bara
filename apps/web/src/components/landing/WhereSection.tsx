@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import type { LandingCopy } from "../../lib/copy/landing";
-import { SectionHead } from "./SectionHead";
 
 const TITLE_ID = "landing-where-title";
 
@@ -9,16 +8,18 @@ type WhereCopy = LandingCopy["where"];
 function Places({ copy }: { copy: WhereCopy }) {
   return (
     <div className="landing-places">
-      <SectionHead id={TITLE_ID} eyebrow={copy.eyebrow} title={copy.title} />
+      <h2 id={TITLE_ID} className="section-title landing-title landing-title-compact">
+        {copy.title}
+      </h2>
       <dl className="landing-place-list">
         {copy.places.map((place) => (
-          <div key={place.name} className="landing-place">
+          <div key={place.name}>
             <dt>{place.name}</dt>
             <dd>{place.body}</dd>
           </div>
         ))}
       </dl>
-      <p className="landing-small">{copy.licence}</p>
+      <p className="muted landing-note">{copy.licence}</p>
     </div>
   );
 }
@@ -31,10 +32,10 @@ function Screens({ copy }: { copy: WhereCopy }) {
         <ul className="landing-entries">
           {copy.entries.map((entry) => (
             <li key={entry.to}>
-              <Link to={entry.to} className="landing-entry">
-                <span className="landing-entry-label">{entry.label}</span>
-                <span className="landing-entry-note">{entry.note}</span>
+              <Link to={entry.to} className="link landing-entry-label">
+                {entry.label}
               </Link>
+              <span className="muted">{entry.note}</span>
             </li>
           ))}
         </ul>
@@ -45,8 +46,8 @@ function Screens({ copy }: { copy: WhereCopy }) {
 
 export function WhereSection({ copy }: { copy: WhereCopy }) {
   return (
-    <section className="landing-section landing-where" aria-labelledby={TITLE_ID}>
-      <div className="landing-wrap landing-where-grid">
+    <section className="landing-where" aria-labelledby={TITLE_ID}>
+      <div className="wrap landing-where-grid">
         <Places copy={copy} />
         <Screens copy={copy} />
       </div>

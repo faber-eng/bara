@@ -6,12 +6,19 @@ import { type CopyLanguage, useCopyLanguage } from "../../lib/copy/language";
 import { damColor } from "../../lib/ops/cellLayer";
 import { formatSimTime } from "../../lib/simClock";
 import { InlineLoading } from "../LoadingPanel";
-import { DetailActions, DetailLayout, DetailText, FactList } from "./DetailSheet";
+import {
+  DetailAbout,
+  DetailActions,
+  DetailKeyFact,
+  DetailLayout,
+  DetailText,
+  FactSection,
+} from "./DetailSheet";
 import { type FactRow, scoreFact } from "./facts";
 import type { OpsDetail } from "./selection";
 import { useOpenCase } from "./useOpenCase";
 
-export function DamStateChip({
+export function DamStateValue({
   state,
   copy,
 }: {
@@ -19,22 +26,33 @@ export function DamStateChip({
   copy: DetailCopy;
 }) {
   return (
-    <span className="chip chip-plain mv-dam-chip">
+    <span className="mv-dam-chip">
       <span className="mv-swatch-dot" style={{ background: damColor(state) }} aria-hidden="true" />
       {copy.damStates[state]}
     </span>
   );
 }
 
+function lastCheckedCaption(dam: RankedDam, copy: DetailCopy): string {
+  if (dam.last_checked_at === null) return copy.facts.neverChecked;
+  return copy.dam.checkedAt(formatSimTime(dam.last_checked_at));
+}
+
 function damRows(dam: RankedDam, copy: DetailCopy, language: CopyLanguage): FactRow[] {
-  const checked =
-    dam.last_checked_at === null ? copy.facts.neverChecked : formatSimTime(dam.last_checked_at);
   return [
-    { label: copy.facts.lastState, value: copy.damStates[dam.last_state], meaning: null },
-    { label: copy.facts.lastChecked, value: checked, meaning: null },
     scoreFact(dam.drying_score, copy, language),
     { label: copy.facts.rank, value: String(dam.rank), meaning: dam.cell_id },
   ];
+}
+
+function DamKeyFact({ dam, copy }: { dam: RankedDam; copy: DetailCopy }) {
+  return (
+    <DetailKeyFact
+      label={copy.facts.lastState}
+      value={<DamStateValue state={dam.last_state} copy={copy} />}
+      caption={lastCheckedCaption(dam, copy)}
+    />
+  );
 }
 
 type DamBodyProps = {
@@ -49,9 +67,8 @@ function DamBody({ dam, region, copy, language, onOpen }: DamBodyProps) {
   const caseId = useOpenCase(region, (record) => record.dam_id === dam.dam_id);
   return (
     <>
-      <DetailText label={copy.sections.why}>{copy.dam.why}</DetailText>
-      <FactList label={copy.sections.numbers} rows={damRows(dam, copy, language)} />
-      <DetailActions label={copy.sections.next}>
+      <DamKeyFact dam={dam} copy={copy} />
+      <DetailActions>
         <button
           type="button"
           className="btn btn-primary"
@@ -69,6 +86,8 @@ function DamBody({ dam, region, copy, language, onOpen }: DamBodyProps) {
           </button>
         )}
       </DetailActions>
+      <DetailText label={copy.sections.why}>{copy.dam.why}</DetailText>
+      <FactSection label={copy.sections.numbers} rows={damRows(dam, copy, language)} />
     </>
   );
 }
@@ -82,16 +101,13 @@ export function DamDetail({ damId, region, onOpen }: DamDetailProps) {
   const dam = rankings.data?.dams.find((item) => item.dam_id === damId);
 
   return (
-    <DetailLayout
-      title={copy.dam.title(damId)}
-      chips={dam === undefined ? undefined : <DamStateChip state={dam.last_state} copy={copy} />}
-    >
-      <DetailText label={copy.sections.what}>{copy.dam.what}</DetailText>
+    <DetailLayout title={copy.dam.title(damId)}>
       {rankings.isPending && <InlineLoading text="Loading the dam" />}
       {!rankings.isPending && dam === undefined && <p className="mv-note">{copy.dam.missing}</p>}
       {dam !== undefined && (
         <DamBody dam={dam} region={region} copy={copy} language={language} onOpen={onOpen} />
       )}
+      <DetailAbout label={copy.sections.what}>{copy.dam.what}</DetailAbout>
     </DetailLayout>
   );
 }

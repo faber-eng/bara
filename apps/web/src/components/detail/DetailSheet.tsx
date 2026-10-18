@@ -10,7 +10,7 @@ import {
   useLayoutEffect,
   useRef,
 } from "react";
-import type { FactRow } from "./facts";
+import type { FactGroup, FactRow } from "./facts";
 
 type SheetContext = { titleId: string; closeLabel: string; onClose: () => void };
 
@@ -114,7 +114,7 @@ type SectionProps = { label: string; children: ReactNode };
 export function DetailSection({ label, children }: SectionProps) {
   return (
     <section className="mv-section" aria-label={label}>
-      <h3 className="mv-label">{label}</h3>
+      <h3 className="mv-heading">{label}</h3>
       {children}
     </section>
   );
@@ -125,6 +125,35 @@ export function DetailText({ label, children }: SectionProps) {
     <DetailSection label={label}>
       <p className="mv-text">{children}</p>
     </DetailSection>
+  );
+}
+
+export function DetailAbout({ label, children }: SectionProps) {
+  return (
+    <details className="mv-about">
+      <summary>{label}</summary>
+      <p className="mv-text">{children}</p>
+    </details>
+  );
+}
+
+type KeyFactProps = {
+  label?: string;
+  value: ReactNode;
+  caption?: ReactNode;
+  aside?: ReactNode;
+};
+
+export function DetailKeyFact({ label, value, caption, aside }: KeyFactProps) {
+  return (
+    <div className="mv-keyfact">
+      <div className="mv-keyfact-main">
+        {label !== undefined && <p className="mv-keyfact-label">{label}</p>}
+        <p className="mv-keyfact-value num">{value}</p>
+        {caption !== undefined && <p className="mv-keyfact-caption">{caption}</p>}
+      </div>
+      {aside !== undefined && <div className="mv-keyfact-aside">{aside}</div>}
+    </div>
   );
 }
 
@@ -140,25 +169,43 @@ function FactItem({ row }: { row: FactRow }) {
   );
 }
 
-type FactListProps = { label: string; rows: readonly FactRow[]; children?: ReactNode };
+type FactListProps = { rows: readonly FactRow[]; heading?: string };
 
-export function FactList({ label, rows, children }: FactListProps) {
+export function FactList({ rows, heading }: FactListProps) {
+  if (rows.length === 0) return null;
   return (
-    <DetailSection label={label}>
+    <div className="mv-fact-group">
+      {heading !== undefined && <h4 className="mv-subheading">{heading}</h4>}
       <dl className="mv-facts">
         {rows.map((row) => (
           <FactItem key={row.label} row={row} />
         ))}
       </dl>
-      {children}
+    </div>
+  );
+}
+
+export function FactSection({ label, rows }: { label: string; rows: readonly FactRow[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <DetailSection label={label}>
+      <FactList rows={rows} />
     </DetailSection>
   );
 }
 
-export function DetailActions({ label, children }: SectionProps) {
+type FactGroupsProps = { label: string; groups: readonly FactGroup[] };
+
+export function FactGroupsSection({ label, groups }: FactGroupsProps) {
   return (
     <DetailSection label={label}>
-      <div className="mv-actions">{children}</div>
+      {groups.map((group) => (
+        <FactList key={group.heading} heading={group.heading} rows={group.rows} />
+      ))}
     </DetailSection>
   );
+}
+
+export function DetailActions({ children }: { children: ReactNode }) {
+  return <div className="mv-actions">{children}</div>;
 }

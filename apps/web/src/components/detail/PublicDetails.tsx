@@ -2,15 +2,24 @@ import type { PublicCell, PublicDam } from "../../lib/contracts";
 import type { DetailCopy } from "../../lib/copy/detail";
 import type { CopyLanguage } from "../../lib/copy/language";
 import { formatDay } from "../../lib/public/format";
-import { DamStateChip } from "./DamDetail";
-import { DetailActions, DetailLayout, DetailText, FactList } from "./DetailSheet";
-import { componentFacts, type FactRow, rankChangeMeaning, scoreFact } from "./facts";
+import { DamStateValue } from "./DamDetail";
+import {
+  DetailAbout,
+  DetailActions,
+  DetailKeyFact,
+  DetailLayout,
+  DetailText,
+  FactGroupsSection,
+  FactSection,
+} from "./DetailSheet";
+import { componentGroups, type FactRow, rankChangeMeaning } from "./facts";
+import { ScoreKeyFact } from "./ScoreKeyFact";
 
 type DownloadProps = { copy: DetailCopy; onDownload: () => void };
 
 function DownloadAction({ copy, onDownload }: DownloadProps) {
   return (
-    <DetailActions label={copy.sections.next}>
+    <DetailActions>
       <button type="button" className="btn btn-primary" onClick={onDownload}>
         {copy.publicDetail.download}
       </button>
@@ -18,15 +27,13 @@ function DownloadAction({ copy, onDownload }: DownloadProps) {
   );
 }
 
-function cellRows(cell: PublicCell, copy: DetailCopy, language: CopyLanguage): FactRow[] {
+function cellRows(cell: PublicCell, copy: DetailCopy): FactRow[] {
   return [
-    scoreFact(cell.drying_score, copy, language),
     {
-      label: copy.facts.rank,
-      value: String(cell.rank),
-      meaning: rankChangeMeaning(cell.rank_change, copy),
+      label: copy.facts.rankChange,
+      value: rankChangeMeaning(cell.rank_change, copy),
+      meaning: null,
     },
-    ...componentFacts(cell.components, copy, language),
   ];
 }
 
@@ -43,43 +50,44 @@ export function PublicCellDetail({
   language,
   onDownload,
 }: PublicCellDetailProps) {
+  const groups = [
+    { heading: copy.facts.rank, rows: cellRows(cell, copy) },
+    ...componentGroups(cell.components, copy, language),
+  ];
   return (
-    <DetailLayout
-      title={copy.cell.title(cell.cell_id)}
-      chips={
-        <span className="chip chip-plain">
-          {copy.facts.rank} {cell.rank}
-        </span>
-      }
-    >
-      <DetailText label={copy.sections.what}>{copy.cell.what}</DetailText>
-      <DetailText label={copy.sections.why}>{copy.cell.whyMissing}</DetailText>
-      <FactList label={copy.sections.numbers} rows={cellRows(cell, copy, language)} />
-      {openCase && <p className="mv-note">{copy.cell.openCaseNote}</p>}
+    <DetailLayout title={copy.cell.title(cell.cell_id)}>
+      <ScoreKeyFact
+        score={cell.drying_score}
+        rank={cell.rank}
+        total={null}
+        copy={copy}
+        language={language}
+      />
       <DownloadAction copy={copy} onDownload={onDownload} />
+      {openCase && <p className="mv-note">{copy.cell.openCaseNote}</p>}
+      <DetailText label={copy.sections.why}>{copy.cell.whyMissing}</DetailText>
+      <FactGroupsSection label={copy.sections.numbers} groups={groups} />
+      <DetailAbout label={copy.sections.what}>{copy.cell.what}</DetailAbout>
     </DetailLayout>
   );
 }
 
-function damRows(
-  dam: PublicDam,
-  copy: DetailCopy,
-  language: CopyLanguage,
-  timeZone: string,
-): FactRow[] {
-  const checked =
-    dam.last_checked_at === null
-      ? copy.facts.neverChecked
-      : formatDay(dam.last_checked_at, language, timeZone);
+function damRows(dam: PublicDam, copy: DetailCopy, language: CopyLanguage, timeZone: string) {
   const repair =
     dam.repair_due_at === null
       ? copy.facts.noRepairDue
       : formatDay(dam.repair_due_at, language, timeZone);
-  return [
-    { label: copy.facts.lastState, value: copy.damStates[dam.last_state], meaning: null },
-    { label: copy.facts.lastChecked, value: checked, meaning: null },
-    { label: copy.facts.repairDue, value: repair, meaning: null },
-  ];
+  return [{ label: copy.facts.repairDue, value: repair, meaning: null }];
+}
+
+function checkedCaption(
+  dam: PublicDam,
+  copy: DetailCopy,
+  language: CopyLanguage,
+  timeZone: string,
+) {
+  if (dam.last_checked_at === null) return copy.facts.neverChecked;
+  return copy.dam.checkedAt(formatDay(dam.last_checked_at, language, timeZone));
 }
 
 type PublicDamDetailProps = DownloadProps & {
@@ -96,14 +104,16 @@ export function PublicDamDetail({
   onDownload,
 }: PublicDamDetailProps) {
   return (
-    <DetailLayout
-      title={copy.dam.title(dam.id)}
-      chips={<DamStateChip state={dam.last_state} copy={copy} />}
-    >
-      <DetailText label={copy.sections.what}>{copy.dam.what}</DetailText>
-      <DetailText label={copy.sections.why}>{copy.dam.why}</DetailText>
-      <FactList label={copy.sections.numbers} rows={damRows(dam, copy, language, timeZone)} />
+    <DetailLayout title={copy.dam.title(dam.id)}>
+      <DetailKeyFact
+        label={copy.facts.lastState}
+        value={<DamStateValue state={dam.last_state} copy={copy} />}
+        caption={checkedCaption(dam, copy, language, timeZone)}
+      />
       <DownloadAction copy={copy} onDownload={onDownload} />
+      <DetailText label={copy.sections.why}>{copy.dam.why}</DetailText>
+      <FactSection label={copy.sections.numbers} rows={damRows(dam, copy, language, timeZone)} />
+      <DetailAbout label={copy.sections.what}>{copy.dam.what}</DetailAbout>
     </DetailLayout>
   );
 }

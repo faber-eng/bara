@@ -15,15 +15,14 @@ export function LandingScreen() {
   return (
     <div className="landing">
       <section className="landing-hero">
-        <div className="landing-wrap">
+        <div className="wrap">
           <div className="landing-hero-top">
-            <p className="eyebrow landing-eyebrow">{copy.eyebrow}</p>
             <LanguageToggle label={copy.toggleLabel} />
           </div>
-          <h1 className="landing-h1">{copy.title}</h1>
-          <p className="landing-audience">{copy.audience}</p>
+          <h1 className="serif landing-h1">{copy.title}</h1>
+          <p className="lede">{copy.audience}</p>
           <TourButtons copy={copy} />
-          <p className="landing-small">{copy.tourNote}</p>
+          <p className="muted landing-note">{copy.tourNote}</p>
         </div>
       </section>
       <ProblemSection copy={copy.problem} />
@@ -32,8 +31,8 @@ export function LandingScreen() {
       <ProofSection copy={copy.proof} language={language} />
       <WhereSection copy={copy.where} />
       <footer className="landing-team">
-        <div className="landing-wrap">
-          <p>{copy.team}</p>
+        <div className="wrap">
+          <p className="muted">{copy.team}</p>
         </div>
       </footer>
     </div>

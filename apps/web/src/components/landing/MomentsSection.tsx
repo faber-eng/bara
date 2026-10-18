@@ -1,18 +1,16 @@
 import type { LandingCopy, LandingMoment } from "../../lib/copy/landing";
-import { SectionHead } from "./SectionHead";
 
 const TITLE_ID = "landing-moments-title";
 
-function Moment({ moment }: { moment: LandingMoment }) {
+type MomentProps = { moment: LandingMoment; tone: "tile-sage" | "tile-peach" };
+
+function Moment({ moment, tone }: MomentProps) {
   return (
-    <article className="landing-moment">
-      <h3 className="landing-h3">{moment.when}</h3>
-      <p className="landing-moment-flow">
-        <span>{moment.signal}</span>
-        <span aria-hidden="true" className="landing-moment-arrow">
-          →
-        </span>
-        <span>{moment.action}</span>
+    <article className={`tile ${tone} landing-moment`}>
+      <h3 className="serif landing-moment-title">{moment.when}</h3>
+      <p className="landing-chips">
+        <span className="chip chip-plain">{moment.signal}</span>
+        <span className="chip chip-plain landing-chip-action">{moment.action}</span>
       </p>
       <p>{moment.body}</p>
     </article>
@@ -21,12 +19,14 @@ function Moment({ moment }: { moment: LandingMoment }) {
 
 export function MomentsSection({ copy }: { copy: LandingCopy["moments"] }) {
   return (
-    <section className="landing-section landing-moments" aria-labelledby={TITLE_ID}>
-      <div className="landing-wrap">
-        <SectionHead id={TITLE_ID} eyebrow={copy.eyebrow} title={copy.title} />
+    <section className="landing-moments" aria-labelledby={TITLE_ID}>
+      <div className="wrap">
+        <h2 id={TITLE_ID} className="section-title landing-title">
+          {copy.title}
+        </h2>
         <div className="landing-moments-pair">
-          <Moment moment={copy.before} />
-          <Moment moment={copy.after} />
+          <Moment moment={copy.before} tone="tile-sage" />
+          <Moment moment={copy.after} tone="tile-peach" />
         </div>
       </div>
     </section>

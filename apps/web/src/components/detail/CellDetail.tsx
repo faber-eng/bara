@@ -7,29 +7,20 @@ import { damColor } from "../../lib/ops/cellLayer";
 import { formatFixed, formatNumber } from "../../lib/public/format";
 import { ExplanationHow, ExplanationText } from "../ops/ExplanationText";
 import { QueryState } from "../ops/QueryState";
-import { DetailActions, DetailLayout, DetailSection, DetailText, FactList } from "./DetailSheet";
-import { chanceText, componentFacts, type FactRow, scoreFact } from "./facts";
+import {
+  DetailAbout,
+  DetailActions,
+  DetailLayout,
+  DetailSection,
+  FactGroupsSection,
+} from "./DetailSheet";
+import { chanceText, componentGroups } from "./facts";
+import { ScoreKeyFact } from "./ScoreKeyFact";
 import { Sparkline } from "./Sparkline";
 import type { OpsDetail } from "./selection";
 import { useOpenCase } from "./useOpenCase";
 
 const MIN_TREND_POINTS = 2;
-
-function rankRow(rank: number, total: number | null, copy: DetailCopy): FactRow {
-  const value = total === null ? String(rank) : copy.facts.rankOf(rank, total);
-  return { label: copy.facts.rank, value, meaning: null };
-}
-
-type RankChipProps = { rank: number; total: number | null; copy: DetailCopy };
-
-function RankChip({ rank, total, copy }: RankChipProps) {
-  const row = rankRow(rank, total, copy);
-  return (
-    <span className="chip chip-plain">
-      {row.label} {row.value}
-    </span>
-  );
-}
 
 type FactsProps = {
   facts: CellFacts;
@@ -38,7 +29,7 @@ type FactsProps = {
   language: CopyLanguage;
 };
 
-function TrendLine({ facts, copy, language }: Omit<FactsProps, "total">) {
+function TrendAside({ facts, copy, language }: Omit<FactsProps, "total">) {
   const scores = facts.trend.map((point) => point.drying_score);
   const first = scores[0];
   const last = scores.at(-1);
@@ -49,11 +40,25 @@ function TrendLine({ facts, copy, language }: Omit<FactsProps, "total">) {
     scores.length,
   );
   return (
-    <p className="mv-trend">
-      <span className="mv-label">{copy.facts.trend}</span>
+    <div className="mv-trend">
       <Sparkline values={scores} />
-      <span>{text}</span>
-    </p>
+      <span className="mv-trend-text">
+        {copy.facts.trend}: {text}
+      </span>
+    </div>
+  );
+}
+
+function CellKeyFact({ facts, total, copy, language }: FactsProps) {
+  return (
+    <ScoreKeyFact
+      score={facts.drying_score}
+      rank={facts.rank}
+      total={total}
+      copy={copy}
+      language={language}
+      aside={<TrendAside facts={facts} copy={copy} language={language} />}
+    />
   );
 }
 
@@ -96,22 +101,10 @@ function PastFires({ facts, copy, language }: Omit<FactsProps, "total">) {
 
 function WhyText({ explanation, copy }: { explanation: RankExplanation | null; copy: DetailCopy }) {
   if (explanation === null) return <p className="mv-text">{copy.cell.whyMissing}</p>;
-  if ((explanation.points ?? []).length > 0) {
-    return <ExplanationText explanation={explanation} copy={copy} />;
-  }
-  return (
-    <p className="mv-text">
-      <ExplanationText explanation={explanation} copy={copy} />
-    </p>
-  );
+  return <ExplanationText explanation={explanation} copy={copy} />;
 }
 
-function CellFactsSections({ facts, total, copy, language }: FactsProps) {
-  const rows = [
-    scoreFact(facts.drying_score, copy, language),
-    rankRow(facts.rank, total, copy),
-    ...componentFacts(facts.components, copy, language),
-  ];
+function CellFactsSections({ facts, copy, language }: Omit<FactsProps, "total">) {
   return (
     <>
       <DetailSection label={copy.sections.why}>
@@ -120,9 +113,10 @@ function CellFactsSections({ facts, total, copy, language }: FactsProps) {
           <ExplanationHow explanation={facts.explanation} copy={copy} />
         )}
       </DetailSection>
-      <FactList label={copy.sections.numbers} rows={rows}>
-        <TrendLine facts={facts} copy={copy} language={language} />
-      </FactList>
+      <FactGroupsSection
+        label={copy.sections.numbers}
+        groups={componentGroups(facts.components, copy, language)}
+      />
       <NearbyDams facts={facts} copy={copy} language={language} />
       <PastFires facts={facts} copy={copy} language={language} />
     </>
@@ -170,26 +164,25 @@ export function CellDetail({ cellId, region, onOpen, onZoom }: CellDetailProps) 
   const facts = useQuery(cellFactsQuery(cellId));
   const total = useQuery(allCellsQuery(region)).data?.cells.length ?? null;
   const caseId = useOpenCase(region, (record) => record.cell_id === cellId);
-  const rank = facts.data?.rank;
 
   return (
-    <DetailLayout
-      title={copy.cell.title(cellId)}
-      chips={rank === undefined ? undefined : <RankChip rank={rank} total={total} copy={copy} />}
-    >
-      <DetailText label={copy.sections.what}>{copy.cell.what}</DetailText>
+    <DetailLayout title={copy.cell.title(cellId)}>
+      {facts.data !== undefined && (
+        <CellKeyFact facts={facts.data} total={total} copy={copy} language={language} />
+      )}
+      <DetailActions>
+        <CellActions cellId={cellId} caseId={caseId} copy={copy} onOpen={onOpen} onZoom={onZoom} />
+      </DetailActions>
+      {caseId !== undefined && <p className="mv-note">{copy.cell.openCaseNote}</p>}
       <QueryState
         query={facts}
         label="the numbers"
         emptyText={copy.cell.whyMissing}
         isEmpty={() => false}
       >
-        {(data) => <CellFactsSections facts={data} total={total} copy={copy} language={language} />}
+        {(data) => <CellFactsSections facts={data} copy={copy} language={language} />}
       </QueryState>
-      {caseId !== undefined && <p className="mv-note">{copy.cell.openCaseNote}</p>}
-      <DetailActions label={copy.sections.next}>
-        <CellActions cellId={cellId} caseId={caseId} copy={copy} onOpen={onOpen} onZoom={onZoom} />
-      </DetailActions>
+      <DetailAbout label={copy.sections.what}>{copy.cell.what}</DetailAbout>
     </DetailLayout>
   );
 }

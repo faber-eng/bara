@@ -38,7 +38,6 @@ export type ReignitionLineInput = {
 
 export type LandingCopy = {
   toggleLabel: string;
-  eyebrow: string;
   title: string;
   audience: string;
   tourNote: string;
@@ -46,20 +45,17 @@ export type LandingCopy = {
   resumeTour: (step: number, total: number) => string;
   explore: string;
   problem: {
-    eyebrow: string;
     title: string;
     points: readonly LandingPoint[];
     stakes: string;
     diagram: DamDiagramCopy;
   };
   moments: {
-    eyebrow: string;
     title: string;
     before: LandingMoment;
     after: LandingMoment;
   };
   loop: {
-    eyebrow: string;
     title: string;
     listLabel: string;
     aiDoes: string;
@@ -68,7 +64,6 @@ export type LandingCopy = {
     closing: string;
   };
   proof: {
-    eyebrow: string;
     title: string;
     dryingTitle: string;
     dryingBody: (topShare: string) => string;
@@ -88,7 +83,6 @@ export type LandingCopy = {
     moreSuffix: string;
   };
   where: {
-    eyebrow: string;
     title: string;
     places: readonly LandingPlace[];
     licence: string;
@@ -100,7 +94,6 @@ export type LandingCopy = {
 
 const EN: LandingCopy = {
   toggleLabel: "Language of this page",
-  eyebrow: "Peat fire prevention · tested on Riau data",
   title: "Bara finds drying peat and sends a person to check it before it burns.",
   audience:
     "For the people who keep peat wet: an ops desk, local volunteers, repair teams and the fire brigade.",
@@ -109,7 +102,6 @@ const EN: LandingCopy = {
   resumeTour: (step, total) => `Resume at step ${step} of ${total}`,
   explore: "Explore freely",
   problem: {
-    eyebrow: "The problem",
     title: "Wet peat is safe. Dry peat is fuel.",
     points: [
       {
@@ -140,7 +132,6 @@ const EN: LandingCopy = {
     },
   },
   moments: {
-    eyebrow: "When Bara acts",
     title: "Before the dry season, and after a fire looks out.",
     before: {
       when: "Before the dry season",
@@ -156,7 +147,6 @@ const EN: LandingCopy = {
     },
   },
   loop: {
-    eyebrow: "How one case runs",
     title: "Five steps, from a satellite signal to a person with a task.",
     listLabel: "The five steps",
     aiDoes: "AI does",
@@ -192,7 +182,6 @@ const EN: LandingCopy = {
     closing: "AI never puts out a fire. It makes sure the right person knows, in time, with proof.",
   },
   proof: {
-    eyebrow: "Proof",
     title: "What we measured, and where it falls short.",
     dryingTitle: "The drying ranking finds later fires",
     dryingBody: (topShare) =>
@@ -215,7 +204,6 @@ const EN: LandingCopy = {
     moreSuffix: ", at the bottom of the public page.",
   },
   where: {
-    eyebrow: "Where it runs",
     title: "Tested on data. Not yet in the field.",
     places: [
       {
@@ -252,7 +240,6 @@ const EN: LandingCopy = {
 
 const ID: LandingCopy = {
   toggleLabel: "Bahasa halaman ini",
-  eyebrow: "Pencegahan kebakaran gambut · diuji dengan data Riau",
   title:
     "Bara menemukan gambut yang mulai kering dan mengirim orang untuk mengeceknya sebelum terbakar.",
   audience:
@@ -263,7 +250,6 @@ const ID: LandingCopy = {
   resumeTour: (step, total) => `Lanjutkan di langkah ${step} dari ${total}`,
   explore: "Jelajahi sendiri",
   problem: {
-    eyebrow: "Masalahnya",
     title: "Gambut basah aman. Gambut kering jadi bahan bakar.",
     points: [
       {
@@ -294,7 +280,6 @@ const ID: LandingCopy = {
     },
   },
   moments: {
-    eyebrow: "Kapan Bara bekerja",
     title: "Sebelum kemarau, dan setelah api tampak padam.",
     before: {
       when: "Sebelum kemarau",
@@ -310,7 +295,6 @@ const ID: LandingCopy = {
     },
   },
   loop: {
-    eyebrow: "Satu kasus, dari awal sampai akhir",
     title: "Lima langkah, dari sinyal satelit sampai ada orang yang memegang tugas.",
     listLabel: "Lima langkah",
     aiDoes: "Dikerjakan AI",
@@ -347,7 +331,6 @@ const ID: LandingCopy = {
       "AI tidak memadamkan api. AI memastikan orang yang tepat tahu, tepat waktu, dengan bukti.",
   },
   proof: {
-    eyebrow: "Bukti",
     title: "Apa yang kami ukur, dan di mana masih kurang.",
     dryingTitle: "Peringkat kering menangkap kebakaran berikutnya",
     dryingBody: (topShare) =>
@@ -370,7 +353,6 @@ const ID: LandingCopy = {
     moreSuffix: ", di bagian bawah halaman publik.",
   },
   where: {
-    eyebrow: "Tempat Bara berjalan",
     title: "Diuji dengan data. Belum di lapangan.",
     places: [
       {

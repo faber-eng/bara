@@ -1,7 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { DetailLayout, DetailSheet, DetailText, FactList } from "./DetailSheet";
+import { DetailAbout, DetailKeyFact, DetailLayout, DetailSheet, FactSection } from "./DetailSheet";
 
 function Harness({ onClose = () => {} }: { onClose?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -18,12 +18,13 @@ function Harness({ onClose = () => {} }: { onClose?: () => void }) {
       </button>
       {open && (
         <DetailSheet closeLabel="Close" onClose={close}>
-          <DetailLayout title="Area riau-0102" chips={<span className="chip">Rank 1</span>}>
-            <DetailText label="What it is">This square is a 1 km peat area.</DetailText>
-            <FactList
+          <DetailLayout title="Area riau-0102">
+            <DetailKeyFact value="96.8 / 100" caption="Very fast drying · Rank 1 of 3,769" />
+            <FactSection
               label="Numbers"
-              rows={[{ label: "Drying score", value: "96.8 / 100", meaning: "Very fast drying" }]}
+              rows={[{ label: "Rain, 30 days", value: "182.6 mm", meaning: null }]}
             />
+            <DetailAbout label="What it is">This square is a 1 km peat area.</DetailAbout>
           </DetailLayout>
         </DetailSheet>
       )}
@@ -46,9 +47,19 @@ describe("DetailSheet", () => {
     const dialog = screen.getByRole("dialog", { name: "Area riau-0102" });
     expect(dialog).toHaveAttribute("open");
     expect(screen.getByRole("button", { name: "Close" })).toHaveFocus();
-    expect(dialog).toHaveTextContent("This square is a 1 km peat area.");
     expect(dialog).toHaveTextContent("96.8 / 100");
-    expect(dialog).toHaveTextContent("Very fast drying");
+    expect(dialog).toHaveTextContent("Very fast drying · Rank 1 of 3,769");
+    expect(within(dialog).getByRole("heading", { level: 3, name: "Numbers" })).toBeInTheDocument();
+  });
+
+  it("keeps the generic explainer collapsed until asked", () => {
+    render(<Harness />);
+    openFromRow();
+
+    const summary = screen.getByText("What it is");
+    expect(summary.closest("details")).not.toHaveAttribute("open");
+    fireEvent.click(summary);
+    expect(summary.closest("details")).toHaveAttribute("open");
   });
 
   it("closes on Escape and returns focus to the row that opened it", () => {
@@ -80,7 +91,7 @@ describe("DetailSheet", () => {
     render(<Harness onClose={onClose} />);
     openFromRow();
 
-    fireEvent.click(screen.getByText("This square is a 1 km peat area."));
+    fireEvent.click(screen.getByText("96.8 / 100"));
 
     expect(onClose).not.toHaveBeenCalled();
   });

@@ -82,6 +82,31 @@ describe("EvalPanelView", () => {
     expect(text).toContain("84.6%");
   });
 
+  it("puts each report in its own card with a heading, run date and table", () => {
+    setCopyLanguage("en");
+    render(<EvalPanelView report={reportOf(FULL)} />);
+
+    const titles = [
+      "Drying ranking",
+      "Re-ignition risk",
+      "Gemini verdict accuracy",
+      "Agent checks",
+    ];
+    for (const title of titles) {
+      const card = screen.getByRole("heading", { level: 3, name: title }).closest("article");
+      expect(card).not.toBeNull();
+      if (card === null) continue;
+      expect(within(card).getByText(/^Run on 2026-10-/)).toBeInTheDocument();
+    }
+    const evidence = screen
+      .getByRole("heading", { name: "Gemini verdict accuracy" })
+      .closest("article");
+    if (evidence === null) throw new Error("no evidence card");
+    expect(within(evidence).getAllByRole("table")).toHaveLength(2);
+    expect(within(evidence).getByRole("table", { name: /Photos/ })).toBeInTheDocument();
+    expect(within(evidence).getByRole("table", { name: /Voice notes/ })).toBeInTheDocument();
+  });
+
   it("shows the baseline plainly when it wins", () => {
     setCopyLanguage("en");
     render(<EvalPanelView report={reportOf(FULL)} />);
