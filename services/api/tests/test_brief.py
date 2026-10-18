@@ -222,3 +222,26 @@ def test_an_empty_brief_is_rejected(field):
     write(model)
 
     assert len(model.calls) == 2
+
+
+AREA_FACTS = replace(FACTS, dam_id=None, overdue_task=None)
+
+
+def test_a_dam_risk_case_without_a_dam_says_area_not_dam():
+    brief = template_brief(AREA_FACTS)
+
+    assert brief.brief_en == (
+        "Area at risk in cell riau-0412. A crew is needed now because drying "
+        "score 96.7, above the limit of 80; no field photo yet. "
+        "Send a crew to check the area."
+    )
+    assert "dam" not in brief.brief_en.lower()
+    assert "bendungan" not in brief.brief_id
+    assert brief.brief_id.startswith("Lokasi berisiko di sel riau-0412.")
+
+
+def test_the_facts_sent_to_the_model_say_area_for_a_case_without_a_dam():
+    facts = render_facts(AREA_FACTS)
+
+    assert "dam" not in facts.lower()
+    assert "bendungan" not in facts

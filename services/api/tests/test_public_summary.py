@@ -156,3 +156,21 @@ def test_a_spoken_intact_is_not_a_repair_result():
         )
         is False
     )
+
+
+def test_the_record_says_area_for_a_dam_risk_case_without_a_dam():
+    from datetime import UTC, datetime
+    from zoneinfo import ZoneInfo
+
+    from domain.public_summary import case_lines
+    from tests.fakes import make_case, make_task
+
+    case = make_case(cell_id="riau-9", dam_id=None)
+    task = make_task(case_id=case.id, type="dam_check")
+
+    lines = case_lines(case, [task], [], ZoneInfo("Asia/Jakarta"))
+
+    texts = [line.text for line in lines]
+    assert "Area flagged at risk in riau-9." in texts
+    assert any(text.startswith("Area check due") for text in texts)
+    assert not any("dam" in text.lower() for text in texts)
