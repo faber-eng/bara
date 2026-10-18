@@ -6,11 +6,15 @@ import { beginTourAt } from "../../lib/tour/enterStep";
 import { FIRST_STEP, TOUR_STEPS } from "../../lib/tour/steps";
 import { getTourSnapshot, subscribeTour } from "../../lib/tour/store";
 
-export function TourButtons({ copy }: { copy: LandingCopy }) {
+export function useTourDeps() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  return { history: router.history, queryClient };
+}
+
+export function TourButtons({ copy }: { copy: LandingCopy }) {
   const { step } = useSyncExternalStore(subscribeTour, getTourSnapshot);
-  const deps = { history: router.history, queryClient };
+  const deps = useTourDeps();
   const resuming = step > FIRST_STEP;
 
   return (

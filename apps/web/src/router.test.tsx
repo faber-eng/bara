@@ -45,7 +45,7 @@ describe("app routes", () => {
   it("says the landing page is tested on data, not yet in the field", async () => {
     renderAt("/");
 
-    expect(await screen.findByRole("heading", { name: /tested on data/i })).toBeInTheDocument();
+    expect(await screen.findByText(/not yet in the field/i)).toBeInTheDocument();
   });
 
   it("opens the volunteer screen for the id in the URL", async () => {

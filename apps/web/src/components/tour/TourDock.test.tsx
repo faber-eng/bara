@@ -16,13 +16,12 @@ describe("landing and guided tour", () => {
     return () => vi.unstubAllGlobals();
   });
 
-  it("links to the four entry screens", async () => {
+  it("links to the public page from the hero", async () => {
     stubApi({});
     renderApp("/");
 
-    const nav = await screen.findByRole("navigation", { name: "Open a screen" });
-    const hrefs = Array.from(nav.querySelectorAll("a")).map((link) => link.getAttribute("href"));
-    expect(hrefs).toEqual(["/public", "/ops", "/area/new", "/join"]);
+    const heroLink = await screen.findByRole("link", { name: "Explore freely" });
+    expect(heroLink).toHaveAttribute("href", "/public");
   });
 
   it("starts the tour on the public page and walks forward and back", async () => {

@@ -11,19 +11,13 @@ export function ProblemSection({ copy }: { copy: LandingCopy["problem"] }) {
           <h2 id={TITLE_ID} className="section-title landing-title">
             {copy.title}
           </h2>
-          <ol className="landing-points">
-            {copy.points.map((point) => (
-              <li key={point.title}>
-                <h3 className="landing-h3">{point.title}</h3>
-                <p>{point.body}</p>
-              </li>
-            ))}
-          </ol>
+          {copy.paragraphs.map((paragraph) => (
+            <p key={paragraph} className="landing-prose">
+              {paragraph}
+            </p>
+          ))}
         </div>
         <DamDiagram copy={copy.diagram} />
-      </div>
-      <div className="wrap">
-        <p className="landing-stakes">{copy.stakes}</p>
       </div>
     </section>
   );
