@@ -280,6 +280,7 @@ def build_agent_service(
             cells=adapters.cells,
             dams=adapters.dams,
             volunteers=adapters.volunteers,
+            tasks=adapters.tasks,
             assigner=build_assigner(settings, adapters, gateway),
             checker=checker,
             escalator=escalator,

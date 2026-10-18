@@ -4,12 +4,13 @@ from adapters.cells import CellRepository
 from adapters.firestore_repos import (
     DamRepository,
     RankingRepository,
+    TaskRepository,
     VolunteerRepository,
 )
 from bara_agent.agent import build_tools, tool_name
 from bara_agent.output import ToolName
 from bara_agent.prompts import INSTRUCTION, PROMPT_VERSION
-from contracts import Dam, RankedCell, Volunteer
+from contracts import Dam, RankedCell, Task, Volunteer
 from tests.fakes import FakeWarehouse, InMemoryCollection, UnusedAreaRanker
 
 
@@ -39,6 +40,7 @@ def registered_names() -> set[str]:
         cells=CellRepository(FakeWarehouse()),
         dams=DamRepository(InMemoryCollection(Dam)),
         volunteers=VolunteerRepository(InMemoryCollection(Volunteer)),
+        tasks=TaskRepository(InMemoryCollection(Task)),
         assigner=UnusedAssigner(),
         checker=UnusedChecker(),
         escalator=UnusedEscalator(),

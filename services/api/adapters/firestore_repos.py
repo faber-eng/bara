@@ -48,6 +48,7 @@ from domain.scenario import Scenario
 
 CLOCK_DOCUMENT = "clock"
 TASKS = "tasks"
+HOLDING_STATUSES = ("open", "overdue")
 CASES = "cases"
 MESSAGES = "messages"
 EVIDENCE = "evidence"
@@ -84,6 +85,10 @@ class TaskRepository:
 
     def for_cases(self, case_ids: list[str]) -> list[Task]:
         return children(self._tasks, case_ids)
+
+    def open_assignees(self) -> set[str]:
+        held = matching(self._tasks, "status", list(HOLDING_STATUSES))
+        return {task.assignee_id for task in held}
 
 
 class EvidenceRepository:

@@ -7,17 +7,19 @@ from adapters.cells import CENTROID_SQL, WEEKLY_SQL, CellRepository
 from adapters.firestore_repos import (
     DamRepository,
     RankingRepository,
+    TaskRepository,
     VolunteerRepository,
 )
 from bara_agent.tools.find_people import FindPeople
 from bara_agent.tools.get_area_facts import GetAreaFacts
 from bara_agent.tools.rank_areas import RankAreas
-from contracts import Dam, GeoPoint, RankedCell, RankingComponents, Volunteer
+from contracts import Dam, GeoPoint, RankedCell, RankingComponents, Task, Volunteer
 from tests.fakes import (
     FakeWarehouse,
     InMemoryCollection,
     make_dam,
     make_ranked_cell,
+    make_task,
     make_volunteer,
     weekly_row,
 )
@@ -173,11 +175,12 @@ def test_get_area_facts_summary():
     assert summary == "riau-1-1: score 96.8, rank 1, 1 dam within 1000 m"
 
 
-def find_people_tool(people, located=True):
+def find_people_tool(people, located=True, tasks=()):
     rows = [CENTER] if located else []
     warehouse = FakeWarehouse({CENTROID_SQL: rows})
     repo = VolunteerRepository(collection_of(Volunteer, people, "id"))
-    return FindPeople(CellRepository(warehouse), repo), warehouse
+    held = TaskRepository(collection_of(Task, tasks, "id"))
+    return FindPeople(CellRepository(warehouse), repo, held), warehouse
 
 
 def at(lon: float) -> GeoPoint:
@@ -201,12 +204,51 @@ def test_find_people_returns_nearest_available_people_of_the_role():
     assert [p["id"] for p in result["people"]] == ["near", "far"]
 
 
+def test_find_people_puts_people_with_an_open_task_after_free_people():
+    people = [
+        make_volunteer(id="busy", home=at(101.41)),
+        make_volunteer(id="free", home=at(101.45)),
+    ]
+    held = [make_task(id="t1", assignee_id="busy", status="open")]
+    tool, _ = find_people_tool(people, tasks=held)
+
+    result = asyncio.run(tool.find_people("riau-1-1", "volunteer"))
+
+    assert [(p["id"], p["busy"]) for p in result["people"]] == [
+        ("free", False),
+        ("busy", True),
+    ]
+
+
+def test_find_people_ignores_finished_tasks_and_still_lists_everyone_busy():
+    people = [make_volunteer(id="v1", home=at(101.41))]
+    done = [make_task(id="t1", assignee_id="v1", status="done")]
+    tool, _ = find_people_tool(people, tasks=done)
+    assert (
+        asyncio.run(tool.find_people("riau-1-1", "volunteer"))["people"][0]["busy"]
+        is False
+    )
+
+    open_task = [make_task(id="t2", assignee_id="v1", status="overdue")]
+    tool, _ = find_people_tool(people, tasks=open_task)
+    [only] = asyncio.run(tool.find_people("riau-1-1", "volunteer"))["people"]
+    assert (only["id"], only["busy"]) == ("v1", True)
+
+
 def test_find_people_never_returns_home_or_contact_details():
     tool, _ = find_people_tool([make_volunteer(id="v1", home=at(101.41))])
 
     [person] = asyncio.run(tool.find_people("riau-1-1", "volunteer"))["people"]
 
-    assert set(person) == {"id", "name", "role", "language", "distance_km", "example"}
+    assert set(person) == {
+        "id",
+        "name",
+        "role",
+        "language",
+        "distance_km",
+        "example",
+        "busy",
+    }
     assert person["distance_km"] == 1.1
 
 

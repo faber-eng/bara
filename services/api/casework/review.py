@@ -167,7 +167,7 @@ class ReviewDesk:
         if centroid is None:
             raise ReviewRejected(f"unknown cell {case.cell_id!r}")
         people = self._volunteers.available(ROLE_FOR_TASK[task.type])
-        matches = nearest_people(centroid, people, 1)
+        matches = nearest_people(centroid, people, 1, self._tasks.open_assignees())
         if not matches:
             raise ReviewRejected(f"nobody is available for {task.type}")
         return matches[0].volunteer.id

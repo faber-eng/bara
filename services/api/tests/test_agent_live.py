@@ -169,6 +169,7 @@ def test_a_live_dam_risk_run_on_flash_with_real_bigquery():
             cells=CellRepository(warehouse),
             dams=dams,
             volunteers=volunteers,
+            tasks=TaskRepository(tasks),
             assigner=TaskAssigner(
                 cases=cases,
                 volunteers=volunteers,
