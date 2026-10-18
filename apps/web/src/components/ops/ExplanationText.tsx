@@ -1,4 +1,5 @@
 import type { RankExplanation } from "../../lib/contracts";
+import type { DetailCopy } from "../../lib/copy/detail";
 import { type ExplanationSegment, segmentExplanation } from "../../lib/ops/citedNumbers";
 
 function sourceTitle(fields: readonly string[]): string {
@@ -16,14 +17,35 @@ function SegmentView({ segment }: { segment: ExplanationSegment }) {
 
 export function ExplanationText({ explanation }: { explanation: RankExplanation }) {
   const segments = segmentExplanation(explanation.text, explanation.cited);
-  const version = explanation.prompt_version ?? null;
   return (
     <>
       <span className="chip chip-gemini">Gemini</span>{" "}
       {segments.map((segment) => (
         <SegmentView key={segment.start} segment={segment} />
       ))}
-      {version !== null && <span className="ops-meta"> ({version})</span>}
     </>
+  );
+}
+
+type ExplanationHowProps = { explanation: RankExplanation; copy: DetailCopy };
+
+export function ExplanationHow({ explanation, copy }: ExplanationHowProps) {
+  const version = explanation.prompt_version ?? null;
+  return (
+    <details className="pub-how">
+      <summary>{copy.cell.how.title}</summary>
+      <dl className="pub-how-facts">
+        <div>
+          <dt>{copy.cell.how.model}</dt>
+          <dd className="spec-code">Gemini</dd>
+        </div>
+        {version !== null && (
+          <div>
+            <dt>{copy.cell.how.promptVersion}</dt>
+            <dd className="spec-code">{version}</dd>
+          </div>
+        )}
+      </dl>
+    </details>
   );
 }

@@ -5,7 +5,7 @@ import { type DetailCopy, detailCopy } from "../../lib/copy/detail";
 import { type CopyLanguage, useCopyLanguage } from "../../lib/copy/language";
 import { damColor } from "../../lib/ops/cellLayer";
 import { formatFixed, formatNumber } from "../../lib/public/format";
-import { ExplanationText } from "../ops/ExplanationText";
+import { ExplanationHow, ExplanationText } from "../ops/ExplanationText";
 import { QueryState } from "../ops/QueryState";
 import { DetailActions, DetailLayout, DetailSection, DetailText, FactList } from "./DetailSheet";
 import { chanceText, componentFacts, type FactRow, scoreFact } from "./facts";
@@ -110,6 +110,9 @@ function CellFactsSections({ facts, total, copy, language }: FactsProps) {
             <ExplanationText explanation={facts.explanation} />
           )}
         </p>
+        {facts.explanation !== null && (
+          <ExplanationHow explanation={facts.explanation} copy={copy} />
+        )}
       </DetailSection>
       <FactList label={copy.sections.numbers} rows={rows}>
         <TrendLine facts={facts} copy={copy} language={language} />

@@ -84,6 +84,7 @@ export type DetailCopy = {
     openCase: string;
     zoom: string;
     openCaseNote: string;
+    how: { title: string; model: string; promptVersion: string };
   };
   dam: {
     title: (id: string) => string;
@@ -250,6 +251,7 @@ const EN: DetailCopy = {
     openCase: "Open its case",
     zoom: "Zoom to area",
     openCaseNote: "Open case: someone is checking this area.",
+    how: { title: "How this was written", model: "Model", promptVersion: "Prompt version" },
   },
   dam: {
     title: (id) => `Canal dam ${id}`,
@@ -431,6 +433,7 @@ const ID: DetailCopy = {
     openCase: "Buka kasusnya",
     zoom: "Perbesar ke petak",
     openCaseNote: "Kasus terbuka: ada orang yang sedang mengecek area ini.",
+    how: { title: "Cara teks ini ditulis", model: "Model", promptVersion: "Versi prompt" },
   },
   dam: {
     title: (id) => `Sekat kanal ${id}`,
