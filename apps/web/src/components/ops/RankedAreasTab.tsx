@@ -1,5 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  memo,
+  type SyntheticEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { isNotFoundError } from "../../lib/api/client";
 import { allCellsQuery, casesQuery, rankingsQuery } from "../../lib/api/queries";
 import type { Case, RankedCell, Rankings } from "../../lib/contracts";
@@ -55,28 +64,44 @@ function moveFocus(event: KeyboardEvent<HTMLOListElement>) {
   next.focus();
 }
 
-type RowProps = {
+type RowView = {
   cell: RankedCell;
-  reason: RowReason | null;
+  line: string;
+  band: string;
   openCase: Case | undefined;
-  selected: boolean;
-  copy: DetailCopy;
-  language: CopyLanguage;
-  onSelect: (cellId: string) => void;
-  onHighlight: (cellId: string | undefined) => void;
 };
 
-function RankedRow({
-  cell,
-  reason,
-  openCase,
-  selected,
-  copy,
-  language,
-  onSelect,
-  onHighlight,
-}: RowProps) {
+function rowViews(
+  cells: readonly RankedCell[],
+  openCases: ReadonlyMap<string, Case>,
+  brokenDams: ReadonlySet<string>,
+  copy: DetailCopy,
+  language: CopyLanguage,
+): RowView[] {
+  const views: RowView[] = [];
+  for (const cell of cells) {
+    const reason = mainReason(cell, brokenDams);
+    const change = rankChangeShort(cell.rank_change, copy);
+    views.push({
+      cell,
+      line: reason === null ? change : `${reasonText(reason, copy, language)} · ${change}`,
+      band: scoreBand(cell.drying_score, copy),
+      openCase: openCases.get(cell.cell_id),
+    });
+  }
+  return views;
+}
+
+function cellIdOf(target: EventTarget): string | undefined {
+  if (!(target instanceof Element)) return undefined;
+  return target.closest<HTMLElement>("[data-cell-id]")?.dataset.cellId;
+}
+
+type RowProps = { view: RowView; selected: boolean; copy: DetailCopy };
+
+const RankedRow = memo(function RankedRow({ view, selected, copy }: RowProps) {
   const rowRef = useRef<HTMLLIElement>(null);
+  const { cell, line, band, openCase } = view;
 
   useEffect(() => {
     if (selected) rowRef.current?.scrollIntoView?.({ block: "nearest" });
@@ -88,11 +113,7 @@ function RankedRow({
         type="button"
         className="ops-cell-button mv-row mv-row-ranked"
         aria-pressed={selected}
-        onClick={() => onSelect(cell.cell_id)}
-        onMouseEnter={() => onHighlight(cell.cell_id)}
-        onMouseLeave={() => onHighlight(undefined)}
-        onFocus={() => onHighlight(cell.cell_id)}
-        onBlur={() => onHighlight(undefined)}
+        data-cell-id={cell.cell_id}
       >
         <span className="mv-row-rank num" aria-hidden="true">
           {cell.rank}
@@ -100,21 +121,18 @@ function RankedRow({
         <span className="mv-row-main">
           <strong className="mv-row-title">{cell.cell_id}</strong>
           <span className="mv-row-line">
-            <span className="mv-row-meta">
-              {reason !== null && `${reasonText(reason, copy, language)} · `}
-              {rankChangeShort(cell.rank_change, copy)}
-            </span>
+            <span className="mv-row-meta">{line}</span>
             {openCase !== undefined && <StatusBadge status={openCase.status} copy={copy} />}
           </span>
         </span>
         <span className="mv-row-score">
           <ScoreBadge score={cell.drying_score} />
-          <span className="mv-row-band">{scoreBand(cell.drying_score, copy)}</span>
+          <span className="mv-row-band">{band}</span>
         </span>
       </button>
     </li>
   );
-}
+});
 
 type FilterProps = {
   value: RankedFilter;
@@ -156,10 +174,26 @@ function RankedList({ rankings, region, selectedCellId, onSelect, onHighlight }:
   const cases = useQuery({ ...casesQuery(region), enabled: casework });
   const allCells = useQuery(allCellsQuery(region));
   const [filter, setFilter] = useState<RankedFilter>("all");
-  const openCases = openCaseByCell(casework ? cases.data : undefined);
-  const brokenDams = brokenDamCells(rankings.dams);
-  const ordered = [...rankings.cells].sort((a, b) => a.rank - b.rank);
-  const shown = ordered.filter((cell) => matchesFilter(filter, openCases.has(cell.cell_id)));
+  const caseData = casework ? cases.data : undefined;
+  const openCases = useMemo(() => openCaseByCell(caseData), [caseData]);
+  const ordered = useMemo(
+    () => [...rankings.cells].sort((a, b) => a.rank - b.rank),
+    [rankings.cells],
+  );
+  const views = useMemo(
+    () => rowViews(ordered, openCases, brokenDamCells(rankings.dams), copy, language),
+    [ordered, openCases, rankings.dams, copy, language],
+  );
+  const shown = views.filter((view) => matchesFilter(filter, view.openCase !== undefined));
+
+  function handleClick(event: MouseEvent<HTMLOListElement>) {
+    const cellId = cellIdOf(event.target);
+    if (cellId !== undefined) onSelect(cellId);
+  }
+
+  function handlePointer(event: SyntheticEvent<HTMLOListElement>) {
+    onHighlight(cellIdOf(event.target));
+  }
   const total =
     allCells.data === undefined ? null : formatNumber(allCells.data.cells.length, language);
 
@@ -183,18 +217,18 @@ function RankedList({ rankings, region, selectedCellId, onSelect, onHighlight }:
         className="mv-list"
         aria-label={copy.ranked.listLabel(rankings.week)}
         onKeyDown={moveFocus}
+        onClick={handleClick}
+        onMouseOver={handlePointer}
+        onFocus={handlePointer}
+        onMouseLeave={() => onHighlight(undefined)}
+        onBlur={() => onHighlight(undefined)}
       >
-        {shown.map((cell) => (
+        {shown.map((view) => (
           <RankedRow
-            key={cell.cell_id}
-            cell={cell}
-            reason={mainReason(cell, brokenDams)}
-            openCase={openCases.get(cell.cell_id)}
-            selected={rowSelection(cell.cell_id, selectedCellId)}
+            key={view.cell.cell_id}
+            view={view}
+            selected={rowSelection(view.cell.cell_id, selectedCellId)}
             copy={copy}
-            language={language}
-            onSelect={onSelect}
-            onHighlight={onHighlight}
           />
         ))}
       </ol>

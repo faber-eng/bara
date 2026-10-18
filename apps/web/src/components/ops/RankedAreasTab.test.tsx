@@ -224,7 +224,7 @@ describe("RankedAreasTab", () => {
       rows[0]?.querySelector(".mv-row-title")?.textContent,
     );
 
-    fireEvent.mouseLeave(rows[0] as HTMLElement);
+    fireEvent.mouseLeave(list);
     expect(onCellHighlight).toHaveBeenLastCalledWith(undefined);
   });
 });
