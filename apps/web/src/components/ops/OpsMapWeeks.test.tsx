@@ -100,6 +100,7 @@ function Harness() {
       region="riau"
       week={week}
       selectedCellId={undefined}
+      highlightedCellId={undefined}
       focus={null}
       onRegionChange={() => {}}
       onWeekChange={setWeek}
@@ -140,6 +141,7 @@ describe("OpsMap week slider and layers", () => {
     performance.clearMeasures();
     layerSpies.createCellLayer.mockReset().mockReturnValue({
       select: vi.fn(),
+      highlight: vi.fn(),
       focus: vi.fn(),
       destroy: vi.fn(),
     });

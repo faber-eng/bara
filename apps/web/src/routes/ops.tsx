@@ -33,6 +33,7 @@ function OpsScreen() {
   const latest = useQuery(rankingsQuery(region)).data?.week;
   const week = effectiveWeek(search.week, latest);
   const [focus, setFocus] = useState<FocusRequest | null>(null);
+  const [highlighted, setHighlighted] = useState<string | undefined>(undefined);
 
   const detail = detailFromSearch(search);
 
@@ -80,6 +81,7 @@ function OpsScreen() {
           onRegionChange={handleRegionChange}
           onWeekChange={handleWeekChange}
           selectedCellId={search.cell}
+          highlightedCellId={highlighted}
           focus={focus}
           onCellSelect={(cellId) => openDetail({ kind: "cell", id: cellId })}
           onDamSelect={(damId) => openDetail({ kind: "dam", id: damId })}
@@ -92,6 +94,7 @@ function OpsScreen() {
           selectedCaseId={search.case}
           selectedCellId={search.cell}
           onCellSelect={handleListCellSelect}
+          onCellHighlight={setHighlighted}
           onTabChange={handleTabChange}
           onCaseSelect={(caseId) => openDetail({ kind: "case", id: caseId })}
           onReviewSelect={(caseId) => openDetail({ kind: "review", id: caseId })}

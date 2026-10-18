@@ -63,6 +63,7 @@ function renderMap(selectedCellId?: string) {
         onRegionChange={() => {}}
         onWeekChange={() => {}}
         selectedCellId={selectedCellId}
+        highlightedCellId={undefined}
         focus={null}
         onCellSelect={() => {}}
         onDamSelect={() => {}}
@@ -77,6 +78,7 @@ describe("OpsMap", () => {
     layers.length = 0;
     layerSpies.createCellLayer.mockReset().mockReturnValue({
       select: vi.fn(),
+      highlight: vi.fn(),
       focus: vi.fn(),
       destroy: vi.fn(),
     });

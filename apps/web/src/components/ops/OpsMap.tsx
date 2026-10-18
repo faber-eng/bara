@@ -3,7 +3,7 @@ import { APIProvider, Map as GoogleMap, useMap } from "@vis.gl/react-google-maps
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isNotFoundError } from "../../lib/api/client";
 import { allCellsQuery, casesQuery, rankingsQuery, tileLayerQuery } from "../../lib/api/queries";
-import type { CaseSummary, TileLayerKind } from "../../lib/contracts";
+import type { TileLayerKind } from "../../lib/contracts";
 import { detailCopy } from "../../lib/copy/detail";
 import { useCopyLanguage } from "../../lib/copy/language";
 import {
@@ -25,6 +25,7 @@ import { CellsLayer, DamsLayer, type FocusRequest } from "./CellsLayer";
 import { LayerOverlay } from "./LayerOverlay";
 import { LayerOpacityControls, MapTypeControl } from "./MapControls";
 import { LayerToggles, RegionSwitcher, WeekSlider } from "./OpsToolbar";
+import { openCaseByCell } from "./rankedRows";
 
 function readMapsKey(): string {
   const key: unknown = import.meta.env.VITE_MAPS_KEY;
@@ -60,21 +61,11 @@ function opsMarks(casework: boolean, kinds: readonly TileLayerKind[]): MapKeyMar
   return marks;
 }
 
-type OpenCases = { cellIds: string[]; caseByCell: ReadonlyMap<string, string> };
-
-function openCasesOf(cases: readonly CaseSummary[] | undefined): OpenCases {
-  const caseByCell = new Map<string, string>();
-  for (const summary of cases ?? []) {
-    if (summary.case.status === "closed" || caseByCell.has(summary.case.cell_id)) continue;
-    caseByCell.set(summary.case.cell_id, summary.case.id);
-  }
-  return { cellIds: [...caseByCell.keys()], caseByCell };
-}
-
 type OpsMapProps = {
   region: string;
   week: string | undefined;
   selectedCellId: string | undefined;
+  highlightedCellId: string | undefined;
   focus: FocusRequest | null;
   onRegionChange: (regionId: string) => void;
   onWeekChange: (week: string | undefined) => void;
@@ -87,6 +78,7 @@ export function OpsMap({
   region,
   week,
   selectedCellId,
+  highlightedCellId,
   focus,
   onRegionChange,
   onWeekChange,
@@ -99,7 +91,8 @@ export function OpsMap({
   const latestRankings = useQuery(rankingsQuery(region));
   const allCells = useQuery(allCellsQuery(region));
   const cases = useQuery({ ...casesQuery(region), enabled: regionInfo.casework });
-  const openCases = useMemo(() => openCasesOf(cases.data), [cases.data]);
+  const openCases = useMemo(() => openCaseByCell(cases.data), [cases.data]);
+  const openCellIds = useMemo(() => [...openCases.keys()], [openCases]);
   const latest = latestRankings.data?.week;
   const asked = requestWeek(week, latest);
   const [mapType, setMapType] = useState<MapTypeId>(DEFAULT_MAP_TYPE);
@@ -126,8 +119,8 @@ export function OpsMap({
   }
 
   function handleOutlineSelect(cellId: string) {
-    const caseId = openCases.caseByCell.get(cellId);
-    if (caseId !== undefined) onCaseSelect(caseId);
+    const record = openCases.get(cellId);
+    if (record !== undefined) onCaseSelect(record.id);
   }
 
   function handleWeekCommit(next: string) {
@@ -181,6 +174,7 @@ export function OpsMap({
                 key={region}
                 cells={cells}
                 selectedCellId={selectedCellId}
+                highlightedCellId={highlightedCellId}
                 focus={focus}
                 onSelect={onCellSelect}
               />
@@ -188,7 +182,7 @@ export function OpsMap({
             {cells !== undefined && regionInfo.casework && (
               <OpenCaseOutlines
                 cells={cells}
-                openCellIds={openCases.cellIds}
+                openCellIds={openCellIds}
                 onSelect={handleOutlineSelect}
               />
             )}

@@ -14,11 +14,18 @@ export type FocusRequest = { cellId: string };
 type CellsLayerProps = {
   cells: readonly CellPoint[];
   selectedCellId: string | undefined;
+  highlightedCellId?: string;
   focus: FocusRequest | null;
   onSelect: (cellId: string) => void;
 };
 
-export function CellsLayer({ cells, selectedCellId, focus, onSelect }: CellsLayerProps) {
+export function CellsLayer({
+  cells,
+  selectedCellId,
+  highlightedCellId,
+  focus,
+  onSelect,
+}: CellsLayerProps) {
   const map = useMap();
   const layerRef = useRef<CellLayer | null>(null);
   const selectedRef = useRef(selectedCellId);
@@ -57,6 +64,10 @@ export function CellsLayer({ cells, selectedCellId, focus, onSelect }: CellsLaye
     selectedRef.current = selectedCellId;
     layerRef.current?.select(selectedCellId);
   }, [selectedCellId]);
+
+  useEffect(() => {
+    layerRef.current?.highlight(highlightedCellId);
+  }, [highlightedCellId]);
 
   useEffect(() => {
     if (focus === null) return;

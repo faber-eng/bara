@@ -32,6 +32,7 @@ type OpsPanelProps = {
   selectedCaseId: string | undefined;
   selectedCellId: string | undefined;
   onCellSelect: (cellId: string) => void;
+  onCellHighlight: (cellId: string | undefined) => void;
   onTabChange: (tab: OpsTab) => void;
   onCaseSelect: (caseId: string) => void;
   onReviewSelect: (caseId: string) => void;
@@ -46,6 +47,7 @@ function TabBody({
   selectedCaseId,
   selectedCellId,
   onCellSelect,
+  onCellHighlight,
   onCaseSelect,
   onReviewSelect,
   onShowCases,
@@ -57,6 +59,7 @@ function TabBody({
         week={week}
         selectedCellId={selectedCellId}
         onCellSelect={onCellSelect}
+        onCellHighlight={onCellHighlight}
       />
     );
   }

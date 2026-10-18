@@ -22,7 +22,9 @@
   background: transparent;
   color: var(--text);
   font: inherit;
+  font-weight: var(--fw-body, 400);
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 .mv-row:hover {
@@ -59,6 +61,56 @@
   color: var(--text-muted);
   font-size: var(--fs-xs, 12.6px);
   font-weight: var(--fw-label, 500);
+}
+.mv-row-ranked {
+  align-items: flex-start;
+}
+.mv-row-ranked .mv-row-rank {
+  padding-top: 2px;
+}
+.mv-row-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1, 4px) var(--space-2, 6px);
+}
+.mv-row-score {
+  flex: none;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.mv-row-band {
+  color: var(--text-muted);
+  font-size: var(--fs-xs, 12.6px);
+  font-weight: var(--fw-label, 500);
+  white-space: nowrap;
+}
+.mv-list-head {
+  display: grid;
+  gap: var(--space-2, 6px);
+  padding: var(--space-2, 6px) var(--space-3, 10px) var(--space-3, 10px);
+}
+.mv-list-summary {
+  margin: 0;
+  font-size: var(--fs-sm, 14.2px);
+  font-weight: var(--fw-label, 500);
+  color: var(--text-2);
+}
+.mv-filter {
+  margin: 0;
+  border: 0;
+  justify-self: start;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.mv-filter button {
+  min-height: 36px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+.mv-filter .num {
+  opacity: 0.75;
 }
 .mv-row .chip {
   font-size: var(--fs-xs, 12.6px);
