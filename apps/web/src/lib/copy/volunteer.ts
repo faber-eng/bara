@@ -1,4 +1,5 @@
 import type { DamState, HotGround, Smoke, TaskType } from "../contracts";
+import type { PickKind } from "../volunteer/evidenceKinds";
 import type { CopyLanguage } from "./language";
 
 export type HeadlineKey =
@@ -92,6 +93,11 @@ export type VolunteerCopy = {
   threadLabel: string;
   tasksLabel: string;
   captureLabel: string;
+  evidenceRowLabel: string;
+  kindLabels: Record<PickKind, string>;
+  kindSent: (label: string) => string;
+  addDialogTitle: Record<PickKind, string>;
+  cancel: string;
 };
 
 const ID: VolunteerCopy = {
@@ -211,6 +217,15 @@ const ID: VolunteerCopy = {
   threadLabel: "Percakapan dengan Bara",
   tasksLabel: "Tugas Anda",
   captureLabel: "Kirim bukti",
+  evidenceRowLabel: "Tambah bukti",
+  kindLabels: { photo: "Foto", voice: "Suara", video: "Video" },
+  kindSent: (label) => `${label}, terkirim`,
+  addDialogTitle: {
+    photo: "Tambah foto",
+    voice: "Tambah pesan suara",
+    video: "Tambah video",
+  },
+  cancel: "Batal",
 };
 
 const EN: VolunteerCopy = {
@@ -325,6 +340,15 @@ const EN: VolunteerCopy = {
   threadLabel: "Conversation with Bara",
   tasksLabel: "Your tasks",
   captureLabel: "Send evidence",
+  evidenceRowLabel: "Add evidence",
+  kindLabels: { photo: "Photo", voice: "Voice", video: "Video" },
+  kindSent: (label) => `${label}, sent`,
+  addDialogTitle: {
+    photo: "Add a photo",
+    voice: "Add a voice note",
+    video: "Add a video",
+  },
+  cancel: "Cancel",
 };
 
 export function volunteerCopy(language: CopyLanguage): VolunteerCopy {

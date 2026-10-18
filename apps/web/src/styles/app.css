@@ -550,10 +550,79 @@ fieldset.join-fieldset {
 .proto-row--between {
   justify-content: space-between;
 }
-.capture {
+.evidence-row {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.evidence-btn {
+  flex: 1 1 88px;
+  min-width: 0;
+  min-height: 64px;
   display: grid;
-  grid-template-columns: 1fr;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-inner);
+  background: var(--brand);
+  color: var(--on-brand);
+  font: 500 var(--text-sm) / 1.2 var(--font-sans);
+  cursor: pointer;
+}
+.evidence-btn svg {
+  width: 24px;
+  height: 24px;
+}
+.evidence-btn--done {
+  background: var(--sage-card);
+  border-color: var(--olive);
+  color: var(--brand);
+}
+.evidence-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--photo-scrim);
+}
+.dialog-panel {
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 16px;
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+.dialog-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-sub);
+}
+.dialog-choices {
+  display: grid;
   gap: 10px;
+}
+@media (min-width: 600px) {
+  .dialog-backdrop {
+    align-items: center;
+  }
+  .dialog-panel {
+    border-radius: var(--radius-card);
+  }
 }
 .task-card {
   background: var(--surface);

@@ -311,9 +311,8 @@ describe("volunteer screen", () => {
     renderApp("/v/uid-1");
 
     const card = await screen.findByRole("article", { name: "Cek sekat kanal" });
-    fireEvent.click(
-      within(card).getAllByRole("button", { name: "Pakai contoh" })[0] as HTMLElement,
-    );
+    fireEvent.click(within(card).getByRole("button", { name: "Foto" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Pakai contoh" }));
     fireEvent.click(await screen.findByRole("button", { name: /Breached dam/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Kirim foto" }));
 
@@ -351,9 +350,8 @@ describe("volunteer screen", () => {
     renderApp("/v/uid-1");
 
     const card = await screen.findByRole("article", { name: "Cek sekat kanal" });
-    fireEvent.click(
-      within(card).getAllByRole("button", { name: "Pakai contoh" })[1] as HTMLElement,
-    );
+    fireEvent.click(within(card).getByRole("button", { name: "Suara" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Pakai contoh" }));
     fireEvent.click(await screen.findByRole("button", { name: /Damaged dam, leaking/ }));
 
     expect(await screen.findByText("Sekatnya jebol di sisi kiri")).toBeInTheDocument();
@@ -394,5 +392,115 @@ describe("volunteer screen", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("MP4 atau MOV");
     expect(callsTo(fetchMock, "POST /api/v/uid-1/uploads")).toHaveLength(0);
+  });
+
+  describe("evidence row", () => {
+    it("shows one button per kind the task needs", async () => {
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      renderApp("/v/uid-1");
+
+      const row = await screen.findByRole("group", { name: "Tambah bukti" });
+      const labels = within(row)
+        .getAllByRole("button")
+        .map((button) => button.textContent);
+      expect(labels).toEqual(["Foto", "Suara", "Video"]);
+    });
+
+    it("omits the voice button for a repair task", async () => {
+      stubApi({
+        "GET /api/v/uid-1/inbox": () =>
+          Response.json({ ...inboxBody, tasks: [{ ...task, type: "dam_repair" }] }),
+      });
+      renderApp("/v/uid-1");
+
+      const row = await screen.findByRole("group", { name: "Tambah bukti" });
+      expect(within(row).queryByRole("button", { name: "Suara" })).not.toBeInTheDocument();
+      expect(within(row).getAllByRole("button")).toHaveLength(2);
+    });
+
+    it("opens a dialog with the real action and the sample choice", async () => {
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      renderApp("/v/uid-1");
+
+      fireEvent.click(await screen.findByRole("button", { name: "Foto" }));
+
+      const dialog = await screen.findByRole("dialog", { name: "Tambah foto" });
+      expect(dialog).toHaveAttribute("aria-modal", "true");
+      expect(within(dialog).getByRole("button", { name: "Ambil foto" })).toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: "Pakai contoh" })).toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: "Batal" })).toBeInTheDocument();
+    });
+
+    it("opens the camera input from the real action and closes the dialog", async () => {
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      const click = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+      renderApp("/v/uid-1");
+
+      fireEvent.click(await screen.findByRole("button", { name: "Foto" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Ambil foto" }));
+
+      expect(click).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      click.mockRestore();
+    });
+
+    it("offers no sample choice for video", async () => {
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      renderApp("/v/uid-1");
+
+      fireEvent.click(await screen.findByRole("button", { name: "Video" }));
+
+      const dialog = await screen.findByRole("dialog", { name: "Tambah video" });
+      expect(within(dialog).getByRole("button", { name: "Rekam video" })).toBeInTheDocument();
+      expect(within(dialog).queryByRole("button", { name: "Pakai contoh" })).toBeNull();
+    });
+
+    it("marks a kind that was already sent as done", async () => {
+      stubApi({
+        "GET /api/v/uid-1/inbox": () =>
+          Response.json({ ...inboxBody, evidence: [{ ...judged, kind: "photo" }] }),
+      });
+      renderApp("/v/uid-1");
+
+      expect(await screen.findByRole("button", { name: "Foto, terkirim" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Suara" })).toBeInTheDocument();
+    });
+
+    it("closes on Escape and returns focus to the button", async () => {
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      renderApp("/v/uid-1");
+
+      const trigger = await screen.findByRole("button", { name: "Foto" });
+      trigger.focus();
+      fireEvent.click(trigger);
+      const dialog = await screen.findByRole("dialog");
+      fireEvent.keyDown(dialog, { key: "Escape" });
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(trigger).toHaveFocus();
+    });
+
+    it("closes on Cancel", async () => {
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      renderApp("/v/uid-1");
+
+      fireEvent.click(await screen.findByRole("button", { name: "Suara" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Batal" }));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("keeps Tab inside the dialog", async () => {
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      renderApp("/v/uid-1");
+
+      fireEvent.click(await screen.findByRole("button", { name: "Video" }));
+      const dialog = await screen.findByRole("dialog");
+      const cancel = within(dialog).getByRole("button", { name: "Batal" });
+      cancel.focus();
+      fireEvent.keyDown(dialog, { key: "Tab" });
+
+      expect(within(dialog).getByRole("button", { name: "Rekam video" })).toHaveFocus();
+    });
   });
 });

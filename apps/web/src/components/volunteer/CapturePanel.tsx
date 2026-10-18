@@ -1,7 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { type ChangeEvent, useRef } from "react";
+import type { TaskType } from "../../lib/contracts";
 import type { CopyLanguage } from "../../lib/copy/language";
 import type { VolunteerCopy } from "../../lib/copy/volunteer";
-import { SamplePicker } from "../samples/SamplePicker";
+import { kindsForTask, type PickKind, sentKindsFor } from "../../lib/volunteer/evidenceKinds";
+import { EvidenceRow } from "./EvidenceRow";
 import {
   FailurePanel,
   PhotoPreview,
@@ -10,6 +13,7 @@ import {
   UnreadPanel,
   UploadingPanel,
 } from "./FlowPanels";
+import { inboxQuery } from "./inboxQuery";
 import { useUploadFlow } from "./useUploadFlow";
 import { VerdictCard } from "./VerdictCard";
 import { VoiceRecording } from "./VoiceRecording";
@@ -19,10 +23,19 @@ type CapturePanelProps = {
   language: CopyLanguage;
   volunteerId: string;
   taskId: string;
+  taskType: TaskType;
   locked: boolean;
 };
 
-export function CapturePanel({ copy, language, volunteerId, taskId, locked }: CapturePanelProps) {
+export function CapturePanel({
+  copy,
+  language,
+  volunteerId,
+  taskId,
+  taskType,
+  locked,
+}: CapturePanelProps) {
+  const inbox = useQuery(inboxQuery(volunteerId));
   const flow = useUploadFlow({ volunteerId, taskId });
   const { state } = flow;
   const fileInput = useRef<HTMLInputElement>(null);
@@ -88,66 +101,42 @@ export function CapturePanel({ copy, language, volunteerId, taskId, locked }: Ca
   if (locked) return null;
   const busy = state.step === "preparing";
 
+  function handleAction(kind: PickKind) {
+    if (kind === "photo") fileInput.current?.click();
+    if (kind === "voice") void flow.startRecording();
+    if (kind === "video") videoInput.current?.click();
+  }
+
   return (
     <div className="flow-panel">
-      <div className="capture">
-        <button
-          type="button"
-          className="btn btn-primary btn-lg"
-          disabled={busy}
-          onClick={() => fileInput.current?.click()}
-        >
-          {copy.takePhoto}
-        </button>
-        <SamplePicker
-          kind="photo"
-          copy={copy}
-          disabled={busy}
-          onPick={(item) => void flow.chooseSample(item)}
-        />
-        <input
-          ref={fileInput}
-          className="visually-hidden"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          aria-label={copy.photoFile}
-          tabIndex={-1}
-          onChange={handleFile}
-        />
-        <button
-          type="button"
-          className="btn btn-primary btn-lg"
-          disabled={busy}
-          onClick={() => void flow.startRecording()}
-        >
-          {copy.recordVoice}
-        </button>
-        <SamplePicker
-          kind="voice"
-          copy={copy}
-          disabled={busy}
-          onPick={(item) => void flow.chooseSample(item)}
-        />
-        <button
-          type="button"
-          className="btn btn-primary btn-lg"
-          disabled={busy}
-          onClick={() => videoInput.current?.click()}
-        >
-          {copy.recordVideo}
-        </button>
-        <input
-          ref={videoInput}
-          className="visually-hidden"
-          type="file"
-          accept="video/mp4,video/quicktime,video/*"
-          capture="environment"
-          aria-label={copy.videoFile}
-          tabIndex={-1}
-          onChange={handleVideo}
-        />
-      </div>
+      <EvidenceRow
+        copy={copy}
+        kinds={kindsForTask(taskType)}
+        sentKinds={sentKindsFor(inbox.data?.evidence ?? [], taskId)}
+        busy={busy}
+        onAction={handleAction}
+        onSample={(item) => void flow.chooseSample(item)}
+      />
+      <input
+        ref={fileInput}
+        className="visually-hidden"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        aria-label={copy.photoFile}
+        tabIndex={-1}
+        onChange={handleFile}
+      />
+      <input
+        ref={videoInput}
+        className="visually-hidden"
+        type="file"
+        accept="video/mp4,video/quicktime,video/*"
+        capture="environment"
+        aria-label={copy.videoFile}
+        tabIndex={-1}
+        onChange={handleVideo}
+      />
       <p className="proto-note">{copy.cameraHint}</p>
     </div>
   );

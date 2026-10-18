@@ -41,6 +41,7 @@ export function TaskCard({ copy, language, volunteerId, task, nowMs }: TaskCardP
         language={language}
         volunteerId={volunteerId}
         taskId={task.id}
+        taskType={task.type}
         locked={task.status === "done"}
       />
     </article>
