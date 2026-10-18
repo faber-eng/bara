@@ -25,7 +25,7 @@ from casework.messenger import (
 )
 from contracts import Case, Language, Message, MessageThread, Task, Volunteer
 from domain.case_view import format_local
-from domain.channels import Channel, OutboundMessage
+from domain.channels import BARA_RECIPIENT, Channel, OutboundMessage
 from domain.chat_blocked import reports_blocked
 from domain.chat_limit import decide
 from domain.chat_wording import WHAT_TO_SEND, leaks_internal_words, task_phrase
@@ -36,7 +36,6 @@ CHAT_PROMPT_VERSION = "chat-v5"
 REPLY_TIMEOUT_SECONDS = 15.0
 MAX_CONCURRENT_REPLIES = 8
 FENCE_MARKS = ("<<<CHAT", "CHAT>>>")
-BARA_RECIPIENT = "bara"
 OPS_RECIPIENT = "ops"
 FALLBACK_TIMEZONE = "UTC"
 

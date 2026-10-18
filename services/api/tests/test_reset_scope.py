@@ -142,6 +142,18 @@ def test_a_volunteer_thread_message_to_a_real_uid_keeps_the_case():
     assert plan_reset(example_world(case)).case_ids == set()
 
 
+def test_a_volunteer_chat_message_to_bara_does_not_keep_the_case():
+    case = scenario_case()
+    sent = make_message(id="m-chat", case_id="c-ex", to_id="bara", thread="volunteer")
+    world = example_world(case)
+    world = snapshot(**{**world.__dict__, "messages": [case["message"], sent]})
+
+    scope = plan_reset(world)
+
+    assert scope.case_ids == {"c-ex"}
+    assert scope.message_ids == {"m-c-ex", "m-chat"}
+
+
 def test_a_real_case_is_never_selected():
     real = make_case(id="c-real", example=False)
     task = make_task(id="t1", case_id="c-real", assignee_id="v-ex")

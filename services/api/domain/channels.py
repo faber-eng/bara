@@ -3,6 +3,8 @@ from typing import Protocol
 
 from contracts import Message, MessageThread
 
+BARA_RECIPIENT = "bara"
+
 
 @dataclass(frozen=True)
 class OutboundMessage:
