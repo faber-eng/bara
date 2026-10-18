@@ -39,3 +39,17 @@ export function formatSimTime(iso: string): string {
   const date = `${parts.get("day")} ${parts.get("month")} ${parts.get("year")}`;
   return `${date}, ${parts.get("hour")}:${parts.get("minute")}`;
 }
+
+const simShortFormat = new Intl.DateTimeFormat("en-GB", {
+  timeZone: SIM_TIME_ZONE,
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+export function formatSimTimeShort(iso: string): string {
+  const parts = new Map(simShortFormat.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
+  return `${parts.get("day")} ${parts.get("month")} ${parts.get("hour")}:${parts.get("minute")}`;
+}
