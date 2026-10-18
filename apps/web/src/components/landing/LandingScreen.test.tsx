@@ -105,7 +105,7 @@ describe("landing pamphlet", () => {
     expect(within(proof).getByText("3,573")).toBeInTheDocument();
     expect(within(proof).getByText("82.5%")).toBeInTheDocument();
     expect(within(proof).getByText("n = 40 photos")).toBeInTheDocument();
-    expect(within(proof).getByText("8 of 8")).toBeInTheDocument();
+    expect(within(proof).getByText("9 of 9")).toBeInTheDocument();
     expect(within(proof).getByRole("link", { name: "How well it works" })).toHaveAttribute(
       "href",
       "/public",

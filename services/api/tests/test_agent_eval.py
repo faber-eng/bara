@@ -19,6 +19,7 @@ from evals.agent_eval.metric import trajectory_matches, trajectory_subset_args
 from evals.agent_eval.scenarios import build_scenarios
 from evals.agent_eval.world import build_world_tools
 from evals.run_agent_eval import OUTPUT_PATH, REPO_ROOT, EvalRunMissing, summarize
+from tests.fakes import FakeToolContext
 
 REQUIRED_CASES = {
     "dam_broken_assigns_repair",
@@ -29,6 +30,7 @@ REQUIRED_CASES = {
     "second_overdue_escalates",
     "recheck_smoke_escalates",
     "location_mismatch_goes_to_review",
+    "area_check_ranks_the_drawn_area",
 }
 
 
@@ -249,3 +251,23 @@ def test_summarize_refuses_a_result_with_a_missing_case_or_no_model():
 def test_the_agent_part_lands_in_the_repo_docs_eval_folder():
     assert (REPO_ROOT / "services" / "api" / "evals").is_dir()
     assert OUTPUT_PATH == REPO_ROOT / "docs" / "eval" / "agent.json"
+
+
+def test_the_area_check_case_expects_one_area_run_on_the_drawn_polygon():
+    item = scenario("area_check_ranks_the_drawn_area")
+
+    assert item.trigger == "area.check"
+    assert [(call.name, call.args) for call in item.expected] == [
+        ("run_area_ranking", {"coordinates": item.event["area"]["coordinates"]})
+    ]
+
+
+def test_the_eval_world_ranks_a_drawn_area_without_earth_engine():
+    item = scenario("area_check_ranks_the_drawn_area")
+    result = asyncio.run(
+        tools_by_name()["run_area_ranking"](
+            item.event["area"]["coordinates"], FakeToolContext()
+        )
+    )
+    assert result["status"] == "ranked"
+    assert result["cells"][0]["rank"] == 1

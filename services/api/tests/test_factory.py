@@ -7,7 +7,7 @@ from adapters.factory import build_adapters
 from adapters.gemini import ModelGateway
 from bara_agent.run import AgentService
 from config import ConfigError
-from tests.fakes import FakeModels
+from tests.fakes import FakeModels, UnusedAreaRanker
 
 
 def offline_gateway(settings) -> ModelGateway:
@@ -54,6 +54,7 @@ def test_build_agent_service_wires_the_coordinator_offline(settings, monkeypatch
         gateway,
         main.build_checker(settings, adapters, gateway),
         main.build_escalator(adapters, gateway),
+        UnusedAreaRanker(),
     )
 
     assert isinstance(service, AgentService)
@@ -74,6 +75,7 @@ def test_build_agent_service_without_enterprise_mode_fails_at_boot(
             gateway,
             main.build_checker(settings, adapters, gateway),
             main.build_escalator(adapters, gateway),
+            UnusedAreaRanker(),
         )
 
 
@@ -85,7 +87,9 @@ def test_build_dispatcher_handles_every_pushed_topic_and_trigger_wires_offline(
     gateway = offline_gateway(settings)
     checker = main.build_checker(settings, adapters, gateway)
     escalator = main.build_escalator(adapters, gateway)
-    agent = main.build_agent_service(settings, adapters, gateway, checker, escalator)
+    agent = main.build_agent_service(
+        settings, adapters, gateway, checker, escalator, UnusedAreaRanker()
+    )
 
     assigner = main.build_assigner(settings, adapters, gateway)
     precomputer = main.build_explanation_precomputer(settings, adapters, gateway)

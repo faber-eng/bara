@@ -12,6 +12,7 @@ ToolName = Literal[
     "check_evidence",
     "escalate",
     "request_human_review",
+    "run_area_ranking",
 ]
 
 

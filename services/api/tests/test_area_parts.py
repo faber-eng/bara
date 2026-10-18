@@ -1,15 +1,18 @@
+import asyncio
+import threading
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from adapters.area_regions import load_area_regions
 from adapters.earthengine_area import AreaSourceError, scored_cell
-from bara_agent.tools.run_area_ranking import RunAreaRanking
+from bara_agent.tools.run_area_ranking import MAX_AREA_RUNS, RunAreaRanking
 from contracts import AreaRanking, AreaRunState
 from domain.area_cache import AreaRankingCache
 from domain.area_limit import RUNS_PER_HOUR, decide
 from domain.area_rank import AreaMeasure
-from tests.area_support import RIAU_SQUARE, FakeAreaSource, make_ranker
+from tests.area_support import RIAU_SQUARE, FakeAreaSource, make_ranker, square
+from tests.fakes import FakeToolContext
 
 HASH = "a" * 64
 
@@ -104,10 +107,15 @@ def test_every_region_with_drying_settings_takes_area_runs(settings):
     assert regions[0].box.west == 101.95
 
 
+def run_tool(tool, geojson, context=None):
+    coordinates = geojson.get("coordinates")
+    return asyncio.run(tool.function(coordinates, context or FakeToolContext()))
+
+
 def test_the_tool_returns_the_ranking_and_summarises_it(settings):
     tool = RunAreaRanking(make_ranker(settings))
 
-    result = tool.function(RIAU_SQUARE)
+    result = run_tool(tool, RIAU_SQUARE)
 
     assert result["status"] == "ranked"
     assert tool.summarize(result) == "3 cells, top riau-1-2 at 80.0"
@@ -117,10 +125,54 @@ def test_the_tool_reports_no_peat(settings):
     ranker = make_ranker(settings, FakeAreaSource(AreaMeasure(0, [], None)))
     tool = RunAreaRanking(ranker)
 
-    assert tool.summarize(tool.function(RIAU_SQUARE)) == "no mapped peat"
+    assert tool.summarize(run_tool(tool, RIAU_SQUARE)) == "no mapped peat"
 
 
 def test_the_tool_returns_an_error_for_a_bad_polygon(settings):
-    result = RunAreaRanking(make_ranker(settings)).function({"type": "Point"})
+    result = run_tool(
+        RunAreaRanking(make_ranker(settings)), {"coordinates": [[[1, 1]]]}
+    )
 
     assert "area rejected" in str(result["error"])
+
+
+def test_the_tool_returns_an_error_when_earth_engine_fails(settings):
+    source = FakeAreaSource(error=AreaSourceError("ee down"))
+
+    result = run_tool(RunAreaRanking(make_ranker(settings, source)), RIAU_SQUARE)
+
+    assert "area ranking unavailable" in str(result["error"])
+
+
+def test_the_tool_returns_an_error_when_the_run_times_out(settings):
+    gate = threading.Event()
+    ranker = make_ranker(settings, FakeAreaSource(delay=gate), timeout_seconds=0.05)
+    threading.Timer(0.3, gate.set).start()
+
+    result = run_tool(RunAreaRanking(ranker), RIAU_SQUARE)
+
+    assert "area ranking unavailable" in str(result["error"])
+
+
+def test_one_agent_run_gets_at_most_two_area_runs(settings):
+    source = FakeAreaSource()
+    tool = RunAreaRanking(make_ranker(settings, source))
+    context = FakeToolContext()
+
+    first = run_tool(tool, square(102.0, 0.5, 0.05), context)
+    second = run_tool(tool, square(102.1, 0.5, 0.05), context)
+    third = run_tool(tool, square(102.2, 0.5, 0.05), context)
+
+    assert first["status"] == "ranked"
+    assert second["status"] == "ranked"
+    assert f"at most {MAX_AREA_RUNS} area runs" in str(third["error"])
+    assert len(source.calls) == MAX_AREA_RUNS
+
+
+def test_a_new_agent_run_gets_a_new_area_budget(settings):
+    tool = RunAreaRanking(make_ranker(settings))
+    spent = FakeToolContext()
+    for west in (102.0, 102.1, 102.2):
+        run_tool(tool, square(west, 0.5, 0.05), spent)
+
+    assert run_tool(tool, RIAU_SQUARE)["status"] == "ranked"
