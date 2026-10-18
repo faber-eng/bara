@@ -159,6 +159,7 @@ def test_each_of_the_three_cells_gets_a_patrol_recheck_due_in_48_hours():
     assert {r.task_type for r in requests} == {"patrol_recheck"}
     assert {r.deadline_hours for r in requests} == {48}
     assert {r.case_id for r in requests} == {world.all_cases()[0].id}
+    assert {r.reassigns_overdue for r in requests} == {False}
     assert all("c-" in r.instructions_hint for r in requests)
 
 

@@ -52,6 +52,7 @@ class AssignmentRequest:
     instructions_hint: str
     deadline_hours: int | None
     target_cell_id: str | None = None
+    reassigns_overdue: bool = True
 
 
 @dataclass(frozen=True)
@@ -122,6 +123,7 @@ class TaskAssigner:
 
     def _plan(self, request: AssignmentRequest) -> AssignmentPlan:
         case = self._case(request.case_id)
+        self._require_reassign_allowed(case, request)
         next_status = self._status_after_assign(case)
         volunteer = self._assignee(request.assignee_id)
         hours = self._hours(request)
@@ -207,6 +209,13 @@ class TaskAssigner:
         if case is None:
             raise AssignmentRejected(f"unknown case {case_id!r}")
         return case
+
+    @staticmethod
+    def _require_reassign_allowed(case: Case, request: AssignmentRequest) -> None:
+        if case.status == "overdue" and not request.reassigns_overdue:
+            raise AssignmentRejected(
+                f"case {case.id} is overdue; it waits for escalation"
+            )
 
     @staticmethod
     def _status_after_assign(case: Case) -> CaseStatus:

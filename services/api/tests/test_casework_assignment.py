@@ -272,6 +272,16 @@ def test_an_unavailable_person_is_rejected():
     assert world.nothing_written()
 
 
+def test_a_request_that_does_not_reassign_is_rejected_on_an_overdue_case():
+    world = World(case=make_case(dam_id="dam-7", status="overdue"))
+
+    with pytest.raises(AssignmentRejected, match="overdue"):
+        world.assign(reassigns_overdue=False)
+
+    assert world.nothing_written()
+    assert world.cases.get("c1").status == "overdue"
+
+
 @pytest.mark.parametrize("status", ["escalated", "closed", "resolved_pending_human"])
 def test_a_case_that_cannot_be_assigned_is_rejected(status):
     world = World(case=make_case(dam_id="dam-7", status=status))
