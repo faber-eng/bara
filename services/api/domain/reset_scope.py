@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from contracts import Case, Contact, Dam, Escalation, Evidence, Message, Task, Volunteer
+from domain.channels import BARA_RECIPIENT
 
 
 @dataclass(frozen=True)
@@ -34,7 +35,7 @@ def ids(items) -> frozenset[str]:
 def plan_reset(snapshot: ResetSnapshot) -> ResetScope:
     volunteers = [item for item in snapshot.volunteers if item.example]
     contacts = [item for item in snapshot.contacts if item.example]
-    example_people = ids(volunteers) | ids(contacts)
+    example_people = ids(volunteers) | ids(contacts) | {BARA_RECIPIENT}
     cases = [
         case
         for case in snapshot.cases
