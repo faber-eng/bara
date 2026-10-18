@@ -191,7 +191,7 @@ describe("/ops", () => {
     renderApp("/ops");
 
     expect(await screen.findByRole("list", { name: /Ranked areas/ })).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Demo Panel" })).not.toBeInTheDocument();
     const call = callsTo(fetchMock, "GET /api/rankings/riau")[0];
     expect(headerOf(call, "Authorization")).toBe("Bearer claims-token");
     expect(headerOf(call, "X-Bara-Role")).toBeNull();

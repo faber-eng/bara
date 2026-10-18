@@ -224,7 +224,7 @@ const EN: LandingCopy = {
       },
       {
         to: "/ops",
-        label: "Ops desk (judge mode)",
+        label: "Ops desk (Demo Panel)",
         note: "Ranked areas, cases, live agent steps and the review queue.",
       },
       {
@@ -376,7 +376,7 @@ const ID: LandingCopy = {
       },
       {
         to: "/ops",
-        label: "Meja operasi (mode juri)",
+        label: "Meja operasi (Panel Demo)",
         note: "Area berperingkat, kasus, langkah agen secara langsung, dan antrean tinjauan.",
       },
       {

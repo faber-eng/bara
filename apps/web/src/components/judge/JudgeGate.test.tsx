@@ -61,7 +61,7 @@ describe("judge gate", () => {
       await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Loading Bara…")).not.toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Demo Panel" })).not.toBeInTheDocument();
     expect(container.querySelectorAll("main.shell-main")).toHaveLength(1);
   });
 
@@ -75,7 +75,7 @@ describe("judge gate", () => {
     });
     renderApp("/nope");
 
-    expect(await screen.findByRole("region", { name: "Judge mode" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Demo Panel" })).toBeInTheDocument();
     expect(callsTo(fetchMock, "GET /api/clock")).toHaveLength(2);
   });
 
@@ -91,6 +91,6 @@ describe("judge gate", () => {
       ),
     ).toBeInTheDocument();
     expect(callsTo(fetchMock, "GET /api/clock")).toHaveLength(3);
-    expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Demo Panel" })).not.toBeInTheDocument();
   });
 });

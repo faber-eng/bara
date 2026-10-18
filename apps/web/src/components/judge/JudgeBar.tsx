@@ -21,14 +21,14 @@ function choose(state: JudgeBarState) {
 function JudgePill({ now }: { now: string }) {
   return (
     <button type="button" className="judge-pill" aria-expanded={false} onClick={choose("open")}>
-      Judge · {formatSimTimeShort(now)}
+      Demo Panel · {formatSimTimeShort(now)}
     </button>
   );
 }
 
 function JudgePanel({ now }: { now: string }) {
   return (
-    <section id={PANEL_ID} className="judge-bar" aria-label="Judge mode">
+    <section id={PANEL_ID} className="judge-bar" aria-label="Demo Panel">
       <div className="judge-group">
         <RoleSwitcher />
       </div>
@@ -46,7 +46,7 @@ function JudgePanel({ now }: { now: string }) {
         aria-controls={PANEL_ID}
         onClick={choose("closed")}
       >
-        <span className="visually-hidden">Collapse judge mode</span>
+        <span className="visually-hidden">Collapse Demo Panel</span>
         <span aria-hidden="true">×</span>
       </button>
     </section>

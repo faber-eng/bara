@@ -18,7 +18,7 @@ function stubClock() {
 }
 
 function pill() {
-  return screen.findByRole("button", { name: /^Judge · / });
+  return screen.findByRole("button", { name: /^Demo Panel · / });
 }
 
 describe("judge bar collapse", () => {
@@ -40,9 +40,9 @@ describe("judge bar collapse", () => {
     stubClock();
     renderApp("/nope");
 
-    const bar = await screen.findByRole("region", { name: "Judge mode" });
+    const bar = await screen.findByRole("region", { name: "Demo Panel" });
 
-    expect(within(bar).getByRole("button", { name: "Collapse judge mode" })).toHaveAttribute(
+    expect(within(bar).getByRole("button", { name: "Collapse Demo Panel" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -61,10 +61,10 @@ describe("judge bar collapse", () => {
   it("collapses to a pill showing the sim time and expands again", async () => {
     stubClock();
     renderApp("/nope");
-    fireEvent.click(await screen.findByRole("button", { name: "Collapse judge mode" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Collapse Demo Panel" }));
 
     const collapsed = await pill();
-    expect(collapsed).toHaveTextContent("Judge · 18 Oct 10:37");
+    expect(collapsed).toHaveTextContent("Demo Panel · 18 Oct 10:37");
     expect(collapsed).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("button", { name: "+48h" })).not.toBeInTheDocument();
     expect(localStorage.getItem("bara.judgeBar")).toBe("closed");
@@ -82,7 +82,7 @@ describe("judge bar collapse", () => {
     renderApp("/nope");
 
     expect(await pill()).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Demo Panel" })).not.toBeInTheDocument();
   });
 
   it("falls back to open on an unknown stored value", async () => {
@@ -91,7 +91,7 @@ describe("judge bar collapse", () => {
     stubClock();
     renderApp("/nope");
 
-    expect(await screen.findByRole("region", { name: "Judge mode" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Demo Panel" })).toBeInTheDocument();
   });
 
   it("still toggles when storage throws", async () => {
@@ -105,7 +105,7 @@ describe("judge bar collapse", () => {
     stubClock();
     renderApp("/nope");
 
-    fireEvent.click(await screen.findByRole("button", { name: "Collapse judge mode" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Collapse Demo Panel" }));
 
     expect(await pill()).toBeInTheDocument();
   });
