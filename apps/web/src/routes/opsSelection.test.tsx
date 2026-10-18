@@ -7,6 +7,7 @@ vi.mock("../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1")
 
 const spies = vi.hoisted(() => ({
   select: vi.fn(),
+  highlight: vi.fn(),
   focus: vi.fn(),
   onSelect: { current: (_cellId: string) => {} },
 }));
@@ -19,7 +20,7 @@ vi.mock("../lib/ops/cellLayer", async (importOriginal) => ({
     handlers: { onSelect: (id: string) => void },
   ) => {
     spies.onSelect.current = handlers.onSelect;
-    return { select: spies.select, focus: spies.focus, destroy: vi.fn() };
+    return { select: spies.select, highlight: vi.fn(), focus: spies.focus, destroy: vi.fn() };
   },
   createDamLayer: () => ({ destroy: vi.fn() }),
 }));

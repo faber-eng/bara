@@ -6,7 +6,7 @@ import { RankedAreasTab } from "./RankedAreasTab";
 
 vi.mock("../../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
 
-function renderTab(selectedCellId?: string, onCellSelect = vi.fn()) {
+function renderTab(selectedCellId?: string, onCellSelect = vi.fn(), onCellHighlight = vi.fn()) {
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
@@ -15,6 +15,7 @@ function renderTab(selectedCellId?: string, onCellSelect = vi.fn()) {
         week={undefined}
         selectedCellId={selectedCellId}
         onCellSelect={onCellSelect}
+        onCellHighlight={onCellHighlight}
       />
     </QueryClientProvider>,
   );
@@ -59,7 +60,7 @@ describe("RankedAreasTab", () => {
     renderTab();
     await rankedList();
 
-    expect(screen.getAllByText("New this week").length).toBe(
+    expect(screen.getAllByText(/(^|· )new$/).length).toBe(
       fixture.cells.filter((cell) => cell.rank_change === null).length,
     );
   });
@@ -127,9 +128,9 @@ describe("RankedAreasTab", () => {
 
   it("marks no row when nothing is selected", async () => {
     renderTab();
-    await rankedList();
+    const list = await rankedList();
 
-    expect(screen.queryByRole("button", { pressed: true })).not.toBeInTheDocument();
+    expect(within(list).queryByRole("button", { pressed: true })).not.toBeInTheDocument();
   });
 
   it("asks for the week when one is chosen", async () => {
@@ -143,6 +144,7 @@ describe("RankedAreasTab", () => {
           week="2026-W25"
           selectedCellId={undefined}
           onCellSelect={vi.fn()}
+          onCellHighlight={vi.fn()}
         />
       </QueryClientProvider>,
     );
@@ -164,11 +166,65 @@ describe("RankedAreasTab", () => {
           week={undefined}
           selectedCellId={undefined}
           onCellSelect={vi.fn()}
+          onCellHighlight={vi.fn()}
         />
       </QueryClientProvider>,
     );
 
     expect(await screen.findByText("No ranked areas for Congo yet.")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("heads the list with the week and counts, and filters by case", async () => {
+    renderTab();
+    await rankedList();
+
+    expect(screen.getByText(`Week ${fixture.week} · 200 ranked areas`)).toBeInTheDocument();
+    const caseOpen = await screen.findByRole("button", { name: /Case open 1/ });
+    expect(screen.getByRole("button", { name: /Needs a person 199/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /All 200/ })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(caseOpen);
+
+    const rows = rowButtons(await rankedList());
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("riau-0277");
+    expect(rows[0]).toHaveTextContent("Needs review");
+  });
+
+  it("shows the case chip only for a cell with an open case", async () => {
+    renderTab();
+    const list = await rankedList();
+
+    expect(await within(list).findAllByText("Needs review")).toHaveLength(1);
+    expect(within(list).getByRole("button", { name: /riau-0199/ })).not.toHaveTextContent("Closed");
+  });
+
+  it("names a broken dam as the main reason", async () => {
+    renderTab();
+    const list = await rankedList();
+
+    expect(within(list).getByRole("button", { name: /riau-0103/ })).toHaveTextContent(
+      "Broken dam in this area",
+    );
+  });
+
+  it("moves through rows with the arrow keys and highlights the focused cell", async () => {
+    const onCellHighlight = vi.fn();
+    renderTab(undefined, vi.fn(), onCellHighlight);
+    const list = await rankedList();
+    const rows = rowButtons(list);
+    rows[0]?.focus();
+
+    fireEvent.keyDown(list, { key: "ArrowDown" });
+    expect(rows[1]).toHaveFocus();
+    fireEvent.keyDown(list, { key: "ArrowUp" });
+    expect(rows[0]).toHaveFocus();
+    expect(onCellHighlight).toHaveBeenLastCalledWith(
+      rows[0]?.querySelector(".mv-row-title")?.textContent,
+    );
+
+    fireEvent.mouseLeave(rows[0] as HTMLElement);
+    expect(onCellHighlight).toHaveBeenLastCalledWith(undefined);
   });
 });

@@ -12,10 +12,10 @@ describe("detail facts", () => {
   });
 
   it("reads a rank change in plain words", () => {
-    expect(rankChangeShort(7, copy)).toBe("↑7 since last week");
-    expect(rankChangeShort(-3, copy)).toBe("↓3 since last week");
-    expect(rankChangeShort(0, copy)).toBe("Same as last week");
-    expect(rankChangeShort(null, copy)).toBe("New this week");
+    expect(rankChangeShort(7, copy)).toBe("↑7");
+    expect(rankChangeShort(-3, copy)).toBe("↓3");
+    expect(rankChangeShort(0, copy)).toBe("same");
+    expect(rankChangeShort(null, copy)).toBe("new");
   });
 
   it("gives each component a unit and a plain meaning where a rule exists", () => {

@@ -30,6 +30,7 @@ export type CellLayerHandlers = { onSelect: (cellId: string) => void };
 
 export type CellLayer = {
   select: (cellId: string | undefined) => void;
+  highlight: (cellId: string | undefined) => void;
   focus: (cellId: string) => void;
   destroy: () => void;
 };
@@ -128,6 +129,7 @@ export function createCellLayer(
       restyle(previous);
       restyle(cellId);
     },
+    highlight: hover,
     focus(cellId) {
       const cell = byId.get(cellId);
       if (cell === undefined) return;

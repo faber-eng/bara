@@ -124,6 +124,17 @@ export type DetailCopy = {
   publicDetail: {
     download: string;
   };
+  ranked: {
+    header: (week: string, ranked: string, total: string | null) => string;
+    filterLabel: string;
+    filters: { all: string; needsPerson: string; caseOpen: string };
+    listLabel: (week: string) => string;
+    empty: string;
+    brokenDam: string;
+    radar: (dB: string) => string;
+    rain: (percent: string) => string;
+    canal: (meters: string) => string;
+  };
 };
 
 const EN_CELL = "a 1 km peat area";
@@ -226,10 +237,10 @@ const EN: DetailCopy = {
     isNew: "New in the ranking this week",
   },
   rankChangeShort: {
-    up: (places) => `↑${places} since last week`,
-    down: (places) => `↓${places} since last week`,
-    same: "Same as last week",
-    isNew: "New this week",
+    up: (places) => `↑${places}`,
+    down: (places) => `↓${places}`,
+    same: "same",
+    isNew: "new",
   },
   cell: {
     title: (id) => `Area ${id}`,
@@ -278,6 +289,20 @@ const EN: DetailCopy = {
   },
   publicDetail: {
     download: "Download this week's data",
+  },
+  ranked: {
+    header: (week, ranked, total) =>
+      total === null
+        ? `Week ${week} · ${ranked} ranked areas`
+        : `Week ${week} · ${ranked} ranked of ${total} areas`,
+    filterLabel: "Show",
+    filters: { all: "All", needsPerson: "Needs a person", caseOpen: "Case open" },
+    listLabel: (week) => `Ranked areas, ${week}`,
+    empty: "No areas match this filter.",
+    brokenDam: "Broken dam in this area",
+    radar: (dB) => `Radar shows a drier surface (${dB} dB)`,
+    rain: (percent) => `Rain ${percent}% below normal`,
+    canal: (meters) => `Canal ${meters} m away`,
   },
 };
 
@@ -393,10 +418,10 @@ const ID: DetailCopy = {
     isNew: "Baru masuk peringkat minggu ini",
   },
   rankChangeShort: {
-    up: (places) => `↑${places} sejak minggu lalu`,
-    down: (places) => `↓${places} sejak minggu lalu`,
-    same: "Sama dengan minggu lalu",
-    isNew: "Baru minggu ini",
+    up: (places) => `↑${places}`,
+    down: (places) => `↓${places}`,
+    same: "tetap",
+    isNew: "baru",
   },
   cell: {
     title: (id) => `Petak ${id}`,
@@ -445,6 +470,20 @@ const ID: DetailCopy = {
   },
   publicDetail: {
     download: "Unduh data minggu ini",
+  },
+  ranked: {
+    header: (week, ranked, total) =>
+      total === null
+        ? `Minggu ${week} · ${ranked} petak diperingkat`
+        : `Minggu ${week} · ${ranked} dari ${total} petak diperingkat`,
+    filterLabel: "Tampilkan",
+    filters: { all: "Semua", needsPerson: "Perlu orang", caseOpen: "Kasus terbuka" },
+    listLabel: (week) => `Petak berperingkat, ${week}`,
+    empty: "Tidak ada petak yang cocok dengan filter ini.",
+    brokenDam: "Ada bendungan jebol di petak ini",
+    radar: (dB) => `Radar menunjukkan permukaan lebih kering (${dB} dB)`,
+    rain: (percent) => `Hujan ${percent}% di bawah normal`,
+    canal: (meters) => `Kanal berjarak ${meters} m`,
   },
 };
 

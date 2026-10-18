@@ -20,7 +20,7 @@ vi.mock("../../lib/ops/cellLayer", async (importOriginal) => ({
     handlers: { onSelect: (id: string) => void },
   ) => {
     spies.onCell.current = handlers.onSelect;
-    return { select: vi.fn(), focus: vi.fn(), destroy: vi.fn() };
+    return { select: vi.fn(), highlight: vi.fn(), focus: vi.fn(), destroy: vi.fn() };
   },
   createDamLayer: (_map: unknown, _dams: unknown, onSelect: (dam: DamMarker) => void) => {
     spies.onDam.current = onSelect;
