@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from adapters.area_limit_store import AreaLimitUnavailable
 from auth import require_volunteer_owner
+from casework.chat import ChatRateLimited, UnknownVolunteer, VolunteerChat
 from casework.evidence_intake import (
     EvidenceIntake,
     IntakeError,
@@ -12,7 +14,15 @@ from casework.evidence_intake import (
     UploadTooLarge,
 )
 from casework.inbox import InboxReader
-from contracts import CompleteRequest, Evidence, Inbox, UploadRequest, UploadTicket
+from contracts import (
+    ChatRequest,
+    CompleteRequest,
+    Evidence,
+    Inbox,
+    Message,
+    UploadRequest,
+    UploadTicket,
+)
 from domain.evidence import UnsupportedMedia
 
 INTAKE_ERRORS: dict[type[Exception], tuple[int, str]] = {
@@ -43,6 +53,10 @@ def inbox_reader(request: Request) -> InboxReader:
     return request.app.state.inbox_reader
 
 
+def volunteer_chat(request: Request) -> VolunteerChat:
+    return request.app.state.volunteer_chat
+
+
 def http_error(error: Exception) -> HTTPException:
     status, detail = INTAKE_ERRORS[type(error)]
     return HTTPException(status_code=status, detail=detail)
@@ -71,3 +85,19 @@ def complete_upload(
         return intake(request).complete(volunteer_id, evidence_id, body)
     except (IntakeError, UnsupportedMedia) as error:
         raise http_error(error) from error
+
+
+@router.post("/chat", response_model=Message)
+async def send_chat(volunteer_id: str, body: ChatRequest, request: Request) -> Message:
+    try:
+        return await volunteer_chat(request).reply(volunteer_id, body.text)
+    except UnknownVolunteer as error:
+        raise HTTPException(status_code=404, detail="volunteer_not_found") from error
+    except ChatRateLimited as error:
+        raise HTTPException(
+            status_code=429,
+            detail="chat_limit",
+            headers={"Retry-After": str(error.retry_after)},
+        ) from error
+    except AreaLimitUnavailable as error:
+        raise HTTPException(status_code=503, detail="chat_limit_unavailable") from error

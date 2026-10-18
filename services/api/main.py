@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from google.cloud import firestore
 
-from adapters.area_limit_store import FirestoreAreaLimitStore
+from adapters.area_limit_store import CHAT_LIMITS_COLLECTION, FirestoreAreaLimitStore
 from adapters.area_regions import load_area_regions
 from adapters.channels import WebChannel
 from adapters.earthengine import EarthEngineTiles
@@ -29,6 +29,7 @@ from casework.area_ranking import AreaRanker
 from casework.assignment import TaskAssigner
 from casework.brief import BriefWriter
 from casework.bulletin import BulletinJob, BulletinWriter
+from casework.chat import VolunteerChat
 from casework.deadline import DeadlineHandler
 from casework.escalation import Acknowledger, BrigadeInbox, Escalator
 from casework.evidence_check import EvidenceChecker
@@ -454,6 +455,24 @@ def build_tiles(settings: Settings, adapters: Adapters) -> EarthEngineTiles:
     )
 
 
+def build_volunteer_chat(
+    settings: Settings, adapters: Adapters, gateway: ModelGateway
+) -> VolunteerChat:
+    db = firestore.Client(project=settings.project)
+    return VolunteerChat(
+        volunteers=adapters.volunteers,
+        tasks=adapters.tasks,
+        cases=adapters.cases,
+        casework=adapters.casework,
+        limits=FirestoreAreaLimitStore(db, CHAT_LIMITS_COLLECTION),
+        model=gateway,
+        channel=WebChannel(adapters.clock, new_id),
+        utcnow=utcnow,
+        default_language=settings.default_language,
+        timezones=region_timezones(settings.config_dir),
+    )
+
+
 def build_area_ranker(settings: Settings) -> AreaRanker:
     db = firestore.Client(project=settings.project)
     return AreaRanker(
@@ -495,6 +514,9 @@ def create_app() -> FastAPI:
     )
     app.state.evidence_intake = build_intake(app.state.adapters)
     app.state.inbox_reader = build_inbox(app.state.adapters)
+    app.state.volunteer_chat = build_volunteer_chat(
+        settings, app.state.adapters, gateway
+    )
     app.state.review_desk = build_review_desk(
         settings, app.state.adapters, gateway, escalator
     )

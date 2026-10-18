@@ -71,7 +71,7 @@ class StubInbox:
         )
 
 
-def make_client(settings, intake=None, inbox=None, judge=False):
+def make_client(settings, intake=None, inbox=None, judge=False, chat=None):
     app = FastAPI()
     app.state.settings = settings.model_copy(
         update={"judge_mode": JudgeMode(enabled=judge, max_resets_per_hour=20)}
@@ -79,6 +79,7 @@ def make_client(settings, intake=None, inbox=None, judge=False):
     app.state.verifier = FakeVerifier(TOKENS)
     app.state.evidence_intake = intake or StubIntake()
     app.state.inbox_reader = inbox or StubInbox()
+    app.state.volunteer_chat = chat
     app.include_router(volunteer.router)
     return TestClient(app)
 
