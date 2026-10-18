@@ -4,7 +4,9 @@ import { useSyncExternalStore } from "react";
 import { advanceClock } from "../../lib/api/clock";
 import { clockQuery } from "../../lib/api/queries";
 import { triggerScenario } from "../../lib/api/trigger";
-import { scenarioCopy } from "../../lib/copy/scenario";
+import { useCopyLanguage } from "../../lib/copy/language";
+import { type ScenarioCopy, scenarioCopy } from "../../lib/copy/scenario";
+import { type TourCopy, tourCopy } from "../../lib/copy/tour";
 import { invalidateWorld } from "../../lib/judge/invalidate";
 import { moveTourTo } from "../../lib/tour/enterStep";
 import { FIRST_STEP, LAST_STEP, TOUR_STEPS, type TourAction } from "../../lib/tour/steps";
@@ -23,11 +25,20 @@ function useTourAction() {
   });
 }
 
+function actionLabel(action: TourAction, copy: TourCopy, scenario: ScenarioCopy): string {
+  if (action.kind === "advance") return copy.advanceLabel(action.hours);
+  if (action.event === "drying.ranked") return scenario.rankingLabel;
+  return scenario.quietLabel;
+}
+
 export function TourDock() {
   const { open, step } = useSyncExternalStore(subscribeTour, getTourSnapshot);
   const router = useRouter();
   const queryClient = useQueryClient();
   const run = useTourAction();
+  const language = useCopyLanguage();
+  const copy = tourCopy(language);
+  const scenario = scenarioCopy(language);
   const current = TOUR_STEPS[step];
   if (!open || current === undefined) return null;
 
@@ -35,6 +46,7 @@ export function TourDock() {
   const isFirst = step === FIRST_STEP;
   const isLast = step === LAST_STEP;
   const action = current.action;
+  const stepCopy = copy.steps[current.id];
 
   function move(index: number) {
     run.reset();
@@ -42,12 +54,10 @@ export function TourDock() {
   }
 
   return (
-    <aside className="tour-dock" aria-label="Guided tour">
-      <p className="tour-progress">
-        Step {step + 1} of {TOUR_STEPS.length}
-      </p>
-      <h2 className="tour-title">{current.title}</h2>
-      <p className="tour-body">{current.body}</p>
+    <aside className="tour-dock" aria-label={copy.dockLabel}>
+      <p className="tour-progress">{copy.progress(step + 1, TOUR_STEPS.length)}</p>
+      <h2 className="tour-title">{stepCopy.title}</h2>
+      <p className="tour-body">{stepCopy.body}</p>
       {action && (
         <button
           type="button"
@@ -55,37 +65,35 @@ export function TourDock() {
           disabled={run.isPending}
           onClick={() => run.mutate(action)}
         >
-          {action.label}
+          {actionLabel(action, copy, scenario)}
         </button>
       )}
       {run.isSuccess && (
         <p role="status" className="tour-note">
-          {action?.kind === "advance"
-            ? "Done. The clock moved."
-            : "Done. Wait about 30 seconds for the result, then press Next."}
+          {action?.kind === "advance" ? copy.clockMoved : copy.triggerSent}
         </p>
       )}
       {run.isError && (
         <p role="alert" className="tour-note tour-alert">
-          {failureMessage(run.error, scenarioCopy("en"))}
+          {failureMessage(run.error, scenario)}
         </p>
       )}
       <div className="tour-buttons">
         <button type="button" className="btn btn-quiet btn-sm" onClick={skipTour}>
-          Skip tour
+          {copy.skip}
         </button>
         {!isFirst && (
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => move(step - 1)}>
-            Back
+            {copy.back}
           </button>
         )}
         {isLast ? (
           <button type="button" className="btn btn-primary btn-sm" onClick={finishTour}>
-            Finish
+            {copy.finish}
           </button>
         ) : (
           <button type="button" className="btn btn-primary btn-sm" onClick={() => move(step + 1)}>
-            Next
+            {copy.next}
           </button>
         )}
       </div>
