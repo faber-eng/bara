@@ -148,7 +148,7 @@ const EN: PublicCopy = {
     title: "Response record",
     note: "Written from the case state and the task, not by Gemini. A cell ID, never a person, a photo or a point.",
     example: "Example data",
-    empty: "No cases yet.",
+    empty: "No cases yet this week. A case appears here when Bara sends someone to check an area.",
     failed: "Could not load the response record.",
     kinds: {
       opened: "Opened",
@@ -267,7 +267,8 @@ const ID: PublicCopy = {
     title: "Catatan respons",
     note: "Disusun dari status kasus dan tugasnya, bukan oleh Gemini. Hanya ID petak, tidak pernah orang, foto, atau titik lokasi.",
     example: "Data contoh",
-    empty: "Belum ada kasus.",
+    empty:
+      "Belum ada kasus minggu ini. Kasus muncul di sini saat Bara meminta seseorang memeriksa sebuah area.",
     failed: "Catatan respons belum bisa dimuat.",
     kinds: {
       opened: "Dibuka",

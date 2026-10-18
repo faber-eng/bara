@@ -165,7 +165,6 @@ describe("landing pamphlet", () => {
         name: "Bara menemukan gambut yang mulai kering dan mengirim orang untuk mengeceknya sebelum terbakar.",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Pencegahan kebakaran gambut · diuji dengan data Riau")).toBeVisible();
     expect(screen.getByText("Hanya peringkat kering dan peta.")).toBeInTheDocument();
     expect(screen.getByText(/AUC model 0,662/)).toBeInTheDocument();
   });

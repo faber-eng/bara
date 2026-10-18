@@ -12,7 +12,6 @@ import type {
 import { parseEvalReport } from "../../lib/eval/report";
 import { photoDamState } from "../../lib/landing/proof";
 import { formatFixed, formatNumber, formatPercent } from "../../lib/public/format";
-import { SectionHead } from "./SectionHead";
 
 const TITLE_ID = "landing-proof-title";
 const NO_VALUE = "n/a";
@@ -33,28 +32,32 @@ function aucText(auc: number | null, language: CopyLanguage): string {
 
 function DryingPart({ value, copy, language }: PartProps<DryingEval>) {
   return (
-    <div className="landing-proof-item landing-proof-drying">
+    <div className="card landing-drying">
       <h3 className="landing-h3">{copy.dryingTitle}</h3>
-      <p>{copy.dryingBody(formatPercent(value.topShare, language))}</p>
-      <table className="landing-lift">
+      <p className="muted">{copy.dryingBody(formatPercent(value.topShare, language))}</p>
+      <table className="table landing-lift">
         <thead>
           <tr>
             <th scope="col">{copy.year}</th>
-            <th scope="col">{copy.lift}</th>
-            <th scope="col">{copy.detectionWeeks}</th>
+            <th scope="col" className="num">
+              {copy.lift}
+            </th>
+            <th scope="col" className="num">
+              {copy.detectionWeeks}
+            </th>
           </tr>
         </thead>
         <tbody>
           {value.years.map((year) => (
             <tr key={year.year}>
               <th scope="row">{year.year}</th>
-              <td className="landing-lift-value">{liftText(year.lift, language)}</td>
-              <td>{formatNumber(year.hotspots, language)}</td>
+              <td className="num landing-lift-value">{liftText(year.lift, language)}</td>
+              <td className="num">{formatNumber(year.hotspots, language)}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="landing-small">{copy.smallCount}</p>
+      <p className="muted landing-note">{copy.smallCount}</p>
     </div>
   );
 }
@@ -62,10 +65,14 @@ function DryingPart({ value, copy, language }: PartProps<DryingEval>) {
 function PhotoPart({ value, copy, language }: PartProps<FieldAccuracy>) {
   const accuracy = value.accuracy === null ? NO_VALUE : formatPercent(value.accuracy, language);
   return (
-    <div className="landing-proof-item">
-      <p className="landing-figure">{accuracy}</p>
+    <div className="landing-figure-block">
+      <p className="serif num landing-figure">{accuracy}</p>
       <h3 className="landing-h3">{copy.photoTitle}</h3>
-      <p className="landing-small">{copy.photoSize(formatNumber(value.n, language))}</p>
+      <p>
+        <span className="chip chip-example num">
+          {copy.photoSize(formatNumber(value.n, language))}
+        </span>
+      </p>
     </div>
   );
 }
@@ -73,12 +80,12 @@ function PhotoPart({ value, copy, language }: PartProps<FieldAccuracy>) {
 function AgentPart({ value, copy, language }: PartProps<AgentEval>) {
   const cases = formatNumber(value.cases, language);
   return (
-    <div className="landing-proof-item">
-      <p className="landing-figure">
+    <div className="landing-figure-block">
+      <p className="serif num landing-figure">
         {copy.agentValue(formatNumber(value.passed, language), cases)}
       </p>
       <h3 className="landing-h3">{copy.agentTitle}</h3>
-      <p className="landing-small">{copy.agentSize(cases)}</p>
+      <p className="muted">{copy.agentSize(cases)}</p>
     </div>
   );
 }
@@ -91,7 +98,7 @@ function ShortfallPart({ value, copy, language }: PartProps<ReignitionEval>) {
     events: formatNumber(value.events, language),
   });
   return (
-    <div className="landing-shortfall">
+    <div className="tile tile-peach landing-shortfall">
       <h3 className="landing-h3">{copy.shortTitle}</h3>
       <p>{line}</p>
     </div>
@@ -106,8 +113,10 @@ function ProofLedger({ report, copy, language }: ProofLedgerProps) {
     <>
       <div className="landing-proof-ledger">
         {report.drying && <DryingPart value={report.drying} copy={copy} language={language} />}
-        {damState && <PhotoPart value={damState} copy={copy} language={language} />}
-        {report.agent && <AgentPart value={report.agent} copy={copy} language={language} />}
+        <div className="landing-figures">
+          {damState && <PhotoPart value={damState} copy={copy} language={language} />}
+          {report.agent && <AgentPart value={report.agent} copy={copy} language={language} />}
+        </div>
       </div>
       {report.reignition && (
         <ShortfallPart value={report.reignition} copy={copy} language={language} />
@@ -120,19 +129,19 @@ type ProofSectionProps = { copy: ProofCopy; language: CopyLanguage };
 
 export function ProofSection({ copy, language }: ProofSectionProps) {
   return (
-    <section className="landing-section landing-proof" aria-labelledby={TITLE_ID}>
-      <div className="landing-wrap landing-proof-grid">
-        <div className="landing-proof-intro">
-          <SectionHead id={TITLE_ID} eyebrow={copy.eyebrow} title={copy.title} />
-          <p className="landing-more">
-            {copy.morePrefix}
-            <Link to="/public" className="link">
-              {copy.moreLink}
-            </Link>
-            {copy.moreSuffix}
-          </p>
-        </div>
+    <section className="landing-proof" aria-labelledby={TITLE_ID}>
+      <div className="wrap">
+        <h2 id={TITLE_ID} className="section-title landing-title">
+          {copy.title}
+        </h2>
         {PARSED.ok && <ProofLedger report={PARSED.report} copy={copy} language={language} />}
+        <p className="muted landing-more">
+          {copy.morePrefix}
+          <Link to="/public" className="link">
+            {copy.moreLink}
+          </Link>
+          {copy.moreSuffix}
+        </p>
       </div>
     </section>
   );

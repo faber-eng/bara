@@ -14,7 +14,15 @@ import { countdownText } from "../ops/Countdown";
 import { EvidenceCard } from "../ops/EvidenceCard";
 import { QueryState } from "../ops/QueryState";
 import { StatusBadge } from "./badges";
-import { DetailActions, DetailLayout, DetailSection, DetailText, FactList } from "./DetailSheet";
+import {
+  DetailAbout,
+  DetailActions,
+  DetailKeyFact,
+  DetailLayout,
+  DetailSection,
+  DetailText,
+  FactSection,
+} from "./DetailSheet";
 import { chanceText, decisionLine, type FactRow, scoreFact } from "./facts";
 import type { OpsDetail } from "./selection";
 
@@ -41,21 +49,24 @@ function CloseButton({ caseId }: { caseId: string }) {
   );
 }
 
-function nextDeadline(tasks: readonly Task[]): string | null {
-  let next: string | null = null;
+function nextOpenTask(tasks: readonly Task[]): Task | null {
+  let next: Task | null = null;
   for (const task of tasks) {
     if (!OPEN_TASK_STATUSES.includes(task.status)) continue;
-    if (next === null || Date.parse(task.deadline_at) < Date.parse(next)) next = task.deadline_at;
+    if (next === null || Date.parse(task.deadline_at) < Date.parse(next.deadline_at)) next = task;
   }
   return next;
 }
 
-function useTimeLeft(detail: CaseDetail, copy: DetailCopy): string {
+function useTimeLeft(task: Task | null, copy: DetailCopy): string {
   const clock = useQuery(clockQuery);
-  const deadline = nextDeadline(detail.tasks);
-  if (deadline === null) return copy.facts.noOpenTask;
+  if (task === null) return copy.facts.noOpenTask;
   const nowMs = clock.data ? Date.parse(clock.data.now) : Date.now();
-  return countdownText({ deadline, nowMs, simClock: clock.data?.judge_mode === true });
+  return countdownText({
+    deadline: task.deadline_at,
+    nowMs,
+    simClock: clock.data?.judge_mode === true,
+  });
 }
 
 type CaseFactsProps = { detail: CaseDetail; copy: DetailCopy; language: CopyLanguage };
@@ -65,7 +76,6 @@ function useCaseRows({ detail, copy, language }: CaseFactsProps): FactRow[] {
   const cell = useQuery(allCellsQuery(record.region)).data?.cells.find(
     (item) => item.cell_id === record.cell_id,
   );
-  const timeLeft = useTimeLeft(detail, copy);
   const rows: FactRow[] = [];
   const score = record.risk.drying_score ?? cell?.drying_score ?? null;
   if (score !== null) rows.push(scoreFact(score, copy, language));
@@ -78,9 +88,15 @@ function useCaseRows({ detail, copy, language }: CaseFactsProps): FactRow[] {
       meaning: null,
     });
   }
-  rows.push({ label: copy.facts.timeLeft, value: timeLeft, meaning: null });
   rows.push({ label: copy.facts.evidence, value: String(detail.evidence.length), meaning: null });
   return rows;
+}
+
+function CaseKeyFact({ detail, copy }: { detail: CaseDetail; copy: DetailCopy }) {
+  const task = nextOpenTask(detail.tasks);
+  const timeLeft = useTimeLeft(task, copy);
+  const caption = task === null ? undefined : copy.case.assignedTo(task.assignee_id);
+  return <DetailKeyFact label={copy.facts.timeLeft} value={timeLeft} caption={caption} />;
 }
 
 function latestDecision(detail: CaseDetail): string | null {
@@ -124,12 +140,8 @@ function CaseBody({ detail, copy, language, onOpen }: CaseBodyProps) {
 
   return (
     <>
-      <DetailText label={copy.sections.what}>{copy.caseWhat[record.type]}</DetailText>
-      <DetailText label={copy.sections.why}>
-        {latestDecision(detail) ?? copy.case.whyMissing}
-      </DetailText>
-      <FactList label={copy.sections.numbers} rows={rows} />
-      <DetailActions label={copy.sections.next}>
+      <CaseKeyFact detail={detail} copy={copy} />
+      <DetailActions>
         {closable && <CloseButton caseId={record.id} />}
         <button
           type="button"
@@ -139,6 +151,10 @@ function CaseBody({ detail, copy, language, onOpen }: CaseBodyProps) {
           {copy.case.showArea}
         </button>
       </DetailActions>
+      <DetailText label={copy.sections.why}>
+        {latestDecision(detail) ?? copy.case.whyMissing}
+      </DetailText>
+      <FactSection label={copy.sections.numbers} rows={rows} />
       <DetailSection label={copy.case.timeline}>
         <CaseTimeline entries={detail.timeline} ruleMade={ruleEscalationEntries(detail)} />
       </DetailSection>
@@ -148,6 +164,7 @@ function CaseBody({ detail, copy, language, onOpen }: CaseBodyProps) {
       <DetailSection label={copy.case.agentRuns}>
         <AgentRuns runs={detail.agent_runs} openRunId={openRunId} onOpenChange={handleRunToggle} />
       </DetailSection>
+      <DetailAbout label={copy.sections.what}>{copy.caseWhat[record.type]}</DetailAbout>
     </>
   );
 }

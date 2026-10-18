@@ -13,9 +13,7 @@ const explanation: RankExplanation = {
 describe("rank explanation", () => {
   it("keeps the prompt version out of the visible text", () => {
     const { container } = render(
-      <p>
-        <ExplanationText explanation={explanation} copy={detailCopy("en")} />
-      </p>,
+      <ExplanationText explanation={explanation} copy={detailCopy("en")} />,
     );
     expect(container.textContent).toContain("Dry for 12 days.");
     expect(container.textContent).not.toContain("explain-v2");

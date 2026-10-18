@@ -7,7 +7,7 @@ export type ScoreBands = readonly [string, string, string, string, string];
 
 export type DetailCopy = {
   close: string;
-  sections: { what: string; why: string; numbers: string; next: string };
+  sections: { what: string; why: string; numbers: string };
   key: {
     title: string;
     explainToggle: string;
@@ -35,6 +35,7 @@ export type DetailCopy = {
     score: string;
     rank: string;
     rankOf: (rank: number, total: number) => string;
+    rankLine: (rank: string, total: string) => string;
     rankChange: string;
     radar: string;
     rain30: string;
@@ -61,6 +62,8 @@ export type DetailCopy = {
     areaSize: string;
     peatCells: string;
     notAvailable: string;
+    groupWeather: string;
+    groupLand: string;
   };
   meanings: {
     drier: string;
@@ -97,11 +100,13 @@ export type DetailCopy = {
     showArea: string;
     openCase: string;
     missing: string;
+    checkedAt: (when: string) => string;
   };
   case: {
     title: (type: string, cellId: string) => string;
     example: string;
     whyMissing: string;
+    assignedTo: (id: string) => string;
     showArea: string;
     timeline: string;
     evidenceTitle: string;
@@ -110,6 +115,8 @@ export type DetailCopy = {
   review: {
     title: (type: string, cellId: string) => string;
     chip: string;
+    decision: string;
+    keyLine: string;
     what: string;
     unsure: string;
     sure: string;
@@ -148,7 +155,7 @@ const EN_AREA_CELL = "a ranked peat cell inside the area you drew";
 
 const EN: DetailCopy = {
   close: "Close",
-  sections: { what: "What it is", why: "Why it matters", numbers: "Numbers", next: "Next step" },
+  sections: { what: "What it is", why: "Why it matters", numbers: "Numbers" },
   key: {
     title: "Map key",
     explainToggle: "What am I looking at?",
@@ -204,6 +211,7 @@ const EN: DetailCopy = {
     score: "Drying score",
     rank: "Rank",
     rankOf: (rank, total) => `${rank} of ${total}`,
+    rankLine: (rank, total) => `Rank ${rank} of ${total}`,
     rankChange: "Since last week",
     radar: "Radar change",
     rain30: "Rain, 30 days",
@@ -231,6 +239,8 @@ const EN: DetailCopy = {
     areaSize: "Area size",
     peatCells: "Peat cells in the area",
     notAvailable: "n/a",
+    groupWeather: "Weather and radar",
+    groupLand: "Land and canal",
   },
   meanings: {
     drier: "The surface got drier",
@@ -275,11 +285,13 @@ const EN: DetailCopy = {
     showArea: "Show the area",
     openCase: "Open its case",
     missing: "This dam is not in this week's ranking.",
+    checkedAt: (when) => `Last checked ${when}`,
   },
   case: {
     title: (type, cellId) => `${type} at ${cellId}`,
     example: "Example data",
     whyMissing: "The agent has not decided yet.",
+    assignedTo: (id) => `Assigned to ${id}`,
     showArea: "Show the area",
     timeline: "Timeline",
     evidenceTitle: "Evidence",
@@ -288,6 +300,8 @@ const EN: DetailCopy = {
   review: {
     title: (type, cellId) => `Review: ${type} at ${cellId}`,
     chip: "Needs review",
+    decision: "Needs a decision",
+    keyLine: "Gemini read the evidence. A person picks what happens next.",
     what: "A volunteer sent evidence for this case. Gemini read it, and a person must confirm what happens next.",
     unsure: "Gemini is unsure, so a person checks it",
     sure: "Gemini is sure, but the case still needs a person",
@@ -329,12 +343,7 @@ const ID_AREA_CELL = "petak gambut berperingkat di dalam area yang Anda gambar";
 
 const ID: DetailCopy = {
   close: "Tutup",
-  sections: {
-    what: "Apa ini",
-    why: "Kenapa penting",
-    numbers: "Angka",
-    next: "Langkah berikutnya",
-  },
+  sections: { what: "Apa ini", why: "Kenapa penting", numbers: "Angka" },
   key: {
     title: "Keterangan peta",
     explainToggle: "Ini peta apa?",
@@ -395,6 +404,7 @@ const ID: DetailCopy = {
     score: "Skor pengeringan",
     rank: "Peringkat",
     rankOf: (rank, total) => `${rank} dari ${total}`,
+    rankLine: (rank, total) => `Peringkat ${rank} dari ${total}`,
     rankChange: "Sejak minggu lalu",
     radar: "Perubahan radar",
     rain30: "Hujan, 30 hari",
@@ -424,6 +434,8 @@ const ID: DetailCopy = {
     areaSize: "Luas area",
     peatCells: "Petak gambut di area ini",
     notAvailable: "t/a",
+    groupWeather: "Cuaca dan radar",
+    groupLand: "Lahan dan kanal",
   },
   meanings: {
     drier: "Permukaannya makin kering",
@@ -464,11 +476,13 @@ const ID: DetailCopy = {
     showArea: "Lihat petaknya",
     openCase: "Buka kasusnya",
     missing: "Sekat ini tidak ada di peringkat minggu ini.",
+    checkedAt: (when) => `Terakhir dicek ${when}`,
   },
   case: {
     title: (type, cellId) => `${type} di ${cellId}`,
     example: "Data contoh",
     whyMissing: "Agen belum mengambil keputusan.",
+    assignedTo: (id) => `Ditugaskan ke ${id}`,
     showArea: "Lihat petaknya",
     timeline: "Linimasa",
     evidenceTitle: "Bukti",
@@ -477,6 +491,8 @@ const ID: DetailCopy = {
   review: {
     title: (type, cellId) => `Periksa: ${type} di ${cellId}`,
     chip: "Perlu dicek",
+    decision: "Perlu keputusan",
+    keyLine: "Gemini sudah membaca bukti. Seseorang memilih langkah berikutnya.",
     what: "Relawan mengirim bukti untuk kasus ini. Gemini sudah membacanya, dan seseorang harus memastikan langkah berikutnya.",
     unsure: "Gemini belum yakin, jadi orang yang mengecek",
     sure: "Gemini cukup yakin, tapi kasus ini tetap perlu dicek orang",

@@ -3,24 +3,14 @@ import type { AreaCell, AreaRanking } from "../../lib/contracts";
 import type { DetailCopy } from "../../lib/copy/detail";
 import type { CopyLanguage } from "../../lib/copy/language";
 import { formatNumber } from "../../lib/public/format";
-import { DetailActions, DetailLayout, DetailText, FactList } from "./DetailSheet";
-import { type FactRow, scoreFact } from "./facts";
+import { DetailAbout, DetailActions, DetailLayout, DetailText, FactSection } from "./DetailSheet";
+import type { FactRow } from "./facts";
+import { ScoreKeyFact } from "./ScoreKeyFact";
 
 type CopyState = "idle" | "copied" | "failed";
 
-function areaRows(
-  cell: AreaCell,
-  ranking: AreaRanking,
-  copy: DetailCopy,
-  language: CopyLanguage,
-): FactRow[] {
+function areaRows(ranking: AreaRanking, language: CopyLanguage, copy: DetailCopy): FactRow[] {
   return [
-    scoreFact(cell.drying_score, copy, language),
-    {
-      label: copy.facts.rank,
-      value: copy.facts.rankOf(cell.rank, ranking.cells.length),
-      meaning: null,
-    },
     {
       label: copy.facts.areaSize,
       value: `${formatNumber(Math.round(ranking.area_km2), language)} km²`,
@@ -61,18 +51,15 @@ export function AreaCellDetail({ cell, ranking, copy, language }: AreaCellDetail
   }
 
   return (
-    <DetailLayout
-      title={copy.areaCell.title(cell.cell_id)}
-      chips={
-        <span className="chip chip-plain">
-          {copy.areaCell.rankOfArea(cell.rank, ranking.cells.length)}
-        </span>
-      }
-    >
-      <DetailText label={copy.sections.what}>{copy.areaCell.what}</DetailText>
-      <DetailText label={copy.sections.why}>{copy.areaCell.why}</DetailText>
-      <FactList label={copy.sections.numbers} rows={areaRows(cell, ranking, copy, language)} />
-      <DetailActions label={copy.sections.next}>
+    <DetailLayout title={copy.areaCell.title(cell.cell_id)}>
+      <ScoreKeyFact
+        score={cell.drying_score}
+        rank={cell.rank}
+        total={ranking.cells.length}
+        copy={copy}
+        language={language}
+      />
+      <DetailActions>
         <button type="button" className="btn btn-primary" onClick={() => void handleCopy()}>
           {copy.areaCell.copy}
         </button>
@@ -82,6 +69,9 @@ export function AreaCellDetail({ cell, ranking, copy, language }: AreaCellDetail
           {status}
         </p>
       )}
+      <DetailText label={copy.sections.why}>{copy.areaCell.why}</DetailText>
+      <FactSection label={copy.sections.numbers} rows={areaRows(ranking, language, copy)} />
+      <DetailAbout label={copy.sections.what}>{copy.areaCell.what}</DetailAbout>
     </DetailLayout>
   );
 }

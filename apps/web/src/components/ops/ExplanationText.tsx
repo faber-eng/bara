@@ -46,10 +46,10 @@ export function ExplanationText({ explanation, copy }: ExplanationTextProps) {
   const points = explanation.points ?? [];
   if (points.length === 0) {
     return (
-      <>
+      <p className="mv-text">
         <span className="chip chip-gemini">Gemini</span>{" "}
         <CitedText text={explanation.text} cited={explanation.cited} />
-      </>
+      </p>
     );
   }
   return (

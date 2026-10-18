@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detailCopy } from "../../lib/copy/detail";
-import { componentFacts, decisionLine, rankChangeShort, scoreBand, scoreLevel } from "./facts";
+import { componentGroups, decisionLine, rankChangeShort, scoreBand, scoreLevel } from "./facts";
 
 const copy = detailCopy("en");
 
@@ -19,7 +19,7 @@ describe("detail facts", () => {
   });
 
   it("gives each component a unit and a plain meaning where a rule exists", () => {
-    const rows = componentFacts(
+    const groups = componentGroups(
       {
         s1_anom_db: -5.1,
         rain_30d_mm: 182.6,
@@ -31,12 +31,22 @@ describe("detail facts", () => {
       "en",
     );
 
-    expect(rows).toEqual([
-      { label: "Radar change", value: "-5.1 dB", meaning: "The surface got drier" },
-      { label: "Rain, 30 days", value: "182.6 mm", meaning: null },
-      { label: "Rain vs normal", value: "5% more", meaning: "More rain than normal" },
-      { label: "Canal distance", value: "2,505 m", meaning: null },
-      { label: "Peat class", value: "1", meaning: null },
+    expect(groups).toEqual([
+      {
+        heading: "Weather and radar",
+        rows: [
+          { label: "Radar change", value: "-5.1 dB", meaning: "The surface got drier" },
+          { label: "Rain, 30 days", value: "182.6 mm", meaning: null },
+          { label: "Rain vs normal", value: "5% more", meaning: "More rain than normal" },
+        ],
+      },
+      {
+        heading: "Land and canal",
+        rows: [
+          { label: "Canal distance", value: "2,505 m", meaning: null },
+          { label: "Peat class", value: "1", meaning: null },
+        ],
+      },
     ]);
   });
 
@@ -48,22 +58,22 @@ describe("detail facts", () => {
     [0.3, "id", "30% lebih sedikit"],
     [0, "id", "Mendekati normal"],
   ] as const)("words the rain against normal for %s in %s", (share, language, value) => {
-    const rows = componentFacts(
+    const [weather] = componentGroups(
       { s1_anom_db: 1, rain_30d_mm: 1, rain_deficit_pct: share, canal_dist_m: 1, peat_class: 1 },
       detailCopy(language),
       language,
     );
-    expect(rows[2]?.value).toBe(value);
+    expect(weather?.rows[2]?.value).toBe(value);
   });
 
   it("says when there was no radar pass", () => {
-    const [radar] = componentFacts(
+    const [weather] = componentGroups(
       { s1_anom_db: null, rain_30d_mm: 1, rain_deficit_pct: 0.4, canal_dist_m: 10, peat_class: 2 },
       copy,
       "en",
     );
 
-    expect(radar).toEqual({
+    expect(weather?.rows[0]).toEqual({
       label: "Radar change",
       value: "n/a",
       meaning: "No radar pass this week",

@@ -950,9 +950,6 @@ fieldset.join-fieldset {
   gap: var(--space-5, 20px);
   align-items: stretch;
 }
-.pub-grid-low {
-  align-items: start;
-}
 .pub-grid > * {
   min-width: 0;
 }
@@ -1228,48 +1225,6 @@ fieldset.join-fieldset {
   flex-wrap: wrap;
   gap: var(--space-2);
   justify-content: flex-end;
-}
-
-.pub-eval {
-  display: grid;
-  gap: var(--space-5, 20px);
-  margin-top: var(--space-5, 20px);
-}
-.pub-eval p {
-  margin: 0;
-  font-size: var(--fs-sm, 14.2px);
-  color: var(--text-2);
-}
-.pub-eval .pub-license {
-  font-size: var(--fs-xs, 12.6px);
-  color: var(--text-muted);
-}
-.pub-eval-part {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-  min-width: 0;
-  overflow-x: auto;
-}
-.pub-low-main {
-  display: grid;
-  gap: var(--space-5, 20px);
-  min-width: 0;
-}
-.pub-eval .table {
-  max-width: 720px;
-}
-.pub-eval-h {
-  font-family: var(--font-serif);
-  font-weight: var(--fw-title, 600);
-  font-size: var(--fs-md, 20.4px);
-  margin: 0;
-}
-.pub-eval-caption {
-  text-align: left;
-  font-size: var(--fs-xs, 12.6px);
-  color: var(--text-2);
-  padding: var(--space-2, 6px) 0;
 }
 
 .chip::before {

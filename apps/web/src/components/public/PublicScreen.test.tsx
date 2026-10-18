@@ -184,6 +184,39 @@ describe("PublicScreen", () => {
     expect(await screen.findByText("Belum ada peringkat untuk wilayah ini.")).toBeInTheDocument();
   });
 
+  it("says why the response record is empty and what fills it", async () => {
+    stubApi({
+      ...handlers(),
+      "GET /api/public/riau/record?limit=50": () => Response.json([]),
+    });
+
+    renderApp("/public");
+
+    expect(
+      await screen.findByText(
+        "Belum ada kasus minggu ini. Kasus muncul di sini saat Bara meminta seseorang memeriksa sebuah area.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("gives each evaluation report its own card under one heading", async () => {
+    stubApi(handlers());
+
+    renderApp("/public");
+
+    expect(
+      await screen.findByRole("heading", { name: "Seberapa baik hasilnya" }),
+    ).toBeInTheDocument();
+    for (const name of [
+      "Peringkat pengeringan",
+      "Risiko api menyala lagi",
+      "Akurasi vonis Gemini",
+      "Uji agen",
+    ]) {
+      expect(screen.getByRole("heading", { level: 3, name })).toBeInTheDocument();
+    }
+  });
+
   it("shows the ranking-only note for Congo and no response record", async () => {
     stubApi({
       "GET /api/public/congo_cuvette/summary": () =>

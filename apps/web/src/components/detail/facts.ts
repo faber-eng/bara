@@ -26,6 +26,17 @@ export function scoreFact(score: number, copy: DetailCopy, language: CopyLanguag
   };
 }
 
+export function rankLine(
+  rank: number,
+  total: number | null,
+  copy: DetailCopy,
+  language: CopyLanguage,
+): string {
+  const rankText = formatNumber(rank, language);
+  if (total === null) return `${copy.facts.rank} ${rankText}`;
+  return copy.facts.rankLine(rankText, formatNumber(total, language));
+}
+
 export function rankChangeMeaning(change: number | null, copy: DetailCopy): string {
   if (change === null) return copy.meanings.isNew;
   if (change === 0) return copy.meanings.same;
@@ -76,7 +87,9 @@ function rainVsNormalValue(share: number, copy: DetailCopy, language: CopyLangua
   return copy.facts.rainMore(text);
 }
 
-export function componentFacts(
+export type FactGroup = { heading: string; rows: FactRow[] };
+
+function weatherFacts(
   components: RankingComponents,
   copy: DetailCopy,
   language: CopyLanguage,
@@ -93,12 +106,28 @@ export function componentFacts(
       value: rainVsNormalValue(components.rain_deficit_pct, copy, language),
       meaning: rainDeficitMeaning(components.rain_deficit_pct, copy),
     },
+  ];
+}
+
+function landFacts(components: RankingComponents, copy: DetailCopy, language: CopyLanguage) {
+  return [
     {
       label: copy.facts.canal,
       value: `${formatNumber(Math.round(components.canal_dist_m), language)} m`,
       meaning: null,
     },
     { label: copy.facts.peatClass, value: String(components.peat_class), meaning: null },
+  ];
+}
+
+export function componentGroups(
+  components: RankingComponents,
+  copy: DetailCopy,
+  language: CopyLanguage,
+): FactGroup[] {
+  return [
+    { heading: copy.facts.groupWeather, rows: weatherFacts(components, copy, language) },
+    { heading: copy.facts.groupLand, rows: landFacts(components, copy, language) },
   ];
 }
 

@@ -5,7 +5,14 @@ import { useCaseDetail } from "../../lib/ops/useCaseDetail";
 import { EvidenceCard } from "../ops/EvidenceCard";
 import { QueryState } from "../ops/QueryState";
 import { ReviewForm } from "../ops/ReviewForm";
-import { DetailActions, DetailLayout, DetailSection, DetailText, FactList } from "./DetailSheet";
+import {
+  DetailAbout,
+  DetailActions,
+  DetailKeyFact,
+  DetailLayout,
+  DetailSection,
+  FactSection,
+} from "./DetailSheet";
 import { chanceText, type FactRow } from "./facts";
 import type { OpsDetail } from "./selection";
 
@@ -45,18 +52,8 @@ function ReviewBody({ detail, copy, language, onOpen, onDone }: ReviewBodyProps)
   const evidence = latestJudged(detail);
   return (
     <>
-      <DetailText label={copy.sections.what}>{copy.review.what}</DetailText>
-      <FactList label={copy.sections.numbers} rows={confidenceRows(evidence, copy, language)} />
-      <DetailSection label={copy.case.evidenceTitle}>
-        {evidence === undefined ? (
-          <p className="ops-meta">{copy.review.noVerdict}</p>
-        ) : (
-          <ul className="evidence-list">
-            <EvidenceCard evidence={evidence} canExplain={false} onWhy={() => undefined} />
-          </ul>
-        )}
-      </DetailSection>
-      <DetailActions label={copy.sections.next}>
+      <DetailKeyFact value={copy.review.decision} caption={copy.review.keyLine} />
+      <DetailActions>
         <ReviewForm record={detail.case} onDone={onDone} />
         <button
           type="button"
@@ -66,6 +63,17 @@ function ReviewBody({ detail, copy, language, onOpen, onDone }: ReviewBodyProps)
           {copy.review.openCase}
         </button>
       </DetailActions>
+      <FactSection label={copy.sections.numbers} rows={confidenceRows(evidence, copy, language)} />
+      <DetailSection label={copy.case.evidenceTitle}>
+        {evidence === undefined ? (
+          <p className="ops-meta">{copy.review.noVerdict}</p>
+        ) : (
+          <ul className="evidence-list">
+            <EvidenceCard evidence={evidence} canExplain={false} onWhy={() => undefined} />
+          </ul>
+        )}
+      </DetailSection>
+      <DetailAbout label={copy.sections.what}>{copy.review.what}</DetailAbout>
     </>
   );
 }
@@ -85,10 +93,7 @@ export function ReviewDetail({ caseId, onOpen, onDone }: ReviewDetailProps) {
     record === undefined ? caseId : copy.review.title(copy.caseTypes[record.type], record.cell_id);
 
   return (
-    <DetailLayout
-      title={title}
-      chips={<span className="chip chip-human-review">{copy.review.chip}</span>}
-    >
+    <DetailLayout title={title}>
       <QueryState
         query={detail}
         label="the case"

@@ -10,6 +10,7 @@ import { findPublicRegion, PUBLIC_REGIONS } from "../../lib/public/regions";
 import { weekChoices } from "../../lib/public/weeks";
 import { LanguageToggle } from "../LanguageToggle";
 import { InlineLoading } from "../LoadingPanel";
+import "./public.css";
 import { BulletinBlock } from "./BulletinBlock";
 import { EvalPanel } from "./EvalPanel";
 import { OpenDataBlock } from "./OpenDataBlock";
@@ -151,31 +152,22 @@ export function PublicScreen({ regionId, week, onRegionChange, onWeekChange }: P
             timeZone={region.timeZone}
           />
           <div className="pub-grid">
-            {cells.data === undefined ? (
-              <div className="ops-map pub-map">
-                <InlineLoading text={copy.loading} />
-              </div>
-            ) : (
-              <PublicMap
-                key={region.id}
-                region={region}
-                query={query}
-                cells={cells.data.cells}
-                copy={copy}
-                language={lang}
-                onReady={() => markOnce("public:map")}
-              />
-            )}
-            <BulletinBlock
-              query={query}
-              available={!region.rankingOnly}
-              copy={copy}
-              language={lang}
-              timeZone={region.timeZone}
-            />
-          </div>
-          <div className="pub-grid pub-grid-low">
-            <div className="pub-low-main">
+            <div className="pub-main">
+              {cells.data === undefined ? (
+                <div className="ops-map pub-map">
+                  <InlineLoading text={copy.loading} />
+                </div>
+              ) : (
+                <PublicMap
+                  key={region.id}
+                  region={region}
+                  query={query}
+                  cells={cells.data.cells}
+                  copy={copy}
+                  language={lang}
+                  onReady={() => markOnce("public:map")}
+                />
+              )}
               {!region.rankingOnly && (
                 <ResponseRecord
                   region={region.id}
@@ -184,10 +176,19 @@ export function PublicScreen({ regionId, week, onRegionChange, onWeekChange }: P
                   timeZone={region.timeZone}
                 />
               )}
-              <EvalPanel />
             </div>
-            <OpenDataBlock region={region.id} week={summary.data.week} copy={copy} />
+            <div className="pub-side">
+              <BulletinBlock
+                query={query}
+                available={!region.rankingOnly}
+                copy={copy}
+                language={lang}
+                timeZone={region.timeZone}
+              />
+              <OpenDataBlock region={region.id} week={summary.data.week} copy={copy} />
+            </div>
           </div>
+          <EvalPanel />
         </>
       )}
     </div>

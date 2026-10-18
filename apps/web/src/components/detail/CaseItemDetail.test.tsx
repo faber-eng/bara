@@ -158,6 +158,20 @@ describe("CaseItemDetail", () => {
     expect(screen.getByRole("dialog")).not.toHaveTextContent("dam_risk");
   });
 
+  it("puts the deadline and the action before the reasoning, with the explainer folded", async () => {
+    renderDrawer("case-0001");
+
+    const timeLeft = await screen.findByText("Time left on the task");
+    const action = screen.getByRole("button", { name: "Show the area" });
+    const why = screen.getByRole("heading", { level: 3, name: "Why it matters" });
+    expect(
+      timeLeft.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(action.compareDocumentPosition(why) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(/^Assigned to /)).toBeInTheDocument();
+    expect(screen.getByText("What it is").closest("details")).not.toHaveAttribute("open");
+  });
+
   it("opens the area of the case", async () => {
     const { onOpen } = renderDrawer("case-0001");
 

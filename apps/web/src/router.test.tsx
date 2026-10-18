@@ -42,12 +42,10 @@ describe("app routes", () => {
     expect(await screen.findByText("API ok")).toBeInTheDocument();
   });
 
-  it("says the landing page is tested on Riau data", async () => {
+  it("says the landing page is tested on data, not yet in the field", async () => {
     renderAt("/");
 
-    expect(
-      await screen.findByText("Peat fire prevention · tested on Riau data"),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /tested on data/i })).toBeInTheDocument();
   });
 
   it("opens the volunteer screen for the id in the URL", async () => {

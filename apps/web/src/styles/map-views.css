@@ -197,21 +197,86 @@
 
 .mv-section {
   display: grid;
-  gap: var(--space-2, 6px);
+  gap: var(--space-3, 10px);
+  margin-top: var(--space-3, 10px);
 }
-.mv-label {
+.mv-heading {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: var(--fs-xs, 12.6px);
+  font-size: var(--fs-md, 20.4px);
+  font-weight: var(--fw-strong, 700);
+  line-height: var(--lh-tight, 1.15);
+  letter-spacing: normal;
+}
+.mv-subheading {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm, 14.2px);
+  font-weight: var(--fw-strong, 700);
+  letter-spacing: normal;
+}
+.mv-keyfact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3, 10px) var(--space-4, 16px);
+}
+.mv-keyfact-main {
+  display: grid;
+  gap: var(--space-1, 4px);
+  min-width: 0;
+}
+.mv-keyfact-label {
+  margin: 0;
+  font-size: var(--fs-sm, 14.2px);
   font-weight: var(--fw-label, 500);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-2);
+}
+.mv-keyfact-value {
+  margin: 0;
+  font-size: var(--fs-xl, 33px);
+  font-weight: var(--fw-strong, 700);
+  line-height: var(--lh-tight, 1.15);
+  letter-spacing: -0.01em;
+}
+.mv-keyfact-caption {
+  margin: 0;
+  font-size: var(--fs-sm, 14.2px);
+  font-weight: var(--fw-label, 500);
+  color: var(--text-2);
+}
+.mv-keyfact-aside {
+  flex: none;
+}
+.mv-about {
+  margin-top: var(--space-3, 10px);
+  padding-top: var(--space-3, 10px);
+  border-top: 1px solid var(--line);
+}
+.mv-about summary {
+  cursor: pointer;
+  min-height: 24px;
+  font-size: var(--fs-sm, 14.2px);
+  font-weight: var(--fw-title, 600);
+  color: var(--text-2);
+}
+.mv-fact-group {
+  display: grid;
+  gap: var(--space-2, 6px);
+}
+.mv-fact-group + .mv-fact-group {
+  margin-top: var(--space-2, 6px);
 }
 .mv-text {
   margin: 0;
   font-size: var(--fs-base, 16px);
   line-height: var(--lh-body, 1.618);
+}
+.mv-about .mv-text {
+  margin-top: var(--space-2, 6px);
+  font-size: var(--fs-sm, 14.2px);
+  color: var(--text-2);
 }
 .mv-note {
   margin: 0;
@@ -263,10 +328,15 @@
 .mv-trend {
   display: grid;
   gap: var(--space-1, 4px);
+  justify-items: start;
+}
+.mv-trend-text {
+  font-size: var(--fs-xs, 12.6px);
+  color: var(--text-muted);
 }
 .mv-spark {
-  width: 100%;
-  height: 40px;
+  width: 120px;
+  height: 32px;
   color: var(--brand);
 }
 .mv-mini {
