@@ -93,6 +93,7 @@ export function VolunteerScreen({ volunteerId }: { volunteerId: string }) {
       {inbox.data && (
         <HomeLocation
           copy={copy}
+          volunteerId={volunteerId}
           home={inbox.data.home}
           name={inbox.data.name}
           volunteerRole={inbox.data.role}

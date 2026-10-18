@@ -1,8 +1,15 @@
-import type { CompleteRequest, Evidence, Inbox, UploadRequest, UploadTicket } from "../contracts";
+import type {
+  CompleteRequest,
+  Evidence,
+  GeoPoint,
+  Inbox,
+  UploadRequest,
+  UploadTicket,
+} from "../contracts";
 import { sourceFor } from "../sources";
 import { apiRequest } from "./client";
 import { ResponseShapeError, readArray, readRecord, readString, readStringRecord } from "./parse";
-import { parseEvidence, parseHome, parseMessage, parseTask } from "./volunteerParse";
+import { parseEvidence, parseGeoPoint, parseHome, parseMessage, parseTask } from "./volunteerParse";
 import type { ChatRequest } from "./volunteerTypes";
 
 const COMPLETE_TIMEOUT_MS = 30_000;
@@ -89,4 +96,9 @@ export async function sendChat(
 ): Promise<void> {
   const path = `/api/v/${encodeURIComponent(volunteerId)}/chat`;
   await apiRequest(path, { method: "POST", body: request, signal, timeoutMs: COMPLETE_TIMEOUT_MS });
+}
+
+export async function saveHome(volunteerId: string, home: GeoPoint): Promise<GeoPoint> {
+  const path = `/api/v/${encodeURIComponent(volunteerId)}/home`;
+  return parseGeoPoint(await apiRequest(path, { method: "PUT", body: home }), "home");
 }

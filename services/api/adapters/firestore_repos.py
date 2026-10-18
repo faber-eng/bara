@@ -29,6 +29,7 @@ from contracts import (
     Escalation,
     EventType,
     Evidence,
+    GeoPoint,
     Message,
     PendingUpload,
     ProcessedEvent,
@@ -424,6 +425,9 @@ class VolunteerRepository:
 
     def create_if_absent(self, volunteer: Volunteer) -> bool:
         return self._volunteers.create_if_absent(volunteer.id, volunteer)
+
+    def set_home(self, volunteer_id: str, home: GeoPoint) -> None:
+        self._volunteers.update(volunteer_id, {"home": home.model_dump()})
 
     def available(self, role: VolunteerRole) -> list[Volunteer]:
         return self._volunteers.where(

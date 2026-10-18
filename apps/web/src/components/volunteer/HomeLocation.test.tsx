@@ -27,7 +27,9 @@ const HOME = { lat: 0.51234, lon: 101.44567 };
 
 function renderHome(language: "en" | "id" = "en") {
   const copy = volunteerCopy(language);
-  render(<HomeLocation copy={copy} home={HOME} name="Sari" volunteerRole="volunteer" />);
+  render(
+    <HomeLocation copy={copy} volunteerId="v1" home={HOME} name="Sari" volunteerRole="volunteer" />,
+  );
 }
 
 describe("HomeLocation", () => {
@@ -73,7 +75,7 @@ describe("HomeLocation", () => {
   it("renders nothing without a home point", () => {
     const copy = volunteerCopy("en");
     const { container } = render(
-      <HomeLocation copy={copy} home={null} name={null} volunteerRole={null} />,
+      <HomeLocation copy={copy} volunteerId="v1" home={null} name={null} volunteerRole={null} />,
     );
     expect(container).toBeEmptyDOMElement();
   });

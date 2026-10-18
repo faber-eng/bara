@@ -18,6 +18,7 @@ from contracts import (
     ChatRequest,
     CompleteRequest,
     Evidence,
+    GeoPoint,
     Inbox,
     Message,
     UploadRequest,
@@ -65,6 +66,18 @@ def http_error(error: Exception) -> HTTPException:
 @router.get("/inbox", response_model=Inbox)
 def read_inbox(volunteer_id: str, request: Request) -> Inbox:
     return inbox_reader(request).read(volunteer_id)
+
+
+@router.put("/home", response_model=GeoPoint)
+def change_home(volunteer_id: str, body: GeoPoint, request: Request) -> GeoPoint:
+    volunteers = request.app.state.adapters.volunteers
+    current = volunteers.get(volunteer_id)
+    if current is None:
+        raise HTTPException(status_code=404, detail="volunteer_not_found")
+    if current.example:
+        raise HTTPException(status_code=403, detail="example_volunteer")
+    volunteers.set_home(volunteer_id, body)
+    return body
 
 
 @router.post("/uploads", response_model=UploadTicket)

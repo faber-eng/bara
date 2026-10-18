@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { GeoPoint } from "../../lib/contracts";
 import type { JoinCopy } from "../../lib/copy/join";
 import {
@@ -7,6 +7,7 @@ import {
   LocationUnavailableError,
   readDeviceLocation,
 } from "../../lib/geo";
+import { parseCoordinates } from "../../lib/join/coordinates";
 import { HomeMap, readMapsKey } from "./HomeMap";
 
 type LocationState = "idle" | "locating" | LocationReason;
@@ -34,6 +35,41 @@ function LocationNote({ copy, state, hasMap }: LocationNoteProps) {
   return null;
 }
 
+type PasteFieldProps = { copy: JoinCopy; onChange: (point: GeoPoint) => void };
+
+function PasteField({ copy, onChange }: PasteFieldProps) {
+  const id = useId();
+  const [text, setText] = useState("");
+  const point = parseCoordinates(text);
+  const rejected = text.trim() !== "" && point === null;
+
+  function handleInput(next: string) {
+    setText(next);
+    const parsed = parseCoordinates(next);
+    if (parsed !== null) onChange(parsed);
+  }
+
+  return (
+    <div className="home-paste">
+      <label className="field-hint" htmlFor={id}>
+        {copy.homePaste}
+      </label>
+      <input
+        id={id}
+        className="input"
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        placeholder={copy.homePasteHint}
+        value={text}
+        aria-invalid={rejected}
+        onChange={(event) => handleInput(event.target.value)}
+      />
+      {rejected && <p role="alert">{copy.homePasteError}</p>}
+    </div>
+  );
+}
+
 export function HomePicker({ copy, value, invalid, onChange }: HomePickerProps) {
   const [state, setState] = useState<LocationState>("idle");
   const hasMap = readMapsKey() !== "";
@@ -59,13 +95,14 @@ export function HomePicker({ copy, value, invalid, onChange }: HomePickerProps) 
         {copy.homeGps}
       </button>
       <LocationNote copy={copy} state={state} hasMap={hasMap} />
+      <PasteField copy={copy} onChange={onChange} />
+      <p className="field-hint">{hasMap ? copy.homeMapNote : copy.homeMapMissing}</p>
+      {hasMap && <HomeMap value={value} onPick={onChange} />}
       {value !== null && (
-        <p className="field-hint">
+        <p className="field-hint" role="status">
           {copy.homeChosen(formatCoordinate(value.lat), formatCoordinate(value.lon))}
         </p>
       )}
-      <p className="field-hint">{hasMap ? copy.homeMapNote : copy.homeMapMissing}</p>
-      {hasMap && <HomeMap value={value} onPick={onChange} />}
     </div>
   );
 }
