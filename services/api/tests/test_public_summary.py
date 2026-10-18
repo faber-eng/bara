@@ -159,9 +159,6 @@ def test_a_spoken_intact_is_not_a_repair_result():
 
 
 def test_the_record_says_area_for_a_dam_risk_case_without_a_dam():
-    from datetime import UTC, datetime
-    from zoneinfo import ZoneInfo
-
     from domain.public_summary import case_lines
     from tests.fakes import make_case, make_task
 

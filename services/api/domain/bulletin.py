@@ -4,7 +4,7 @@ from collections.abc import Mapping, Sequence
 
 from contracts import CitedValue, PublicSummary
 
-BULLETIN_PROMPT_VERSION = "bulletin-v1"
+BULLETIN_PROMPT_VERSION = "bulletin-v2"
 TEMPLATE_PROMPT_VERSION = "bulletin-template-v1"
 MAX_SENTENCES = 4
 EXACT_TOLERANCE = 1e-9

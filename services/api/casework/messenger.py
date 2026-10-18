@@ -13,7 +13,7 @@ from domain.chat_wording import what_to_send
 
 logger = logging.getLogger(__name__)
 
-MESSENGER_PROMPT_VERSION = "messenger-v4"
+MESSENGER_PROMPT_VERSION = "messenger-v5"
 MAX_SENTENCES = 3
 ATTEMPTS = 2
 SENTENCE_END = re.compile(r"[.!?]+(?:\s+|$)")
@@ -27,7 +27,7 @@ LANGUAGE_NAMES: dict[Language, str] = {
 }
 
 SYSTEM_INSTRUCTION = f"""\
-You write one task message to a person in a peat-fire prevention programme. \
+You write one task message to a person in a peat-fire early-warning programme. \
 The user message holds the task in one block between <<<TASK and TASK>>>.
 
 Write the message in the language named in the task, in at most \

@@ -163,7 +163,9 @@ def test_find_people_finds_the_repair_team_of_the_broken_dam_case_first():
 def test_the_action_tools_accept_every_call():
     tools = tools_by_name()
     assigned = asyncio.run(
-        tools["assign_task"]("case-a", "repair-1", "dam_repair", "Fix the gap.")
+        tools["assign_task"](
+            "case-a", "repair-1", "dam_repair", "Fix the gap.", FakeToolContext()
+        )
     )
     escalated = asyncio.run(tools["escalate"]("case-a", "Smoke seen."))
     reviewed = asyncio.run(tools["request_human_review"]("case-a", "Blurred."))

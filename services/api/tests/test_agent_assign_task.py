@@ -130,7 +130,8 @@ def test_a_rejected_assign_does_not_use_up_the_run_slot():
     outcomes = [AssignmentRejected("no such person"), done()]
 
     class Flaky:
-        requests = []
+        def __init__(self):
+            self.requests = []
 
         async def assign(self, request):
             self.requests.append(request)

@@ -11,11 +11,11 @@ from contracts import EvidenceKind, TaskType, Verdict
 
 logger = logging.getLogger(__name__)
 
-EVIDENCE_PROMPT_VERSION = "evidence-v1"
+EVIDENCE_PROMPT_VERSION = "evidence-v2"
 ATTEMPTS = 2
 
-AUDIO_PROMPT_VERSION = "evidence-audio-v1"
-VIDEO_PROMPT_VERSION = "evidence-video-v1"
+AUDIO_PROMPT_VERSION = "evidence-audio-v2"
+VIDEO_PROMPT_VERSION = "evidence-video-v2"
 PROMPT_VERSIONS: dict[EvidenceKind, str] = {
     "photo": EVIDENCE_PROMPT_VERSION,
     "audio": AUDIO_PROMPT_VERSION,
@@ -44,7 +44,7 @@ ASKED_FOR_BY_KIND: dict[EvidenceKind, dict[TaskType, str]] = {
 }
 
 SYSTEM_INSTRUCTION = """\
-You read one photo sent by a field volunteer in a peat-fire prevention \
+You read one photo sent by a field volunteer in a peat-fire early-warning \
 programme in Indonesia, and you describe only what the photo shows. The user \
 message holds the photo, then the task in one block between <<<TASK and TASK>>>.
 
@@ -73,7 +73,7 @@ does not show what the task asked for; otherwise false.
 
 AUDIO_SYSTEM_INSTRUCTION = """\
 You listen to one voice note sent by a field volunteer in a peat-fire \
-prevention programme in Indonesia, and you report only what the speaker says. \
+early-warning programme in Indonesia, and you report only what the speaker says. \
 The voice note is usually Indonesian and may hold local words. The user message \
 holds the audio, then the task in one block between <<<TASK and TASK>>>.
 
@@ -110,7 +110,7 @@ tanah gambut is peat ground.
 """
 
 VIDEO_SYSTEM_INSTRUCTION = """\
-You read one short video sent by a field volunteer in a peat-fire prevention \
+You read one short video sent by a field volunteer in a peat-fire early-warning \
 programme in Indonesia, and you describe only what the video shows. The user \
 message holds the video, then the task in one block between <<<TASK and TASK>>>.
 

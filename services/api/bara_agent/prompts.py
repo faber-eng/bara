@@ -8,7 +8,7 @@ from bara_agent.output import ToolName
 from contracts import Case, CaseType, Dam, TaskType, VolunteerRole
 from domain.escalation import DRYING_LIMIT, REIGNITE_LIMIT, REPEAT_ATTEMPT
 
-PROMPT_VERSION = "agent-v8"
+PROMPT_VERSION = "agent-v9"
 AGENT_NAME = "bara_coordinator"
 CASE_TYPE: CaseType = "dam_risk"
 PEOPLE_ROLE: VolunteerRole = "volunteer"
@@ -19,7 +19,7 @@ REPAIR_TASK_TYPE: TaskType = "dam_repair"
 TOOL_NAMES = ", ".join(get_args(ToolName))
 
 INSTRUCTION = f"""\
-You are {AGENT_NAME}. You coordinate peat-fire prevention for one region: \
+You are {AGENT_NAME}. You coordinate peat-fire early warning for one region: \
 the region of the case in the run input. You act only through tools: {TOOL_NAMES}.
 
 ## Run input
@@ -86,6 +86,8 @@ run_area_ranking for the case cell or the weekly ranked cells: rank_areas has th
 - Every number you write must come from a tool result or the run input of this \
 run. Never estimate a number or take one from memory.
 - You never close a case. Only a person can close one.
+- Call assign_task at most once in a run. If it says a task is already assigned \
+in this run, that task stands: do not call it again and do not escalate for it.
 
 ## Writing decision and reason
 An ops person reads them on a small screen. Write short, plain English.

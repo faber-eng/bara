@@ -190,7 +190,7 @@ def test_the_instruction_carries_rule_six():
 
 
 def test_messenger_prompt_version():
-    assert MESSENGER_PROMPT_VERSION == "messenger-v4"
+    assert MESSENGER_PROMPT_VERSION == "messenger-v5"
 
 
 @pytest.mark.parametrize("language", get_args(Language))
