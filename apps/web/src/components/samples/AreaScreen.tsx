@@ -106,7 +106,7 @@ export function AreaScreen() {
       {sample.isPending && <p role="status">{copy.sampleLoading}</p>}
       {sample.isError && <p role="alert">{copy.loadFailed}</p>}
       {sample.data && (
-        <section className="card join-card" aria-label={copy.loadedTitle}>
+        <section className="card join-card area-sample-card" aria-label={copy.loadedTitle}>
           <span className="chip chip-example">{copy.sampleChip}</span>
           <h2 className="join-heading">{sample.data.summary.name}</h2>
           <p>{copy.vertices(sample.data.summary.vertices)}</p>
