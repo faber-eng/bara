@@ -9,6 +9,7 @@ function failureText(failure: SendFailure, copy: SendCopy): string {
   if (failure.kind === "rate_limited") return failure.detail;
   if (failure.kind === "no_flow") return copy.noFlow;
   if (failure.kind === "case_open") return copy.caseOpen;
+  if (failure.kind === "not_ranked") return copy.notRanked;
   return copy.failed;
 }
 
