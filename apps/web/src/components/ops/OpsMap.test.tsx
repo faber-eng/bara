@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { callsTo, stubApi } from "../../test-utils";
+import { callsTo, outlineMapsApi, stubApi } from "../../test-utils";
 import { OpsMap } from "./OpsMap";
 
 vi.mock("../../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
@@ -12,7 +12,10 @@ const layerSpies = vi.hoisted(() => ({
   createDamLayer: vi.fn(),
 }));
 
-vi.mock("../../lib/ops/cellLayer", () => layerSpies);
+vi.mock("../../lib/ops/cellLayer", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ops/cellLayer")>()),
+  ...layerSpies,
+}));
 
 type TileOptions = {
   getTileUrl: (coord: { x: number; y: number }, zoom: number) => string | null;
@@ -62,7 +65,8 @@ function renderMap(selectedCellId?: string) {
         selectedCellId={selectedCellId}
         focus={null}
         onCellSelect={() => {}}
-        onCellClear={() => {}}
+        onDamSelect={() => {}}
+        onCaseSelect={() => {}}
       />
     </QueryClientProvider>,
   );
@@ -77,7 +81,9 @@ describe("OpsMap", () => {
       destroy: vi.fn(),
     });
     layerSpies.createDamLayer.mockReset().mockReturnValue({ destroy: vi.fn() });
-    vi.stubGlobal("google", { maps: { ImageMapType: FakeImageMapType, Size: class {} } });
+    vi.stubGlobal("google", {
+      maps: { ImageMapType: FakeImageMapType, Size: class {}, ...outlineMapsApi },
+    });
   });
 
   afterEach(() => {
@@ -98,7 +104,7 @@ describe("OpsMap", () => {
     renderMap();
 
     await waitFor(() => expect(layers).toHaveLength(1));
-    expect(screen.getByText("Drying score (0 to 100)")).toBeInTheDocument();
+    expect(screen.getByText(/^Square = a 1 km peat area/)).toBeInTheDocument();
     expect(screen.getByText("Week 2026-W30.")).toBeInTheDocument();
   });
 
@@ -152,9 +158,11 @@ describe("OpsMap", () => {
     await waitFor(() => expect(layers).toHaveLength(1));
     const layer = layers[0] as FakeImageMapType;
 
-    expect(screen.getByText("0 low")).toBeInTheDocument();
-    expect(screen.getByText("100 high")).toBeInTheDocument();
-    fireEvent.change(screen.getByRole("slider", { name: "Opacity" }), { target: { value: "30" } });
+    expect(screen.getByText("0 slow")).toBeInTheDocument();
+    expect(screen.getByText("100 fast")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("slider", { name: "Drying score" }), {
+      target: { value: "30" },
+    });
 
     expect(layers).toHaveLength(1);
     expect(layers[0]).toBe(layer);
@@ -167,7 +175,9 @@ describe("OpsMap", () => {
     await waitFor(() => expect(layerSpies.createCellLayer).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(layers).toHaveLength(1));
 
-    fireEvent.change(screen.getByRole("slider", { name: "Opacity" }), { target: { value: "10" } });
+    fireEvent.change(screen.getByRole("slider", { name: "Drying score" }), {
+      target: { value: "10" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
 
     expect(layerSpies.createCellLayer).toHaveBeenCalledTimes(1);
@@ -216,42 +226,16 @@ describe("OpsMap", () => {
     expect(await screen.findByText(/Only the top 200 areas are clickable/)).toBeInTheDocument();
   });
 
-  it("opens the cell panel for the selected cell and reads its facts", async () => {
-    vi.stubEnv("VITE_MAPS_KEY", "test-key");
-    const fetchMock = stubApi({
-      "GET /api/cells/riau-0412": () =>
-        Response.json({
-          cell_id: "riau-0412",
-          region: "riau",
-          components: {
-            s1_anom_db: -2.8,
-            rain_30d_mm: 41.2,
-            rain_deficit_pct: 0.62,
-            canal_dist_m: 180,
-            peat_class: 1,
-          },
-          drying_score: 91.4,
-          rank: 1,
-          trend: [],
-          nearby_dams: [],
-          past_fires: [],
-          past_checks: [],
-          explanation: { text: "Ranks first on radar and rain.", cited: {} },
-        }),
-    });
-    renderMap("riau-0412");
-
-    const panel = await screen.findByRole("region", { name: "Cell riau-0412" });
-    expect(await screen.findByText("Ranks first on radar and rain.")).toBeInTheDocument();
-    expect(panel).toHaveTextContent("91.4");
-    expect(panel).toHaveTextContent("180 m");
-    expect(callsTo(fetchMock, "GET /api/cells/riau-0412")).toHaveLength(1);
-  });
-
-  it("shows no panel when no cell is selected", () => {
+  it("keys the squares, every dam state and the open-case outline it draws", async () => {
     vi.stubEnv("VITE_MAPS_KEY", "test-key");
     renderMap();
 
-    expect(screen.queryByRole("region", { name: /^Cell / })).not.toBeInTheDocument();
+    const key = await screen.findByRole("region", { name: "Map key" });
+    expect(key).toHaveTextContent("Square = a 1 km peat area");
+    expect(key).toHaveTextContent("Circle = a canal dam");
+    expect(key).toHaveTextContent("Dark outline = open case");
+    for (const state of ["Intact", "Damaged", "Broken", "Water over the top", "Not checked"]) {
+      expect(key).toHaveTextContent(state);
+    }
   });
 });

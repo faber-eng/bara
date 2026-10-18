@@ -18,6 +18,7 @@ type QueryStateProps<T> = {
   query: UseQueryResult<T, Error>;
   label: string;
   emptyText: string;
+  empty?: ReactNode;
   forbiddenText?: string;
   isEmpty: (data: T) => boolean;
   children: (data: T) => ReactNode;
@@ -27,6 +28,7 @@ export function QueryState<T>({
   query,
   label,
   emptyText,
+  empty,
   forbiddenText = OPS_FORBIDDEN_TEXT,
   isEmpty,
   children,
@@ -48,6 +50,6 @@ export function QueryState<T>({
       </div>
     );
   }
-  if (isEmpty(query.data)) return <p className="ops-state">{emptyText}</p>;
+  if (isEmpty(query.data)) return empty ?? <p className="ops-state">{emptyText}</p>;
   return <>{children(query.data)}</>;
 }

@@ -32,13 +32,21 @@ describe("CasesTab", () => {
     expect(screen.getAllByRole("button")).toHaveLength(9);
   });
 
+  it("names case types in plain words, never the raw enum", async () => {
+    renderTab();
+
+    const row = await screen.findByRole("button", { name: /riau-0412/ });
+    expect(row).toHaveTextContent("Dam risk");
+    expect(screen.getByRole("list")).not.toHaveTextContent(/dam_risk|reignition/);
+  });
+
   it.each([
     ["riau-0412", "chip-assigned", "Assigned"],
     ["riau-0610", "chip-open", "Open"],
     ["riau-0388", "chip-reviewing", "Reviewing"],
     ["riau-0455", "chip-overdue", "Overdue"],
-    ["riau-0301", "chip-resolved", "Resolved, pending human"],
-    ["riau-0277", "chip-human-review", "Human review"],
+    ["riau-0301", "chip-resolved", "Resolved, needs a person"],
+    ["riau-0277", "chip-human-review", "Needs review"],
     ["riau-0533", "chip-escalated", "Escalated"],
     ["riau-0540", "chip-monitoring", "Monitoring"],
     ["riau-0199", "chip-closed", "Closed"],

@@ -1,10 +1,11 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { APIProvider, Map as GoogleMap, useMap } from "@vis.gl/react-google-maps";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isNotFoundError } from "../../lib/api/client";
-import { allCellsQuery, rankingsQuery, tileLayerQuery } from "../../lib/api/queries";
-import type { TileLayerKind } from "../../lib/contracts";
-import { damCellId } from "../../lib/ops/cellSelection";
+import { allCellsQuery, casesQuery, rankingsQuery, tileLayerQuery } from "../../lib/api/queries";
+import type { CaseSummary, TileLayerKind } from "../../lib/contracts";
+import { detailCopy } from "../../lib/copy/detail";
+import { useCopyLanguage } from "../../lib/copy/language";
 import {
   DEFAULT_MAP_TYPE,
   defaultEnabledLayers,
@@ -18,10 +19,11 @@ import { LAYER_START, markStart, WEEK_START } from "../../lib/ops/perf";
 import { RANKED_CELL_LIMIT, regionById } from "../../lib/ops/region";
 import { useWeekPrefetch } from "../../lib/ops/useWeekPrefetch";
 import { requestWeek, selectedWeek, weekRange } from "../../lib/ops/weeks";
-import { CellPanel } from "./CellPanel";
+import { MapKey, type MapKeyMark } from "../map/MapKey";
+import { OpenCaseOutlines } from "../public/OpenCaseOutlines";
 import { CellsLayer, DamsLayer, type FocusRequest } from "./CellsLayer";
 import { LayerOverlay } from "./LayerOverlay";
-import { MapLegend, MapTypeControl } from "./MapControls";
+import { LayerOpacityControls, MapTypeControl } from "./MapControls";
 import { LayerToggles, RegionSwitcher, WeekSlider } from "./OpsToolbar";
 
 function readMapsKey(): string {
@@ -42,6 +44,33 @@ function Recenter({ regionId }: { regionId: string }) {
   return null;
 }
 
+const LAYER_MARKS: Partial<Record<TileLayerKind, MapKeyMark>> = {
+  peat: "peat",
+  burn_scars: "burnScar",
+  reignition: "reignition",
+};
+
+function opsMarks(casework: boolean, kinds: readonly TileLayerKind[]): MapKeyMark[] {
+  const marks: MapKeyMark[] = ["cell", "dam"];
+  if (casework) marks.push("case");
+  for (const kind of kinds) {
+    const mark = LAYER_MARKS[kind];
+    if (mark !== undefined) marks.push(mark);
+  }
+  return marks;
+}
+
+type OpenCases = { cellIds: string[]; caseByCell: ReadonlyMap<string, string> };
+
+function openCasesOf(cases: readonly CaseSummary[] | undefined): OpenCases {
+  const caseByCell = new Map<string, string>();
+  for (const summary of cases ?? []) {
+    if (summary.case.status === "closed" || caseByCell.has(summary.case.cell_id)) continue;
+    caseByCell.set(summary.case.cell_id, summary.case.id);
+  }
+  return { cellIds: [...caseByCell.keys()], caseByCell };
+}
+
 type OpsMapProps = {
   region: string;
   week: string | undefined;
@@ -50,7 +79,8 @@ type OpsMapProps = {
   onRegionChange: (regionId: string) => void;
   onWeekChange: (week: string | undefined) => void;
   onCellSelect: (cellId: string) => void;
-  onCellClear: () => void;
+  onDamSelect: (damId: string) => void;
+  onCaseSelect: (caseId: string) => void;
 };
 
 export function OpsMap({
@@ -61,11 +91,15 @@ export function OpsMap({
   onRegionChange,
   onWeekChange,
   onCellSelect,
-  onCellClear,
+  onDamSelect,
+  onCaseSelect,
 }: OpsMapProps) {
+  const copy = detailCopy(useCopyLanguage());
   const regionInfo = regionById(region);
   const latestRankings = useQuery(rankingsQuery(region));
   const allCells = useQuery(allCellsQuery(region));
+  const cases = useQuery({ ...casesQuery(region), enabled: regionInfo.casework });
+  const openCases = useMemo(() => openCasesOf(cases.data), [cases.data]);
   const latest = latestRankings.data?.week;
   const asked = requestWeek(week, latest);
   const [mapType, setMapType] = useState<MapTypeId>(DEFAULT_MAP_TYPE);
@@ -73,6 +107,7 @@ export function OpsMap({
   const [enabled, setEnabled] = useState<EnabledLayers>(defaultEnabledLayers);
   const mapsKey = readMapsKey();
   const kinds = enabledKinds(enabled);
+  const shownWeek = selectedWeek(week, latest);
   const tileQueries = useQueries({
     queries: kinds.map((kind) => tileLayerQuery(kind, region, asked)),
   });
@@ -88,6 +123,11 @@ export function OpsMap({
   function handleToggle(layer: TileLayerKind) {
     markStart(LAYER_START);
     setEnabled((previous) => ({ ...previous, [layer]: !previous[layer] }));
+  }
+
+  function handleOutlineSelect(cellId: string) {
+    const caseId = openCases.caseByCell.get(cellId);
+    if (caseId !== undefined) onCaseSelect(caseId);
   }
 
   function handleWeekCommit(next: string) {
@@ -112,12 +152,12 @@ export function OpsMap({
         <WeekSlider
           key={region}
           weeks={weekRange(latest)}
-          value={selectedWeek(week, latest)}
+          value={shownWeek}
           onCommit={handleWeekCommit}
         />
         <LayerToggles enabled={enabled} onToggle={handleToggle} />
       </div>
-      <div className="ops-map-canvas">
+      <div className="ops-map-canvas mv-host">
         <APIProvider apiKey={mapsKey}>
           <GoogleMap
             defaultCenter={regionInfo.center}
@@ -145,10 +185,17 @@ export function OpsMap({
                 onSelect={onCellSelect}
               />
             )}
+            {cells !== undefined && regionInfo.casework && (
+              <OpenCaseOutlines
+                cells={cells}
+                openCellIds={openCases.cellIds}
+                onSelect={handleOutlineSelect}
+              />
+            )}
             {!noData && latestRankings.data && (
               <DamsLayer
                 dams={latestRankings.data.dams}
-                onSelect={(dam) => onCellSelect(damCellId(dam))}
+                onSelect={(dam) => onDamSelect(dam.dam_id)}
               />
             )}
           </GoogleMap>
@@ -181,15 +228,16 @@ export function OpsMap({
             </p>
           ))}
         </div>
-        <MapLegend
-          definitions={kinds.map(definitionFor)}
-          opacities={opacities}
-          week={selectedWeek(week, latest)}
-          onOpacityChange={handleOpacityChange}
-        />
-        {selectedCellId !== undefined && (
-          <CellPanel key={selectedCellId} cellId={selectedCellId} onClose={onCellClear} />
-        )}
+        <MapKey marks={opsMarks(regionInfo.casework, kinds)} copy={copy} screen="ops">
+          <LayerOpacityControls
+            title={copy.key.opacity}
+            emptyText={copy.key.noLayers}
+            definitions={kinds.map(definitionFor)}
+            opacities={opacities}
+            onOpacityChange={handleOpacityChange}
+          />
+          {shownWeek !== undefined && <p className="mv-key-note">{copy.key.week(shownWeek)}</p>}
+        </MapKey>
       </div>
     </div>
   );

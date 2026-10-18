@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { OpsDetailSheet } from "../components/detail/OpsDetailSheet";
+import { detailFromSearch, type OpsDetail, searchForDetail } from "../components/detail/selection";
 import type { FocusRequest } from "../components/ops/CellsLayer";
 import { OpsMap } from "../components/ops/OpsMap";
 import { OpsPanel } from "../components/ops/OpsPanel";
@@ -10,9 +12,17 @@ import { DEFAULT_REGION_ID, parseRegionId } from "../lib/ops/region";
 import { type OpsTab, parseOpsTab } from "../lib/ops/tabs";
 import { effectiveWeek, parseWeek } from "../lib/ops/weeks";
 
-type OpsSearch = { tab?: OpsTab; case?: string; cell?: string; region?: string; week?: string };
+type OpsSearch = {
+  tab?: OpsTab;
+  case?: string;
+  cell?: string;
+  dam?: string;
+  review?: string;
+  region?: string;
+  week?: string;
+};
 
-function parseCaseId(value: unknown): string | undefined {
+function parseId(value: unknown): string | undefined {
   return parseCellId(value);
 }
 
@@ -24,21 +34,24 @@ function OpsScreen() {
   const week = effectiveWeek(search.week, latest);
   const [focus, setFocus] = useState<FocusRequest | null>(null);
 
+  const detail = detailFromSearch(search);
+
+  function openDetail(next: OpsDetail | null) {
+    void navigate({ search: (previous) => ({ ...previous, ...searchForDetail(next) }) });
+  }
+
   function handleTabChange(tab: OpsTab) {
-    void navigate({ search: (previous) => ({ ...previous, tab, case: undefined }) });
-  }
-
-  function handleCaseSelect(caseId: string) {
-    void navigate({ search: (previous) => ({ ...previous, case: caseId }) });
-  }
-
-  function handleMapCellSelect(cellId: string) {
-    void navigate({ search: (previous) => ({ ...previous, cell: cellId }) });
+    void navigate({ search: (previous) => ({ ...previous, tab }) });
   }
 
   function handleListCellSelect(cellId: string) {
     setFocus({ cellId });
-    handleMapCellSelect(cellId);
+    openDetail({ kind: "cell", id: cellId });
+  }
+
+  function handleZoom(cellId: string) {
+    setFocus({ cellId });
+    openDetail(null);
   }
 
   function handleRegionChange(regionId: string) {
@@ -46,24 +59,15 @@ function OpsScreen() {
     void navigate({
       search: (previous) => ({
         ...previous,
+        ...searchForDetail(null),
         region: regionId === DEFAULT_REGION_ID ? undefined : regionId,
         week: undefined,
-        cell: undefined,
-        case: undefined,
       }),
     });
   }
 
   function handleWeekChange(week: string | undefined) {
     void navigate({ search: (previous) => ({ ...previous, week }) });
-  }
-
-  function handleCellClear() {
-    void navigate({ search: (previous) => ({ ...previous, cell: undefined }) });
-  }
-
-  function handleCaseClear() {
-    void navigate({ search: (previous) => ({ ...previous, case: undefined }) });
   }
 
   return (
@@ -77,8 +81,9 @@ function OpsScreen() {
           onWeekChange={handleWeekChange}
           selectedCellId={search.cell}
           focus={focus}
-          onCellSelect={handleMapCellSelect}
-          onCellClear={handleCellClear}
+          onCellSelect={(cellId) => openDetail({ kind: "cell", id: cellId })}
+          onDamSelect={(damId) => openDetail({ kind: "dam", id: damId })}
+          onCaseSelect={(caseId) => openDetail({ kind: "case", id: caseId })}
         />
         <OpsPanel
           region={region}
@@ -88,10 +93,19 @@ function OpsScreen() {
           selectedCellId={search.cell}
           onCellSelect={handleListCellSelect}
           onTabChange={handleTabChange}
-          onCaseSelect={handleCaseSelect}
-          onCaseClear={handleCaseClear}
+          onCaseSelect={(caseId) => openDetail({ kind: "case", id: caseId })}
+          onReviewSelect={(caseId) => openDetail({ kind: "review", id: caseId })}
         />
       </div>
+      {detail !== null && (
+        <OpsDetailSheet
+          region={region}
+          detail={detail}
+          onOpen={openDetail}
+          onZoom={handleZoom}
+          onClose={() => openDetail(null)}
+        />
+      )}
     </>
   );
 }
@@ -99,8 +113,10 @@ function OpsScreen() {
 export const Route = createFileRoute("/ops")({
   validateSearch: (search: Record<string, unknown>): OpsSearch => ({
     tab: parseOpsTab(search.tab),
-    case: parseCaseId(search.case),
-    cell: parseCellId(search.cell),
+    case: parseId(search.case),
+    cell: parseId(search.cell),
+    dam: parseId(search.dam),
+    review: parseId(search.review),
     region: parseRegionId(search.region),
     week: parseWeek(search.week),
   }),

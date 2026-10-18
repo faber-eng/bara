@@ -20,8 +20,12 @@ function renderTab(selectedCellId?: string, onCellSelect = vi.fn()) {
   );
 }
 
-function bodyRows() {
-  return screen.getAllByRole("row").slice(1);
+function rankedList() {
+  return screen.findByRole("list", { name: /Ranked areas/ });
+}
+
+function rowButtons(list: HTMLElement) {
+  return within(list).getAllByRole("button");
 }
 
 describe("RankedAreasTab", () => {
@@ -30,48 +34,34 @@ describe("RankedAreasTab", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders 200 rows plus the header, in rank order", async () => {
+  it("renders 200 compact rows in rank order", async () => {
     renderTab();
 
-    await screen.findByRole("table", { name: /Ranked areas/ });
-    const rows = screen.getAllByRole("row");
-    expect(rows).toHaveLength(201);
-    const ranks = bodyRows().map((row) => within(row).getAllByRole("cell")[0]?.textContent);
-    expect(ranks).toEqual(Array.from({ length: 200 }, (_, index) => String(index + 1)));
+    const rows = rowButtons(await rankedList());
+    expect(rows).toHaveLength(200);
+    const ids = rows.map((row) => row.querySelector(".mv-row-title")?.textContent);
+    const ordered = [...fixture.cells].sort((a, b) => a.rank - b.rank).map((cell) => cell.cell_id);
+    expect(ids).toEqual(ordered);
   });
 
-  it("shows units on the numbers", async () => {
+  it("shows a bold id, one score and one status per row, nothing more", async () => {
     renderTab();
-    await screen.findByRole("table");
+    const first = fixture.cells.find((cell) => cell.rank === 1);
+    if (first === undefined) throw new Error("fixture has no rank 1");
 
-    const first = fixture.cells[0];
-    const row = bodyRows()[0] as HTMLElement;
-    expect(within(row).getByText(first?.cell_id as string)).toBeInTheDocument();
-    expect(row).toHaveTextContent(/canal \d+ m/);
-    expect(row).toHaveTextContent(/rain deficit \d+%/);
-    expect(row).toHaveTextContent(/radar (-?\d+\.\d dB|n\/a)/);
-    expect(screen.getByRole("columnheader", { name: /Score \(0 to 100\)/ })).toBeInTheDocument();
+    const row = rowButtons(await rankedList())[0] as HTMLElement;
+    expect(within(row).getByText(first.cell_id).tagName).toBe("STRONG");
+    expect(row).toHaveTextContent(first.drying_score.toFixed(1));
+    expect(row).not.toHaveTextContent(/canal|radar|Gemini/);
   });
 
-  it("renders a null rank change, a null s1 value and a missing explanation without breaking", async () => {
+  it("says a cell is new when it has no rank change", async () => {
     renderTab();
-    await screen.findByRole("table");
+    await rankedList();
 
-    expect(screen.getAllByText("new").length).toBe(
+    expect(screen.getAllByText("New this week").length).toBe(
       fixture.cells.filter((cell) => cell.rank_change === null).length,
     );
-    expect(screen.getAllByText(/radar n\/a/).length).toBe(
-      fixture.cells.filter((cell) => cell.components.s1_anom_db === null).length,
-    );
-  });
-
-  it("shows the Gemini chip only for cells with an explanation", async () => {
-    renderTab();
-    await screen.findByRole("table");
-
-    const explained = fixture.cells.filter((cell) => cell.explanation !== null).length;
-    expect(screen.getAllByText("Gemini")).toHaveLength(explained);
-    expect(explained).toBeGreaterThan(0);
   });
 
   it("shows a loading state first", () => {
@@ -105,7 +95,7 @@ describe("RankedAreasTab", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not load ranked areas");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(await rankedList()).toBeInTheDocument();
   });
 
   it.each([401, 403])("says the account lacks the ops role on a %i", async (status) => {
@@ -122,56 +112,24 @@ describe("RankedAreasTab", () => {
     const onCellSelect = vi.fn();
     const second = fixture.cells.find((cell) => cell.rank === 2);
     renderTab(second?.cell_id, onCellSelect);
-    await screen.findByRole("table");
+    const list = await rankedList();
 
-    const selected = screen.getByRole("button", { pressed: true });
+    const selected = within(list).getByRole("button", { pressed: true });
     expect(selected).toHaveTextContent(second?.cell_id as string);
-    expect(selected.closest("tr")).toHaveClass("ops-row-selected");
+    expect(selected).toHaveClass("ops-cell-button");
     const first = fixture.cells.find((cell) => cell.rank === 1);
-    fireEvent.click(screen.getByRole("button", { name: first?.cell_id as string }));
+    fireEvent.click(
+      within(list).getByRole("button", { name: new RegExp(first?.cell_id as string) }),
+    );
 
     expect(onCellSelect).toHaveBeenCalledWith(first?.cell_id);
   });
 
   it("marks no row when nothing is selected", async () => {
     renderTab();
-    await screen.findByRole("table");
+    await rankedList();
 
     expect(screen.queryByRole("button", { pressed: true })).not.toBeInTheDocument();
-  });
-
-  it("draws four component bars on every row", async () => {
-    renderTab();
-    await screen.findByRole("table");
-
-    const bars = within(bodyRows()[0] as HTMLElement).getByRole("list", {
-      name: "Score components",
-    });
-    expect(within(bars).getAllByRole("listitem")).toHaveLength(4);
-    expect(bars).toHaveTextContent(/Radar/);
-    expect(bars).toHaveTextContent(/Rain deficit/);
-  });
-
-  it("names the source field when a cited number is hovered", async () => {
-    vi.stubEnv("VITE_SOURCE_RANKINGS", "live");
-    const cell = {
-      ...fixture.cells[0],
-      explanation: {
-        text: "Rain is 45% under and a canal runs 340 m away.",
-        cited: { rain_deficit_pct: 45, canal_dist_m: 340 },
-        prompt_version: "explain-v2",
-      },
-    };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(Response.json({ ...fixture, cells: [cell], dams: [] })),
-    );
-    renderTab();
-
-    const rain = await screen.findByText("45");
-    expect(rain).toHaveAttribute("title", "Source field: rain_deficit_pct");
-    expect(screen.getByText("340")).toHaveAttribute("title", "Source field: canal_dist_m");
-    expect(screen.getByText(/explain-v2/)).toBeInTheDocument();
   });
 
   it("asks for the week when one is chosen", async () => {
@@ -189,7 +147,7 @@ describe("RankedAreasTab", () => {
       </QueryClientProvider>,
     );
 
-    await screen.findByRole("table");
+    await rankedList();
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/rankings/congo_cuvette?week=2026-W25");
   });
 

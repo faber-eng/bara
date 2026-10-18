@@ -1,4 +1,4 @@
-import type { CellPoint, RankedDam } from "../contracts";
+import type { CellPoint, DamState, RankedDam } from "../contracts";
 import { buildCellIndex, cellRing, findCellAt } from "./cellGrid";
 import { scoreColor } from "./scoreColor";
 
@@ -144,7 +144,16 @@ export function createCellLayer(
   };
 }
 
-const DAM_COLORS: Record<RankedDam["last_state"], string> = {
+export const DAM_STATES: readonly DamState[] = [
+  "intact",
+  "damaged",
+  "broken",
+  "overtopped",
+  "not_applicable",
+  "unknown",
+];
+
+const DAM_COLORS: Record<DamState, string> = {
   intact: "#2f7d4f",
   damaged: "#d98f1f",
   broken: "#b3261e",

@@ -6,12 +6,15 @@ import { areaErrorKind } from "../../lib/area/errors";
 import { areaKm2, draftState } from "../../lib/area/polygon";
 import type { GeoPoint, SampleItem } from "../../lib/contracts";
 import { areaCopy } from "../../lib/copy/area";
+import { detailCopy } from "../../lib/copy/detail";
 import { useCopyLanguage } from "../../lib/copy/language";
 import { type AreaSummary, samplePoints, summarizeArea } from "../../lib/samples/area";
 import { AreaDrawPanel } from "../area/AreaDrawPanel";
 import { AreaMap } from "../area/AreaMap";
 import { AreaResult } from "../area/AreaResult";
 import { useElapsedSeconds } from "../area/useElapsedSeconds";
+import { AreaCellDetail } from "../detail/AreaCellDetail";
+import { DetailSheet } from "../detail/DetailSheet";
 import { LanguageToggle } from "../LanguageToggle";
 import { SamplePicker } from "./SamplePicker";
 
@@ -28,14 +31,18 @@ function readMapsKey(): string {
 }
 
 export function AreaScreen() {
-  const copy = areaCopy(useCopyLanguage());
+  const language = useCopyLanguage();
+  const copy = areaCopy(language);
+  const detail = detailCopy(language);
   const [points, setPoints] = useState<GeoPoint[]>([]);
+  const [selectedCellId, setSelectedCellId] = useState<string | undefined>(undefined);
   const [fitToken, setFitToken] = useState(0);
   const sample = useMutation({
     mutationFn: loadArea,
     onSuccess: (loaded) => {
       setPoints(loaded.points);
       setFitToken((previous) => previous + 1);
+      setSelectedCellId(undefined);
       ranking.reset();
     },
   });
@@ -44,14 +51,21 @@ export function AreaScreen() {
   const mapsKey = readMapsKey();
   const state = draftState(points);
   const result = ranking.data;
+  const selectedCell = result?.cells.find((cell) => cell.cell_id === selectedCellId);
 
   function editPoints(next: GeoPoint[]) {
     setPoints(next);
+    setSelectedCellId(undefined);
     ranking.reset();
   }
 
+  function handleRank() {
+    setSelectedCellId(undefined);
+    ranking.mutate(points);
+  }
+
   return (
-    <section className="screen-center">
+    <section className="screen-center mv-area">
       <LanguageToggle label={copy.toggleLabel} />
       <h1 className="screen-title">{copy.title}</h1>
       <p className="lede">{copy.lede}</p>
@@ -68,7 +82,9 @@ export function AreaScreen() {
           tileUrlTemplate={result?.tile_url_template ?? null}
           tileLabel={copy.title}
           disabled={ranking.isPending}
+          keyCopy={detail}
           onAddPoint={(point) => editPoints([...points, point])}
+          onCellSelect={setSelectedCellId}
         />
       )}
       <AreaDrawPanel
@@ -79,7 +95,7 @@ export function AreaScreen() {
         pending={ranking.isPending}
         onUndo={() => editPoints(points.slice(0, -1))}
         onClear={() => editPoints([])}
-        onRank={() => ranking.mutate(points)}
+        onRank={handleRank}
       />
       <SamplePicker
         kind="area"
@@ -103,7 +119,20 @@ export function AreaScreen() {
           {copy.errors[areaErrorKind(ranking.error)]}
         </p>
       )}
-      {result && <AreaResult ranking={result} copy={copy} />}
+      {result && (
+        <AreaResult
+          ranking={result}
+          copy={copy}
+          detail={detail}
+          selectedCellId={selectedCellId}
+          onSelect={setSelectedCellId}
+        />
+      )}
+      {result && selectedCell !== undefined && (
+        <DetailSheet closeLabel={detail.close} onClose={() => setSelectedCellId(undefined)}>
+          <AreaCellDetail cell={selectedCell} ranking={result} copy={detail} language={language} />
+        </DetailSheet>
+      )}
     </section>
   );
 }

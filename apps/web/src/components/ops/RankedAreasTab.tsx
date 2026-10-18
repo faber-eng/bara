@@ -3,132 +3,68 @@ import { useEffect, useRef } from "react";
 import { isNotFoundError } from "../../lib/api/client";
 import { rankingsQuery } from "../../lib/api/queries";
 import type { RankedCell } from "../../lib/contracts";
+import { detailCopy } from "../../lib/copy/detail";
+import { useCopyLanguage } from "../../lib/copy/language";
 import { rowSelection } from "../../lib/ops/cellSelection";
-import { componentBars } from "../../lib/ops/componentBars";
 import { regionById } from "../../lib/ops/region";
-import { ExplanationText } from "./ExplanationText";
+import { ScoreBadge } from "../detail/badges";
+import { rankChangeShort } from "../detail/facts";
 import { QueryState } from "./QueryState";
-
-const SCORE_STEP = 20;
-const MAX_SCORE_CLASS = 5;
-
-function scoreClass(score: number): string {
-  const level = Math.min(MAX_SCORE_CLASS, Math.floor(score / SCORE_STEP) + 1);
-  return `score-${level}`;
-}
-
-function radarText(cell: RankedCell): string {
-  const value = cell.components.s1_anom_db;
-  if (value === null) return "radar n/a";
-  const stale = cell.stale_s1 ? " (stale)" : "";
-  return `radar ${value.toFixed(1)} dB${stale}`;
-}
-
-function factsText(cell: RankedCell): string {
-  const canal = `canal ${Math.round(cell.components.canal_dist_m)} m`;
-  const rain = `rain deficit ${Math.round(cell.components.rain_deficit_pct * 100)}%`;
-  return `${canal} · ${rain} · ${radarText(cell)}`;
-}
-
-function ComponentBars({ components }: { components: RankedCell["components"] }) {
-  return (
-    <ul className="component-bars" aria-label="Score components">
-      {componentBars(components).map((bar) => (
-        <li key={bar.key} title={`${bar.label}: ${bar.value}`}>
-          <span className="component-label">{bar.label}</span>
-          <span className="component-track" aria-hidden="true">
-            <span className="component-fill" style={{ width: `${Math.round(bar.share * 100)}%` }} />
-          </span>
-          <span className="component-value num">{bar.value}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function RankChange({ value }: { value: number | null }) {
-  if (value === null) return <span title="Not ranked last week">new</span>;
-  if (value === 0) return <span title="No change">-</span>;
-  if (value > 0) return <span title={`Up ${value} places`}>↑{value}</span>;
-  return <span title={`Down ${Math.abs(value)} places`}>↓{Math.abs(value)}</span>;
-}
 
 type RowProps = { cell: RankedCell; selected: boolean; onSelect: (cellId: string) => void };
 
 function RankedRow({ cell, selected, onSelect }: RowProps) {
-  const rowRef = useRef<HTMLTableRowElement>(null);
+  const copy = detailCopy(useCopyLanguage());
+  const rowRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     if (selected) rowRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [selected]);
 
   return (
-    <tr ref={rowRef} className={selected ? "ops-row-selected" : undefined}>
-      <td className="ops-rank">{cell.rank}</td>
-      <td>
-        <span className={`score-badge ${scoreClass(cell.drying_score)}`}>
-          {cell.drying_score.toFixed(1)}
+    <li ref={rowRef}>
+      <button
+        type="button"
+        className="ops-cell-button mv-row"
+        aria-pressed={selected}
+        onClick={() => onSelect(cell.cell_id)}
+      >
+        <span className="mv-row-rank num" aria-hidden="true">
+          {cell.rank}
         </span>
-      </td>
-      <td className="ops-cell">
-        <button
-          type="button"
-          className="ops-cell-button"
-          aria-pressed={selected}
-          onClick={() => onSelect(cell.cell_id)}
-        >
-          {cell.cell_id}
-        </button>
-        <span className="ops-meta">{factsText(cell)}</span>
-        <ComponentBars components={cell.components} />
-        {cell.explanation !== null && (
-          <span className="ops-meta ops-explain">
-            <ExplanationText explanation={cell.explanation} />
-          </span>
-        )}
-      </td>
-      <td className="ops-change">
-        <RankChange value={cell.rank_change} />
-      </td>
-    </tr>
+        <span className="mv-row-main">
+          <strong className="mv-row-title">{cell.cell_id}</strong>
+          <span className="mv-row-meta">{rankChangeShort(cell.rank_change, copy)}</span>
+        </span>
+        <ScoreBadge score={cell.drying_score} />
+      </button>
+    </li>
   );
 }
 
-type TableProps = {
+type ListProps = {
   cells: RankedCell[];
   week: string;
   selectedCellId: string | undefined;
   onSelect: (cellId: string) => void;
 };
 
-function RankedTable({ cells, week, selectedCellId, onSelect }: TableProps) {
+function RankedList({ cells, week, selectedCellId, onSelect }: ListProps) {
   const ordered = [...cells].sort((a, b) => a.rank - b.rank);
   return (
     <>
-      <table className="ops-table">
-        <caption className="visually-hidden">Ranked areas, {week}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">Score (0 to 100)</th>
-            <th scope="col">Area</th>
-            <th scope="col">Vs last week</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ordered.map((cell) => (
-            <RankedRow
-              key={cell.cell_id}
-              cell={cell}
-              selected={rowSelection(cell.cell_id, selectedCellId)}
-              onSelect={onSelect}
-            />
-          ))}
-        </tbody>
-      </table>
+      <ol className="mv-list" aria-label={`Ranked areas, ${week}`}>
+        {ordered.map((cell) => (
+          <RankedRow
+            key={cell.cell_id}
+            cell={cell}
+            selected={rowSelection(cell.cell_id, selectedCellId)}
+            onSelect={onSelect}
+          />
+        ))}
+      </ol>
       <p className="ops-foot">
-        Showing {ordered.length} of {ordered.length} cells for {week}. Scores are drying_score, 0 to
-        100.
+        {ordered.length} areas for {week}, fastest drying first. Score 0 to 100.
       </p>
     </>
   );
@@ -169,7 +105,7 @@ export function RankedAreasTab({
         isEmpty={(data) => data.cells.length === 0}
       >
         {(data) => (
-          <RankedTable
+          <RankedList
             cells={data.cells}
             week={data.week}
             selectedCellId={selectedCellId}

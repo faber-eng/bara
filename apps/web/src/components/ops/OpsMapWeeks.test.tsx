@@ -2,12 +2,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { type ReactNode, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { outlineMapsApi } from "../../test-utils";
 import { OpsMap } from "./OpsMap";
 
 vi.mock("../../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
 
 const layerSpies = vi.hoisted(() => ({ createCellLayer: vi.fn(), createDamLayer: vi.fn() }));
-vi.mock("../../lib/ops/cellLayer", () => layerSpies);
+vi.mock("../../lib/ops/cellLayer", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ops/cellLayer")>()),
+  ...layerSpies,
+}));
 
 type TileOptions = {
   getTileUrl: (coord: { x: number; y: number }, zoom: number) => string | null;
@@ -100,7 +104,8 @@ function Harness() {
       onRegionChange={() => {}}
       onWeekChange={setWeek}
       onCellSelect={() => {}}
-      onCellClear={() => {}}
+      onDamSelect={() => {}}
+      onCaseSelect={() => {}}
     />
   );
 }
@@ -139,7 +144,9 @@ describe("OpsMap week slider and layers", () => {
       destroy: vi.fn(),
     });
     layerSpies.createDamLayer.mockReset().mockReturnValue({ destroy: vi.fn() });
-    vi.stubGlobal("google", { maps: { ImageMapType: FakeImageMapType, Size: class {} } });
+    vi.stubGlobal("google", {
+      maps: { ImageMapType: FakeImageMapType, Size: class {}, ...outlineMapsApi },
+    });
     vi.stubEnv("VITE_MAPS_KEY", "test-key");
     vi.stubEnv("VITE_SOURCE_TILES", "live");
     vi.stubEnv("VITE_SOURCE_RANKINGS", "live");
@@ -212,14 +219,14 @@ describe("OpsMap week slider and layers", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Peat" }));
     await waitFor(() => expect(overlays).toHaveLength(2));
-    expect(screen.getByText("Peat class 1")).toBeInTheDocument();
-    expect(screen.getByText("Drying score (0 to 100)")).toBeInTheDocument();
+    expect(screen.getByText(/^Peat map:/)).toBeInTheDocument();
+    expect(screen.getByText(/^Square = a 1 km peat area/)).toBeInTheDocument();
     expect(requested).toContain("/api/tiles/peat?region=riau");
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Peat" }));
     await waitFor(() => expect(overlays).toHaveLength(1));
-    expect(screen.queryByText("Peat class 1")).not.toBeInTheDocument();
-    expect(screen.getByText("Drying score (0 to 100)")).toBeInTheDocument();
+    expect(screen.queryByText(/^Peat map:/)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Square = a 1 km peat area/)).toBeInTheDocument();
     expect(layerSpies.createCellLayer).toHaveBeenCalledTimes(1);
     console.info(
       "layer shown ms",

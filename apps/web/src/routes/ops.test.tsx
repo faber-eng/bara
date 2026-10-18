@@ -1,6 +1,6 @@
 import cases from "@fixtures/cases.json";
 import rankings from "@fixtures/rankings_riau_200.json";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetClock } from "../lib/api/clock";
@@ -33,7 +33,7 @@ describe("/ops", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Ops dashboard" }),
     ).toBeInTheDocument();
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(await screen.findByRole("list", { name: /Ranked areas/ })).toBeInTheDocument();
     expect(screen.getByTestId("map")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Ranked areas/ })).toHaveAttribute(
       "aria-selected",
@@ -50,7 +50,7 @@ describe("/ops", () => {
 
   it("writes the tab to the URL when the tab changes", async () => {
     const { router } = renderApp("/ops");
-    await screen.findByRole("table");
+    await screen.findByRole("list", { name: /Ranked areas/ });
 
     fireEvent.click(screen.getByRole("tab", { name: /Cases/ }));
 
@@ -69,26 +69,37 @@ describe("/ops", () => {
     expect(await screen.findByRole("heading", { name: /riau-0388/ })).toBeInTheDocument();
   });
 
-  it("opens the case drawer from ?case= and returns to the list", async () => {
+  it("opens the case dialog from ?case= and closes it back to the list", async () => {
     const { router } = renderApp("/ops?tab=cases&case=case-0001");
 
-    expect(await screen.findByRole("region", { name: "Case detail" })).toBeInTheDocument();
-    expect(await screen.findByText("Agent runs")).toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog", { name: /riau-0412/ });
+    expect(await within(dialog).findByText("Agent runs")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Back to list" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
 
     await waitFor(() => expect(router.state.location.search.case).toBeUndefined());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /riau-0412/ })).toBeInTheDocument();
   });
 
-  it("leaves the drawer when a tab is clicked", async () => {
-    const { router } = renderApp("/ops?tab=cases&case=case-0001");
-    await screen.findByRole("region", { name: "Case detail" });
+  it("closes the case dialog with Esc and returns focus to the row", async () => {
+    const { router } = renderApp("/ops?tab=cases");
+    const row = await screen.findByRole("button", { name: /riau-0412/ });
+    row.focus();
+    fireEvent.click(row);
+    const dialog = await screen.findByRole("dialog", { name: /riau-0412/ });
 
-    fireEvent.click(screen.getByRole("tab", { name: /Ranked areas/ }));
+    fireEvent.keyDown(dialog, { key: "Escape" });
 
     await waitFor(() => expect(router.state.location.search.case).toBeUndefined());
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /riau-0412/ })).toHaveFocus();
+  });
+
+  it("shows the case and review counts on the tabs", async () => {
+    renderApp("/ops");
+
+    expect(await screen.findByRole("tab", { name: /Cases\s*9/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Review queue\s*\d+/ })).toBeInTheDocument();
   });
 
   it("opens the review queue from ?tab=review", async () => {
@@ -138,7 +149,7 @@ describe("/ops", () => {
   it("ignores an unknown tab value", async () => {
     renderApp("/ops?tab=weird");
 
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(await screen.findByRole("list", { name: /Ranked areas/ })).toBeInTheDocument();
   });
 
   it("moves a case chip and countdown when the judge advances the fixture clock", async () => {
@@ -179,7 +190,7 @@ describe("/ops", () => {
     });
     renderApp("/ops");
 
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(await screen.findByRole("list", { name: /Ranked areas/ })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
     const call = callsTo(fetchMock, "GET /api/rankings/riau")[0];
     expect(headerOf(call, "Authorization")).toBe("Bearer claims-token");

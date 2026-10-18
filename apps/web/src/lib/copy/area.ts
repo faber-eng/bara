@@ -22,7 +22,6 @@ export type AreaCopy = SamplePickerCopy & {
   resultTitle: (week: string) => string;
   resultMeta: (peatCells: number, km2: number) => string;
   cachedNote: string;
-  cellScore: (rank: number, id: string, score: number) => string;
   noPeat: string;
   mapKeyMissing: string;
   errors: Record<AreaErrorKind, string>;
@@ -54,7 +53,6 @@ const ID: AreaCopy = {
   resultTitle: (week) => `Sel terkering minggu ${week}`,
   resultMeta: (peatCells, km2) => `${peatCells} sel gambut di area ${km2} km²`,
   cachedNote: "Hasil tersimpan dari permintaan yang sama.",
-  cellScore: (rank, id, score) => `${rank}. ${id}, skor ${score}`,
   noPeat: "Tidak ada gambut terpetakan di area ini. Geser atau perluas area.",
   mapKeyMissing: "Kunci peta belum diisi, jadi peta tidak tampil.",
   errors: {
@@ -94,7 +92,6 @@ const EN: AreaCopy = {
   resultTitle: (week) => `Driest cells, week ${week}`,
   resultMeta: (peatCells, km2) => `${peatCells} peat cells in ${km2} km²`,
   cachedNote: "Saved result from the same request.",
-  cellScore: (rank, id, score) => `${rank}. ${id}, score ${score}`,
   noPeat: "No mapped peat in this area. Move it or make it larger.",
   mapKeyMissing: "The map key is not set, so the map does not show.",
   errors: {

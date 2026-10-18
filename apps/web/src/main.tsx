@@ -1,5 +1,6 @@
 import "./styles/kit.css";
 import "./styles/app.css";
+import "./styles/map-views.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";

@@ -1,14 +1,17 @@
+import type { CSSProperties } from "react";
 import {
   clampOpacity,
   type LayerDefinition,
   type LayerOpacities,
-  type LegendSpec,
   MAP_TYPES,
   type MapTypeId,
 } from "../../lib/ops/mapLayers";
 
-const RAMP_STEPS = [1, 2, 3, 4, 5] as const;
 const SLIDER_STEPS = 100;
+
+export function rangeFill(share: number): CSSProperties {
+  return { "--fill": `${Math.round(share * 100)}%` };
+}
 
 type MapTypeControlProps = { value: MapTypeId; onChange: (type: MapTypeId) => void };
 
@@ -31,87 +34,60 @@ export function MapTypeControl({ value, onChange }: MapTypeControlProps) {
   );
 }
 
-function LegendKey({ legend }: { legend: LegendSpec }) {
-  if (legend.kind === "swatches") {
-    return (
-      <ul className="legend-swatches">
-        {legend.items.map((item) => (
-          <li key={item.label}>
-            <span className="legend-swatch" style={{ background: item.color }} aria-hidden="true" />
-            {item.label}
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  return (
-    <>
-      <div className="risk-ramp" aria-hidden="true">
-        {RAMP_STEPS.map((step) => (
-          <span key={step} style={{ background: `var(--risk-${step})` }} />
-        ))}
-      </div>
-      <div className="legend-scale num map-legend-scale">
-        <span>{legend.low}</span>
-        <span>{legend.high}</span>
-      </div>
-    </>
-  );
-}
-
-function legendTitle(definition: LayerDefinition): string {
-  return definition.legend.kind === "ramp" ? `${definition.label} (0 to 100)` : definition.label;
-}
-
-type LayerRowProps = {
+type OpacityRowProps = {
   definition: LayerDefinition;
   opacity: number;
   onOpacityChange: (layerId: string, opacity: number) => void;
 };
 
-function LayerRow({ definition, opacity, onOpacityChange }: LayerRowProps) {
+function OpacityRow({ definition, opacity, onOpacityChange }: OpacityRowProps) {
   const inputId = `opacity-${definition.id}`;
   return (
-    <div className="map-layer">
-      <div className="map-legend-title">{legendTitle(definition)}</div>
-      <LegendKey legend={definition.legend} />
-      <label className="map-opacity" htmlFor={inputId}>
-        <span>Opacity</span>
-        <input
-          id={inputId}
-          type="range"
-          min={0}
-          max={SLIDER_STEPS}
-          value={Math.round(opacity * SLIDER_STEPS)}
-          onChange={(event) =>
-            onOpacityChange(definition.id, clampOpacity(Number(event.target.value) / SLIDER_STEPS))
-          }
-        />
-      </label>
-    </div>
+    <label className="mv-opacity" htmlFor={inputId}>
+      <span>{definition.label}</span>
+      <input
+        id={inputId}
+        className="range"
+        type="range"
+        min={0}
+        max={SLIDER_STEPS}
+        value={Math.round(opacity * SLIDER_STEPS)}
+        style={rangeFill(opacity)}
+        onChange={(event) =>
+          onOpacityChange(definition.id, clampOpacity(Number(event.target.value) / SLIDER_STEPS))
+        }
+      />
+    </label>
   );
 }
 
-type MapLegendProps = {
+type LayerOpacityControlsProps = {
+  title: string;
+  emptyText: string;
   definitions: readonly LayerDefinition[];
   opacities: LayerOpacities;
-  week: string | undefined;
   onOpacityChange: (layerId: string, opacity: number) => void;
 };
 
-export function MapLegend({ definitions, opacities, week, onOpacityChange }: MapLegendProps) {
+export function LayerOpacityControls({
+  title,
+  emptyText,
+  definitions,
+  opacities,
+  onOpacityChange,
+}: LayerOpacityControlsProps) {
   return (
-    <section className="map-legend" aria-label="Map legend">
+    <details className="mv-key-more">
+      <summary>{title}</summary>
       {definitions.map((definition) => (
-        <LayerRow
+        <OpacityRow
           key={definition.id}
           definition={definition}
           opacity={opacities[definition.id] ?? definition.defaultOpacity}
           onOpacityChange={onOpacityChange}
         />
       ))}
-      {definitions.length === 0 && <p className="map-legend-note">No map layers are on.</p>}
-      {week !== undefined && <p className="map-legend-note">Week {week}.</p>}
-    </section>
+      {definitions.length === 0 && <p className="mv-key-note">{emptyText}</p>}
+    </details>
   );
 }
