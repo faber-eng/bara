@@ -29,13 +29,13 @@ FACTS = {
     "canal_dist_m": 140.0,
     "peat_class": 1,
 }
+LEAD = "drying faster than any other area in Riau this week"
 GOOD_TEXT = (
-    "Cell riau-1-1 ranks 1 with a drying score of 90.5. "
+    f"This area is {LEAD} (score 90.5 of 100). "
     "The radar dryness signal is -4.2 dB and the nearest canal is 140 m away."
 )
 GOOD_CITED = {
     "drying_score": 90.5,
-    "rank": 1,
     "s1_anom_db": -4.2,
     "canal_dist_m": 140.0,
 }
@@ -45,7 +45,7 @@ def check(text=GOOD_TEXT, cited=None):
     check_explanation(
         text,
         GOOD_CITED if cited is None else cited,
-        shown_values(FACTS),
+        shown_values(FACTS, "riau"),
         "riau-1-1",
     )
 
@@ -261,40 +261,36 @@ def test_a_ranking_document_of_another_week_is_left_alone():
 
 
 def test_the_prompt_version_is_named():
-    assert EXPLAIN_PROMPT_VERSION == "explain-v2"
+    assert EXPLAIN_PROMPT_VERSION == "explain-v3"
 
 
-@pytest.mark.parametrize(
-    "text",
-    [
-        "Cell riau-1-1 ranks 1 with a drying score of 90.5 and a canal 140 m away.",
-    ],
-)
-def test_an_integer_written_for_a_whole_value_passes(text):
-    check(text=text, cited={"drying_score": 90.5, "rank": 1, "canal_dist_m": 140.0})
+def test_an_integer_written_for_a_whole_value_passes():
+    text = f"This area is {LEAD} (score 90.5 of 100) with a canal 140 m away."
+    check(text=text, cited={"drying_score": 90.5, "canal_dist_m": 140.0})
 
 
 @pytest.mark.parametrize(
     "text,bad",
     [
-        ("Rank 1 with a drying score of 90.", "90"),
-        ("Rank 1, score 90.5, deficit 0.", "0"),
+        (f"This area is {LEAD} (score 90 of 100).", "90"),
+        (f"This area is {LEAD} (score 90.5 of 100), deficit 0.", "0"),
     ],
 )
 def test_a_rounded_or_stray_number_is_rejected(text, bad):
-    facts = shown_values({**FACTS, "peat_class": 2})
+    facts = shown_values({**FACTS, "peat_class": 2}, "riau")
     with pytest.raises(ExplanationRejected, match="not cited"):
-        check_explanation(text, {"drying_score": 90.5, "rank": 1}, facts, "riau-1-1")
+        check_explanation(text, {"drying_score": 90.5}, facts, "riau-1-1")
 
 
 def test_digits_inside_field_names_are_not_numbers():
     text = (
-        "Rank 1 with s1_anom_db of -4.2 dB and rain_30d_mm of 180 mm near Sentinel-1."
+        f"This area is {LEAD}, with s1_anom_db of -4.2 dB and rain_30d_mm of "
+        "180 mm near Sentinel-1."
     )
     check_explanation(
         text,
-        {"rank": 1, "s1_anom_db": -4.2, "rain_30d_mm": 180},
-        shown_values(FACTS),
+        {"s1_anom_db": -4.2, "rain_30d_mm": 180},
+        shown_values(FACTS, "riau"),
         "riau-1-1",
     )
 
@@ -378,26 +374,130 @@ LIVE = {
 }
 
 
-def test_live_values_are_rounded_for_reading():
-    written = {field: shown.written for field, shown in shown_values(LIVE).items()}
+def written_for(values, region="riau"):
+    return {
+        field: shown.written for field, shown in shown_values(values, region).items()
+    }
 
-    assert written == {
-        "drying_score": "96.8",
-        "rank": "1",
+
+def test_live_values_are_rounded_for_reading():
+    assert written_for(LIVE) == {
+        "drying_score": "96.8 of 100",
+        "rank": "drying faster than any other area in Riau this week",
         "s1_anom_db": "-5.1 dB",
         "rain_30d_mm": "184 mm",
-        "rain_deficit_pct": "31%",
+        "rain_deficit_pct": "31% less rain than normal",
         "canal_dist_m": "2.5 km",
         "peat_class": "1",
     }
 
 
+@pytest.mark.parametrize(
+    "fraction,written,number",
+    [
+        (0.3149, "31% less rain than normal", 31),
+        (-0.0471, "5% more rain than normal", 5),
+        (-0.004, "rain close to normal (0% difference)", 0),
+    ],
+)
+def test_the_rain_deficit_sign_is_written_in_words(fraction, written, number):
+    shown = shown_values({"rain_deficit_pct": fraction}, "riau")["rain_deficit_pct"]
+
+    assert shown.written == written
+    assert shown.number == number
+
+
+@pytest.mark.parametrize(
+    "rank,written",
+    [
+        (1, "drying faster than any other area in Kalteng this week"),
+        (2, "the 2nd fastest-drying area in Kalteng this week"),
+        (3, "the 3rd fastest-drying area in Kalteng this week"),
+        (4, "the 4th fastest-drying area in Kalteng this week"),
+        (11, "the 11th fastest-drying area in Kalteng this week"),
+        (12, "the 12th fastest-drying area in Kalteng this week"),
+        (13, "the 13th fastest-drying area in Kalteng this week"),
+        (21, "the 21st fastest-drying area in Kalteng this week"),
+        (102, "the 102nd fastest-drying area in Kalteng this week"),
+    ],
+)
+def test_the_rank_is_written_as_a_plain_lead(rank, written):
+    assert written_for({"rank": rank}, "kalteng")["rank"] == written
+
+
+def test_a_text_without_the_rank_lead_is_rejected():
+    text = GOOD_TEXT.replace(LEAD, "drying fast")
+
+    with pytest.raises(ExplanationRejected, match="rank"):
+        check(text=text)
+
+
+def test_a_wrong_ordinal_for_the_rank_is_rejected():
+    facts = shown_values({**FACTS, "rank": 3}, "riau")
+    text = (
+        "This area is the 3rd fastest-drying area in Riau this week, "
+        "the 5th in the province."
+    )
+
+    with pytest.raises(ExplanationRejected, match="5"):
+        check_explanation(text, {"rank": 3}, facts, "riau-1-1")
+
+
+def test_an_ordinal_rank_is_read_as_its_number():
+    facts = shown_values({**FACTS, "rank": 3}, "riau")
+    text = "This area is the 3rd fastest-drying area in Riau this week."
+
+    check_explanation(text, {"rank": 3}, facts, "riau-1-1")
+
+
+def test_the_rain_wording_passes_when_copied():
+    text = GOOD_TEXT + " It had 31% less rain than normal."
+
+    check(text=text, cited={**GOOD_CITED, "rain_deficit_pct": 31})
+
+
+def test_a_flipped_rain_wording_is_rejected():
+    text = GOOD_TEXT + " It had 31% more rain than normal."
+
+    with pytest.raises(ExplanationRejected, match="rain_deficit_pct"):
+        check(text=text, cited={**GOOD_CITED, "rain_deficit_pct": 31})
+
+
+def test_a_negative_rain_deficit_is_never_written_with_a_minus():
+    text = GOOD_TEXT + " The rain deficit is -5%."
+    facts = shown_values({**FACTS, "rain_deficit_pct": -0.05}, "riau")
+
+    with pytest.raises(ExplanationRejected):
+        check_explanation(
+            text, {**GOOD_CITED, "rain_deficit_pct": 5}, facts, "riau-1-1"
+        )
+
+
+def test_the_score_scale_is_not_an_uncited_number():
+    check(text=GOOD_TEXT)
+
+
+def test_a_score_without_its_scale_is_rejected():
+    text = GOOD_TEXT.replace("90.5 of 100", "90.5")
+
+    with pytest.raises(ExplanationRejected, match="drying_score"):
+        check(text=text)
+
+
 def test_a_distance_under_a_kilometre_is_whole_metres():
-    assert shown_values({"canal_dist_m": 139.6})["canal_dist_m"].written == "140 m"
+    assert written_for({"canal_dist_m": 139.6})["canal_dist_m"] == "140 m"
+
+
+def test_the_explain_call_thinks_at_the_lowest_level():
+    from casework.rank_explanation import generation_config
+
+    level = generation_config().thinking_config.thinking_level
+
+    assert level == types.ThinkingLevel.MINIMAL
 
 
 def test_the_facts_block_names_each_fact_in_plain_words_with_its_written_form():
-    block = render_facts("riau-1-1", shown_values(LIVE))
+    block = render_facts("riau-1-1", shown_values(LIVE, "riau"))
 
     assert "radar dryness signal" in block
     assert "distance to the nearest canal" in block
@@ -407,19 +507,20 @@ def test_the_facts_block_names_each_fact_in_plain_words_with_its_written_form():
 
 
 ROUNDED_TEXT = (
-    "Cell riau-1-1 ranks 1 with a drying score of 96.8. The radar dryness "
+    f"This area is {LEAD} (score 96.8 of 100). The radar dryness "
     "signal is -5.1 dB and the nearest canal is 2.5 km away."
 )
 ROUNDED_CITED = {
     "drying_score": 96.8,
-    "rank": 1,
     "s1_anom_db": -5.1,
     "canal_dist_m": 2.5,
 }
 
 
 def test_a_correctly_rounded_text_passes_the_number_check():
-    check_explanation(ROUNDED_TEXT, ROUNDED_CITED, shown_values(LIVE), "riau-1-1")
+    check_explanation(
+        ROUNDED_TEXT, ROUNDED_CITED, shown_values(LIVE, "riau"), "riau-1-1"
+    )
 
 
 @pytest.mark.parametrize(
@@ -430,14 +531,14 @@ def test_an_invented_or_unrounded_number_in_the_text_fails_the_number_check(old,
     text = ROUNDED_TEXT.replace(old, new)
 
     with pytest.raises(ExplanationRejected):
-        check_explanation(text, ROUNDED_CITED, shown_values(LIVE), "riau-1-1")
+        check_explanation(text, ROUNDED_CITED, shown_values(LIVE, "riau"), "riau-1-1")
 
 
 def test_a_cited_value_that_is_the_unrounded_figure_fails_the_number_check():
     cited = {**ROUNDED_CITED, "drying_score": 96.84027719188221}
 
     with pytest.raises(ExplanationRejected, match="drying_score"):
-        check_explanation(ROUNDED_TEXT, cited, shown_values(LIVE), "riau-1-1")
+        check_explanation(ROUNDED_TEXT, cited, shown_values(LIVE, "riau"), "riau-1-1")
 
 
 def test_the_stored_explanation_names_the_prompt_version():
@@ -450,24 +551,23 @@ def test_a_distance_written_in_the_wrong_unit_is_rejected():
     text = ROUNDED_TEXT.replace("2.5 km", "2.5 m")
 
     with pytest.raises(ExplanationRejected, match="canal_dist_m"):
-        check_explanation(text, ROUNDED_CITED, shown_values(LIVE), "riau-1-1")
+        check_explanation(text, ROUNDED_CITED, shown_values(LIVE, "riau"), "riau-1-1")
 
 
 def test_a_deficit_written_as_millimetres_is_rejected():
-    values = {**LIVE}
-    text = "Cell riau-1-1 ranks 1 and the rain deficit is 31 mm."
-    cited = {"rank": 1, "rain_deficit_pct": 31}
+    text = f"This area is {LEAD} and the rain deficit is 31 mm."
+    cited = {"rain_deficit_pct": 31}
 
     with pytest.raises(ExplanationRejected, match="rain_deficit_pct"):
-        check_explanation(text, cited, shown_values(values), "riau-1-1")
+        check_explanation(text, cited, shown_values(LIVE, "riau"), "riau-1-1")
 
 
 def test_a_small_negative_signal_is_not_written_as_negative_zero():
-    assert shown_values({"s1_anom_db": -0.04})["s1_anom_db"].written == "0.0 dB"
+    assert written_for({"s1_anom_db": -0.04})["s1_anom_db"] == "0.0 dB"
 
 
 def test_a_distance_that_rounds_to_a_kilometre_is_written_in_km():
-    assert shown_values({"canal_dist_m": 999.6})["canal_dist_m"].written == "1.0 km"
+    assert written_for({"canal_dist_m": 999.6})["canal_dist_m"] == "1.0 km"
 
 
 def test_the_explainer_reads_facts_from_the_real_area_facts_tool():

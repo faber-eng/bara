@@ -116,6 +116,10 @@ def build_http_options() -> types.HttpOptions:
     )
 
 
+def minimal_thinking() -> types.ThinkingConfig:
+    return types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL)
+
+
 def build_vertex_clients(settings: Settings) -> dict[Role, AsyncModels]:
     return {
         role: ThreadedModels(

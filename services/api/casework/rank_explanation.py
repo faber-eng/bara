@@ -8,6 +8,7 @@ from google.genai import errors, types
 from pydantic import BaseModel, Field, ValidationError
 
 from adapters.firestore_repos import RankingRepository
+from adapters.gemini import minimal_thinking
 from adapters.store import DocumentNotFound
 from casework.messenger import sentence_count
 from config import Role
@@ -31,32 +32,44 @@ MAX_SENTENCES = 3
 ATTEMPTS = 2
 
 SYSTEM_INSTRUCTION = f"""\
-You explain to an operations officer why one grid cell of tropical peatland \
-ranks where it does for drying this week. The user message holds the cell's \
-facts in one block between <<<FACTS and FACTS>>>: the cell id and a list of \
-facts, each with "field", "name", "written" and "number".
+You explain to an operations officer why one area of tropical peatland \
+matters for drying this week. The user message holds the area's facts in one \
+block between <<<FACTS and FACTS>>>: the cell id and a list of facts, each \
+with "field", "name", "written" and "number".
 
-Write "text": 2 to {MAX_SENTENCES} short sentences of plain English for a \
-non-specialist that say what drives the rank. Rules:
-- Refer to a fact by its "name", never by its "field". Do not write names \
-such as drying_score or canal_dist_m.
-- Write each number exactly as its "written" says: same digits, same unit. \
-The facts are already rounded; do not round again, convert or recompute.
+Write "text": 2 to {MAX_SENTENCES} short sentences of plain, natural English \
+for a non-specialist.
+1. The first sentence says why the area matters. It starts "This area is", \
+then copies the "rank" fact's "written" words exactly, then gives the \
+drying score in brackets as "(score" plus its "written" words plus ")".
+2. The next one or two sentences name what drives it, in plain words: the \
+radar dryness signal (a negative value means the peat surface is drier than \
+usual for this place), the rain compared with normal, and the distance to the \
+nearest canal (a canal close by drains the peat; far away means the canal is \
+not the cause).
+
+Rules:
+- Copy each fact's "written" words exactly: same digits, same unit, same \
+words. Never add a minus sign or a percent sign of your own, and never write \
+"rain deficit".
 - Use only the facts. No other number appears in the text: no week number, no \
-count, no date. The cell id may appear as written.
-- Say what a number means in words next to it (for example "2.5 km from the \
-nearest canal is far, so drainage is slow").
+count, no date. Do not write the cell id; say "this area".
+- Never write a "field" such as drying_score or canal_dist_m.
 
-Write "cited": one entry for each number in the text, with "field" (one of \
-{", ".join(FIELDS)}) and "value" (the fact's "number"). Every number in the \
-text has an entry, and every entry's number appears in the text.
+Write "cited": one entry for each fact whose digits appear in the text, with \
+"field" (one of {", ".join(FIELDS)}) and "value" (the fact's "number"). A \
+fact whose written words hold no digits is not cited.
 
-Example for the facts drying_score 88.4 (name "drying score"), rank 3 (name \
-"rank this week"), canal_dist_m 95 m (name "distance to the nearest canal"):
-text: "Cell riau-1-1 ranks 3 this week with a drying score of 88.4. It lies \
-only 95 m from the nearest canal, so the peat drains quickly."
+Example for the facts rank written "the 3rd fastest-drying area in Jambi this \
+week" (number 3), drying_score written "88.4 of 100" (number 88.4), \
+rain_deficit_pct written "12% more rain than normal" (number 12), \
+canal_dist_m written "95 m" (number 95):
+text: "This area is the 3rd fastest-drying area in Jambi this week (score 88.4 \
+of 100). It had 12% more rain than normal, but it lies only 95 m from a \
+canal, which drains the peat quickly."
 cited: [{{"field": "rank", "value": 3}}, {{"field": "drying_score", "value": \
-88.4}}, {{"field": "canal_dist_m", "value": 95}}]
+88.4}}, {{"field": "rain_deficit_pct", "value": 12}}, {{"field": \
+"canal_dist_m", "value": 95}}]
 
 Reply with one JSON object with "text" and "cited".
 """
@@ -113,6 +126,7 @@ def generation_config() -> types.GenerateContentConfig:
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
         response_schema=ExplainOutput,
+        thinking_config=minimal_thinking(),
     )
 
 
@@ -199,7 +213,7 @@ class RankExplainer:
         return explanation
 
     async def _generate(self, cell_id: str, facts: dict) -> RankExplanation | None:
-        shown = shown_values(known_values(facts))
+        shown = shown_values(known_values(facts), facts["region"])
         contents = render_facts(cell_id, shown)
         for attempt in range(1, ATTEMPTS + 1):
             try:
