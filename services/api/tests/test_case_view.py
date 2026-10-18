@@ -1,7 +1,13 @@
 from datetime import UTC, datetime, timedelta
 
 from contracts import AgentDecision, Verdict
-from domain.case_view import build_timeline, past_checks, summarize_case
+from domain.case_view import (
+    build_timeline,
+    format_local,
+    format_wib,
+    past_checks,
+    summarize_case,
+)
 from tests.fakes import (
     make_agent_run,
     make_case,
@@ -11,6 +17,14 @@ from tests.fakes import (
 )
 
 T0 = datetime(2026, 7, 20, 1, 0, tzinfo=UTC)
+
+
+def test_format_local_names_the_day_and_the_zone_of_the_region():
+    moment = datetime(2026, 10, 21, 3, 59, tzinfo=UTC)
+
+    assert format_local(moment, "Asia/Jakarta") == "Wed 21 Oct, 10:59 WIB"
+    assert format_local(moment, "Africa/Kinshasa") == "Wed 21 Oct, 04:59 WAT"
+    assert format_wib(moment) == "Wed 21 Oct, 10:59 WIB"
 
 
 def at(hours):

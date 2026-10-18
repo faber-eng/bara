@@ -45,8 +45,8 @@ from tests.test_volunteer_routes import bearer, make_client
 VOLUNTEERS = "volunteers"
 NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
 GOOD = {
-    "text": "Catatan diterima. Tugas dam-1 di 0.5, 101.4 sampai Selasa.",
-    "text_en": "Noted. Task at dam-1, 0.5, 101.4 due Tuesday.",
+    "text": "Catatan diterima. Cek sekat kanal di 0.5000, 101.4000 sampai Selasa.",
+    "text_en": "Noted. Check the canal dam at 0.5000, 101.4000 by Tuesday.",
     "needs_ops": False,
 }
 BLOCKED = {**GOOD, "needs_ops": True}
@@ -130,20 +130,102 @@ def test_the_volunteer_message_and_the_reply_land_in_the_thread():
     assert [m.to_id for m in world.stored() if m.thread == "ops"] == []
 
 
-def test_the_model_sees_the_open_task_name_point_and_deadline():
+def test_the_model_sees_the_open_task_in_plain_words():
     model = FakeModel(reply_of(GOOD))
     world = World(model)
 
     ask(world, "v1", "Apa tugas saya?")
 
     role, contents, config = model.calls[0]
+    facts = json.loads(contents.split("<<<CHAT\n")[1].split("\nCHAT>>>")[0])
     assert role == "fast"
-    assert "dam-1" in contents
-    assert "0.5, 101.4" in contents
-    assert "Tuesday 20 October 2026, 19:00 WIB" in contents
+    assert facts["open_task"] == {
+        "task": "cek sekat kanal",
+        "place": "sekat kanal di Riau",
+        "point": "0.5000, 101.4000",
+        "deadline": "Tue 20 Oct, 19:00 WIB",
+        "what_to_send": "a photo of the dam and the water level in the canal",
+    }
+    assert "dam_check" not in contents
+    assert "dam-1" not in contents
     assert "Apa tugas saya?" in contents
     assert "Indonesian" in contents
     assert config.response_schema.__name__ == "ChatOutput"
+
+
+@pytest.mark.parametrize(
+    ("language", "kind", "task", "place"),
+    [
+        ("en", "dam_check", "check the canal dam", "the canal dam in Riau"),
+        ("en", "dam_repair", "repair the canal dam", "the canal dam in Riau"),
+        ("id", "dam_repair", "perbaiki sekat kanal", "sekat kanal di Riau"),
+        ("ms", "dam_check", "periksa tebatan kanal", "tebatan kanal di Riau"),
+        (
+            "fr",
+            "dam_check",
+            "vérifier le barrage du canal",
+            "le barrage du canal à Riau",
+        ),
+        ("en", "patrol_recheck", "re-check the burned area", "the burned area in Riau"),
+        ("fr", "patrol_recheck", "revérifier la zone brûlée", "la zone brûlée à Riau"),
+    ],
+)
+def test_the_task_and_place_use_plain_words_in_the_volunteer_language(
+    language, kind, task, place
+):
+    model = FakeModel(reply_of(GOOD))
+    world = World(model, volunteer=make_volunteer(language=language))
+    world.collections[TASKS].put("t1", make_task(type=kind))
+    if kind == "patrol_recheck":
+        world.collections[CASES].put("c1", make_case(dam_id=None))
+
+    ask(world, "v1", "halo")
+
+    facts = json.loads(model.calls[0][1].split("<<<CHAT\n")[1].split("\nCHAT>>>")[0])
+    assert facts["open_task"]["task"] == task
+    assert facts["open_task"]["place"] == place
+
+
+def test_the_prompt_forbids_internal_ids_and_snake_case():
+    model = FakeModel(reply_of(GOOD))
+    world = World(model)
+
+    ask(world, "v1", "halo")
+
+    instruction = model.calls[0][2].system_instruction
+    assert "internal id" in instruction
+    assert "snake_case" in instruction
+
+
+@pytest.mark.parametrize(
+    "leak",
+    [
+        "Your open task is dam_check at the canal.",
+        "Tugas dam-riau-024 menunggu.",
+        "Status: patrol_recheck",
+    ],
+)
+@pytest.mark.parametrize("field", ["text", "text_en"])
+def test_a_reply_with_an_internal_word_stores_the_fixed_reply(field, leak):
+    world = World(FakeModel(reply_of({**GOOD, field: leak})))
+
+    reply = ask(world, "v1", "apa tugas saya?")
+
+    assert reply.text == FALLBACK_REPLIES["id"]
+    assert len([m for m in world.stored() if m.thread == "ops"]) == 1
+
+
+def test_plain_words_with_a_hyphen_or_digits_pass_the_guard():
+    plain = {
+        **GOOD,
+        "text": "Cek sekat kanal di 0.5305, 102.2106 sebelum Rab 21 Okt, 10:59 WIB.",
+        "text_en": "Re-check the dam at 0.5305, 102.2106 before Wed 21 Oct, 10:59 WIB.",
+    }
+    world = World(FakeModel(reply_of(plain)))
+
+    reply = ask(world, "v1", "halo")
+
+    assert reply.text == plain["text"]
 
 
 def test_a_blocked_report_records_a_timeline_note_on_the_case():
@@ -262,7 +344,8 @@ def test_the_reply_is_logged_with_the_prompt_version(caplog):
     ask(world, "v1", "halo")
 
     fields = [r.fields for r in caplog.records if hasattr(r, "fields")]
-    assert any(f.get("prompt_version") == CHAT_PROMPT_VERSION for f in fields)
+    assert CHAT_PROMPT_VERSION == "chat-v2"
+    assert any(f.get("prompt_version") == "chat-v2" for f in fields)
 
 
 def chat_client(settings, world, judge=False):
