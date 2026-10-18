@@ -34,7 +34,7 @@ flowchart LR
   end
   subgraph Core["Core"]
     API["Cloud Run bara-api<br/>FastAPI + ADK agent"]:::gcp
-    G["Gemini on Vertex AI<br/>Pro and Flash"]:::ai
+    G["Gemini on Vertex AI<br/>3.8 Flash and 3.5 Flash"]:::ai
   end
   subgraph Data["Data"]
     FS[("Firestore")]:::gcp
@@ -78,7 +78,7 @@ Earth Engine, BigQuery ML).
 - **Cloud Run:** runs `bara-api` (FastAPI and the ADK agent) and `bara-jobs` (the batch jobs).
 - **Cloud Run Jobs:** run the weekly drying score and the daily hotspot and re-ignition work.
 - **Cloud Scheduler:** triggers `bara-drying` weekly and `bara-reignition` daily.
-- **Vertex AI, Gemini:** Gemini 3.1 Pro for agent reasoning and Gemini 3.5 Flash for evidence reading and task wording, with a fallback model.
+- **Vertex AI, Gemini:** Gemini 3.8 Flash for agent decisions and escalation briefs; Gemini 3.5 Flash for evidence reading, task wording, chat replies and area explanations. Each has a fallback model (`config/models.yaml`).
 - **Agent Development Kit:** the agent that runs each case to closure: picks a person, assigns the task, reads the evidence, rechecks, escalates.
 - **Earth Engine:** Sentinel-1, rainfall, peat and fire data for the drying score, the map tiles and drawn-area ranking.
 - **BigQuery:** the 1 km grid, weekly drying scores, fire events and field-check labels. Every query has a byte cap.
