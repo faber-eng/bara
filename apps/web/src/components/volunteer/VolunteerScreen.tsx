@@ -8,6 +8,7 @@ import { type VolunteerCopy, volunteerCopy } from "../../lib/copy/volunteer";
 import { LanguageToggle } from "../LanguageToggle";
 import { InlineLoading } from "../LoadingPanel";
 import { ChatThread, type SentEntry, threadEntries } from "./ChatThread";
+import { HomeLocation } from "./HomeLocation";
 import { inboxQuery } from "./inboxQuery";
 import { OutboxStatus } from "./OutboxStatus";
 import { ReplyBar } from "./ReplyBar";
@@ -89,6 +90,14 @@ export function VolunteerScreen({ volunteerId }: { volunteerId: string }) {
     <section className="volunteer" aria-label={copy.tasksLabel}>
       <h1 className="visually-hidden">{copy.tasksLabel}</h1>
       <LanguageToggle label={copy.toggleLabel} />
+      {inbox.data && (
+        <HomeLocation
+          copy={copy}
+          home={inbox.data.home}
+          name={inbox.data.name}
+          volunteerRole={inbox.data.role}
+        />
+      )}
       {inbox.isPending && <InlineLoading text={copy.loading} />}
       {inbox.isError && inbox.data === undefined && (
         <div role="alert" className="banner banner-danger">

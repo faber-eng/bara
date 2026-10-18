@@ -565,6 +565,9 @@ class Inbox(Contract):
     messages: list[Message]
     evidence: list[Evidence]
     area_case_ids: list[str] = []
+    home: GeoPoint | None = None
+    name: str | None = None
+    role: VolunteerRole | None = None
 
 
 class ClockState(Contract):

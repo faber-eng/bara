@@ -262,6 +262,7 @@ def build_inbox(adapters: Adapters) -> InboxReader:
         tasks=adapters.tasks,
         messages=adapters.messages,
         evidence=adapters.evidence,
+        volunteers=adapters.volunteers,
     )
 
 

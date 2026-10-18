@@ -160,6 +160,26 @@ describe("volunteer screen", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("milik relawan lain");
   });
 
+  it("offers the home location item, closed, when the inbox carries a home", async () => {
+    const homeInbox = {
+      ...inboxBody,
+      home: { lat: 0.51234, lon: 101.44567 },
+      name: "Ari",
+      role: "volunteer",
+    };
+    stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(homeInbox) });
+    renderApp("/v/uid-1");
+    expect(await screen.findByText("Lokasi rumah saya")).toBeInTheDocument();
+    expect(screen.queryByText("0.51234, 101.44567")).not.toBeInTheDocument();
+  });
+
+  it("hides the home location item for an older inbox without a home", async () => {
+    stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+    renderApp("/v/uid-1");
+    await screen.findByText("Halo Ari, sekat kanal perlu dicek.");
+    expect(screen.queryByText("Lokasi rumah saya")).not.toBeInTheDocument();
+  });
+
   it("offers a retry when the inbox fails", async () => {
     let calls = 0;
     stubApi({

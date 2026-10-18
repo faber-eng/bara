@@ -5,21 +5,23 @@ from adapters.firestore_repos import (
     EvidenceRepository,
     MessageRepository,
     TaskRepository,
+    VolunteerRepository,
 )
 from casework.inbox import InboxReader
-from contracts import Case, Evidence, Message, Task
+from contracts import Case, Evidence, GeoPoint, Message, Task, Volunteer
 from tests.fakes import (
     InMemoryCollection,
     make_case,
     make_evidence,
     make_message,
     make_task,
+    make_volunteer,
 )
 
 NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
 
 
-def reader_with(tasks=(), messages=(), evidence=(), cases=()):
+def reader_with(tasks=(), messages=(), evidence=(), cases=(), volunteers=()):
     task_store = InMemoryCollection(Task)
     for task in tasks:
         task_store.put(task.id, task)
@@ -32,11 +34,15 @@ def reader_with(tasks=(), messages=(), evidence=(), cases=()):
     case_store = InMemoryCollection(Case)
     for case in cases:
         case_store.put(case.id, case)
+    volunteer_store = InMemoryCollection(Volunteer)
+    for volunteer in volunteers:
+        volunteer_store.put(volunteer.id, volunteer)
     return InboxReader(
         cases=CaseRepository(case_store),
         tasks=TaskRepository(task_store),
         messages=MessageRepository(message_store),
         evidence=EvidenceRepository(evidence_store),
+        volunteers=VolunteerRepository(volunteer_store),
     )
 
 
@@ -105,3 +111,30 @@ def test_a_task_whose_case_is_gone_is_not_an_area_case():
     reader = reader_with(tasks=[make_task(id="t1", assignee_id="v1", case_id="gone")])
 
     assert reader.read("v1").area_case_ids == []
+
+
+def test_the_inbox_carries_the_volunteers_home_name_and_role():
+    reader = reader_with(
+        volunteers=[
+            make_volunteer(
+                id="v1",
+                name="Sari",
+                role="volunteer",
+                home=GeoPoint(lat=0.51234, lon=101.44567),
+            )
+        ]
+    )
+
+    inbox = reader.read("v1")
+
+    assert inbox.home == GeoPoint(lat=0.51234, lon=101.44567)
+    assert inbox.name == "Sari"
+    assert inbox.role == "volunteer"
+
+
+def test_an_unknown_volunteer_has_no_home():
+    inbox = reader_with().read("nobody")
+
+    assert inbox.home is None
+    assert inbox.name is None
+    assert inbox.role is None

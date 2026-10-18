@@ -295,11 +295,16 @@ export type UploadTicket = {
 
 export type CompleteRequest = { point: GeoPoint | null; captured_at: IsoDateTime };
 
+export type VolunteerRole = "volunteer" | "repair_team" | "patrol";
+
 export type Inbox = {
   tasks: Task[];
   messages: Message[];
   evidence: Evidence[];
   area_case_ids: string[];
+  home: GeoPoint | null;
+  name: string | null;
+  role: VolunteerRole | null;
 };
 
 export type ClockState = { now: IsoDateTime; offset_seconds: number; judge_mode: boolean };

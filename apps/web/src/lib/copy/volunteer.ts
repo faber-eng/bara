@@ -1,4 +1,4 @@
-import type { DamState, HotGround, Smoke, TaskType } from "../contracts";
+import type { DamState, HotGround, Smoke, TaskType, VolunteerRole } from "../contracts";
 import type { PickKind } from "../volunteer/evidenceKinds";
 import type { CopyLanguage } from "./language";
 
@@ -13,6 +13,13 @@ export type HeadlineKey =
   | "received";
 
 export type NextKey = "human" | "location" | "forwarded" | "recorded" | "stay_away";
+
+export type HomeCopy = {
+  title: string;
+  mapUnavailable: string;
+  openInMaps: string;
+  roles: Record<VolunteerRole, string>;
+};
 
 export type VolunteerCopy = {
   loading: string;
@@ -102,6 +109,7 @@ export type VolunteerCopy = {
   kindSent: (label: string) => string;
   addDialogTitle: Record<PickKind, string>;
   cancel: string;
+  home: HomeCopy;
 };
 
 const ID: VolunteerCopy = {
@@ -234,6 +242,12 @@ const ID: VolunteerCopy = {
     video: "Tambah video",
   },
   cancel: "Batal",
+  home: {
+    title: "Lokasi rumah saya",
+    mapUnavailable: "Peta tidak tersedia",
+    openInMaps: "Buka di Google Maps",
+    roles: { volunteer: "Relawan", repair_team: "Tim perbaikan", patrol: "Patroli" },
+  },
 };
 
 const EN: VolunteerCopy = {
@@ -361,6 +375,12 @@ const EN: VolunteerCopy = {
     video: "Add a video",
   },
   cancel: "Cancel",
+  home: {
+    title: "My home location",
+    mapUnavailable: "Map not available",
+    openInMaps: "Open in Google Maps",
+    roles: { volunteer: "Volunteer", repair_team: "Repair team", patrol: "Patrol" },
+  },
 };
 
 export function volunteerCopy(language: CopyLanguage): VolunteerCopy {
