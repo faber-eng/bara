@@ -477,3 +477,7 @@
     transform: translateY(12px);
   }
 }
+
+.area-sample-card .chip {
+  align-self: flex-start;
+}
