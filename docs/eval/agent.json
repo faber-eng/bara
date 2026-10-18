@@ -1,7 +1,7 @@
 {
-  "run_at": "2026-10-18T13:09:03Z",
+  "run_at": "2026-10-18T13:26:35Z",
   "model": "gemini-3.8-flash",
-  "prompt_version": "agent-v8",
+  "prompt_version": "agent-v9",
   "cases": 9,
   "passed": 9,
   "pass_rate": 1.0,

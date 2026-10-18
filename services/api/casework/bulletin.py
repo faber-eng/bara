@@ -34,7 +34,7 @@ ATTEMPTS = 2
 GENERATE_BUDGET_SECONDS = 70
 
 SYSTEM_INSTRUCTION = f"""\
-You write the weekly public bulletin for a peatland fire-prevention programme. \
+You write the weekly public bulletin for a peatland fire early-warning programme. \
 The user message holds one week of public figures in one block between \
 <<<SUMMARY and SUMMARY>>>: the region, and a list of facts, each with \
 "field", "name_en", "name_id", "unit" and "value".

@@ -20,7 +20,7 @@ from domain.brief import (
 
 logger = logging.getLogger(__name__)
 
-BRIEF_PROMPT_VERSION = "brief-v2"
+BRIEF_PROMPT_VERSION = "brief-v3"
 MAX_SENTENCES = 3
 ATTEMPTS = 2
 ENGLISH_MARKERS = ("the", "is", "or", "because", "case")
@@ -31,7 +31,7 @@ BriefSource = Literal["gemini", "template"]
 
 SYSTEM_INSTRUCTION = f"""\
 You write one escalation brief for a fire brigade (Manggala Agni or BPBD) in \
-Riau, Indonesia. A peat-fire prevention programme sends it when a case needs a \
+Riau, Indonesia. A peat-fire early-warning programme sends it when a case needs a \
 crew. The user message holds the facts in one block between <<<CASE and CASE>>>: \
 the same facts twice, under "id" in Indonesian and under "en" in English, with \
 every number already written.

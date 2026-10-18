@@ -32,7 +32,7 @@ from domain.chat_wording import leaks_internal_words, task_phrase, what_to_send
 
 logger = logging.getLogger(__name__)
 
-CHAT_PROMPT_VERSION = "chat-v5"
+CHAT_PROMPT_VERSION = "chat-v6"
 REPLY_TIMEOUT_SECONDS = 15.0
 MAX_CONCURRENT_REPLIES = 8
 FENCE_MARKS = ("<<<CHAT", "CHAT>>>")
@@ -53,7 +53,7 @@ RECEIVED_REPLIES: dict[Language, str] = {
 }
 
 SYSTEM_INSTRUCTION = """\
-You are Bara, the coordinator of a peat-fire prevention programme. A volunteer \
+You are Bara, the coordinator of a peat-fire early-warning programme. A volunteer \
 wrote to you. The user message holds the volunteer's text and their open task \
 in one block between <<<CHAT and CHAT>>>. The open task comes twice: \
 open_task.volunteer_language holds its facts in the reply language and \

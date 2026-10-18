@@ -209,7 +209,7 @@ def test_english_leaks_finds_snake_case_and_the_marker_words():
 
 
 def test_the_prompt_rules():
-    assert BRIEF_PROMPT_VERSION == "brief-v2"
+    assert BRIEF_PROMPT_VERSION == "brief-v3"
     assert f"at most {MAX_SENTENCES}" in SYSTEM_INSTRUCTION
     assert "Indonesian" in SYSTEM_INSTRUCTION
     assert ENGLISH_MARKERS == ("the", "is", "or", "because", "case")

@@ -91,7 +91,7 @@ def test_a_valid_reply_is_stored_as_gemini_with_model_and_prompt_version():
     assert bulletin == world.stored()
     assert bulletin.source == "gemini"
     assert bulletin.model == "gemini-3.5-flash"
-    assert bulletin.prompt_version == "bulletin-v1"
+    assert bulletin.prompt_version == "bulletin-v2"
     assert bulletin.text_en == TEXT_EN
     assert [c.field for c in bulletin.cited] == ["high_risk_cells", "dams_broken"]
     role, contents, config = world.model.calls[0]

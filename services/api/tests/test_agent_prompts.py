@@ -67,7 +67,7 @@ def test_instruction_carries_the_never_close_rule_and_the_fraction_glossary():
 
 
 def test_prompt_version():
-    assert PROMPT_VERSION == "agent-v8"
+    assert PROMPT_VERSION == "agent-v9"
 
 
 def test_instruction_steps_end_with_one_assign_task_call():

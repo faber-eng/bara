@@ -456,8 +456,8 @@ def test_the_reply_is_logged_with_the_prompt_version(caplog):
     ask(world, "v1", "halo")
 
     fields = [r.fields for r in caplog.records if hasattr(r, "fields")]
-    assert CHAT_PROMPT_VERSION == "chat-v5"
-    assert any(f.get("prompt_version") == "chat-v5" for f in fields)
+    assert CHAT_PROMPT_VERSION == "chat-v6"
+    assert any(f.get("prompt_version") == "chat-v6" for f in fields)
 
 
 def chat_client(settings, world, judge=False):

@@ -97,7 +97,7 @@ def test_the_context_names_what_the_task_asked_for():
 
 
 def test_the_prompt_version_is_set():
-    assert EVIDENCE_PROMPT_VERSION == "evidence-v1"
+    assert EVIDENCE_PROMPT_VERSION == "evidence-v2"
 
 
 def test_the_instruction_keeps_the_rules_the_verdict_depends_on():
