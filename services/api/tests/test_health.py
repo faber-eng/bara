@@ -63,7 +63,7 @@ def test_create_app_wires_the_repo_config(monkeypatch):
     body = TestClient(main.create_app()).get("/api/health").json()
 
     assert body["models"] == {
-        "reasoning": "gemini-3.1-pro-preview",
+        "reasoning": "gemini-3.8-flash",
         "fast": "gemini-3.5-flash",
     }
     assert body["git_sha"] == "fe23bb1"

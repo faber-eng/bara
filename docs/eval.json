@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T07:06:44Z",
+  "generated_at": "2026-10-18T11:11:51Z",
   "drying": {
     "run_at": "2026-10-17T21:16:10.342308+00:00",
     "region": "riau",
@@ -291,8 +291,8 @@
     ]
   },
   "agent": {
-    "run_at": "2026-10-18T07:06:44Z",
-    "model": "gemini-3.1-pro-preview",
+    "run_at": "2026-10-18T11:11:51Z",
+    "model": "gemini-3.8-flash",
     "cases": 9,
     "passed": 9,
     "pass_rate": 1.0,
