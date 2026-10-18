@@ -37,7 +37,10 @@ describe("app routes", () => {
     renderAt("/");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: /Bara finds drying peat/ }),
+      await screen.findByRole("heading", {
+        level: 1,
+        name: /Bara finds peat that is drying faster/,
+      }),
     ).toBeInTheDocument();
     expect(await screen.findByText("API ok")).toBeInTheDocument();
   });
@@ -82,7 +85,10 @@ describe("app routes", () => {
     renderAt("/");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: /Bara finds drying peat/ }),
+      await screen.findByRole("heading", {
+        level: 1,
+        name: /Bara finds peat that is drying faster/,
+      }),
     ).toBeInTheDocument();
     expect(await screen.findByText("API unreachable", {}, { timeout: 3000 })).toBeInTheDocument();
   });

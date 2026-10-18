@@ -7,8 +7,14 @@
 > - Rafizhafran Halmi (rzh.halim@gmail.com)
 > - Ramel Akil Pratama (ramelakil76@gmail.com)
 
-A Gemini agent on Google Cloud that ranks drying peat before the dry season, scores where a burned area
-may reignite, sends a named person to check, reads their evidence, and escalates to the fire brigade.
+A Gemini agent on Google Cloud that warns early about peat drying faster than normal, drained land included.
+Each week it ranks peat areas from satellite radar (Sentinel-1), rain (CHIRPS), the peat map and distance to canals.
+It scores where a burned area may reignite, sends a named person to check an area or its dam, reads their photo and
+voice evidence, and escalates to the fire brigade when a check is overdue or shows smoke.
+
+Bara does not control canals or water levels, does not measure water depth, and does not know which land is a
+plantation. It is tested on past data and not yet used in the field. Dams and people are example data; canals are
+real OpenStreetMap lines; satellite, rain, peat and fire data are real.
 
 Google Cloud AI Builder Cup 2026, Sustainability and Social Impact.
 
