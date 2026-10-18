@@ -31,6 +31,8 @@ OPENED_TEXT = {
     "reignition": "Re-ignition risk flagged in {cell}.",
     "hotspot": "Fire hotspot reported in {cell}.",
 }
+AREA_OPENED_TEXT = "Area flagged at risk in {cell}."
+AREA_CHECK_TEXT = "Area check due {due} in {cell}."
 TASK_TEXT = {
     "dam_check": "Dam check due {due} in {cell}.",
     "dam_repair": "Repair due {due} in {cell}.",
@@ -206,6 +208,18 @@ def short_date(moment: datetime, zone: ZoneInfo) -> str:
     return f"{local.day} {local:%b}"
 
 
+def opened_text(case: Case) -> str:
+    if case.type == "dam_risk" and case.dam_id is None:
+        return AREA_OPENED_TEXT.format(cell=case.cell_id)
+    return OPENED_TEXT[case.type].format(cell=case.cell_id)
+
+
+def task_text(case: Case, task: Task, due: str) -> str:
+    if task.type == "dam_check" and case.dam_id is None:
+        return AREA_CHECK_TEXT.format(due=due, cell=case.cell_id)
+    return TASK_TEXT[task.type].format(due=due, cell=case.cell_id)
+
+
 def case_lines(
     case: Case,
     tasks: Sequence[Task],
@@ -218,7 +232,7 @@ def case_lines(
             at=case.opened_at,
             cell_id=cell,
             kind="opened",
-            text=OPENED_TEXT[case.type].format(cell=cell),
+            text=opened_text(case),
         )
     ]
     for task in tasks:
@@ -230,7 +244,7 @@ def case_lines(
                 at=task.created_at,
                 cell_id=cell,
                 kind="task",
-                text=TASK_TEXT[task.type].format(due=due, cell=cell),
+                text=task_text(case, task, due),
             )
         )
         if task.status == "overdue":

@@ -33,6 +33,8 @@ class Wording:
     task_types: Mapping[TaskType, str]
     smoke: Mapping[Smoke, str]
     actions: Mapping[CaseType, str]
+    area_case_type: str
+    area_action: str
     cell: str
     dam: str
     found: str
@@ -84,6 +86,8 @@ INDONESIAN = Wording(
             "hotspot": "Kirim regu untuk memeriksa lokasi dan memadamkan api.",
         }
     ),
+    area_case_type="Lokasi berisiko",
+    area_action="Kirim regu untuk memeriksa lokasi.",
     cell="sel {cell_id}",
     dam=", bendungan {dam_id}",
     found="{case_type} di {place}",
@@ -128,6 +132,8 @@ ENGLISH = Wording(
             "hotspot": "Send a crew to check the site and put out the fire.",
         }
     ),
+    area_case_type="Area at risk",
+    area_action="Send a crew to check the area.",
     cell="cell {cell_id}",
     dam=", dam {dam_id}",
     found="{case_type} in {place}",
@@ -174,9 +180,25 @@ def place_text(facts: BriefFacts, wording: Wording) -> str:
     return cell + wording.dam.format(dam_id=facts.dam_id)
 
 
+def is_area_case(facts: BriefFacts) -> bool:
+    return facts.case_type == "dam_risk" and facts.dam_id is None
+
+
+def case_type_text(facts: BriefFacts, wording: Wording) -> str:
+    if is_area_case(facts):
+        return wording.area_case_type
+    return wording.case_types[facts.case_type]
+
+
+def action_text(facts: BriefFacts, wording: Wording) -> str:
+    if is_area_case(facts):
+        return wording.area_action
+    return wording.actions[facts.case_type]
+
+
 def found_text(facts: BriefFacts, wording: Wording) -> str:
     return wording.found.format(
-        case_type=wording.case_types[facts.case_type],
+        case_type=case_type_text(facts, wording),
         place=place_text(facts, wording),
     )
 
@@ -240,7 +262,7 @@ def phrases(facts: BriefFacts, wording: Wording) -> Phrases:
     return Phrases(
         found=found_text(facts, wording),
         reasons=reasons(facts, wording),
-        action=wording.actions[facts.case_type],
+        action=action_text(facts, wording),
     )
 
 
