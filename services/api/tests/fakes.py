@@ -733,6 +733,7 @@ APP_BUILDER_STUBS = {
     "build_inbox": "inbox",
     "build_assigner": "assigner",
     "build_area_ranker": "area_ranker",
+    "build_volunteer_chat": "volunteer_chat",
 }
 
 

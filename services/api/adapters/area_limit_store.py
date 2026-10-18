@@ -6,6 +6,7 @@ from google.cloud import firestore
 from contracts import AreaRunState
 
 LIMITS_COLLECTION = "area_rank_limits"
+CHAT_LIMITS_COLLECTION = "chat_limits"
 
 
 class AreaLimitUnavailable(Exception):
@@ -13,15 +14,16 @@ class AreaLimitUnavailable(Exception):
 
 
 class FirestoreAreaLimitStore:
-    def __init__(self, client):
+    def __init__(self, client, collection: str = LIMITS_COLLECTION):
         self._client = client
+        self._collection = collection
 
     def update(
         self,
         uid: str,
         apply: Callable[[AreaRunState | None], tuple[AreaRunState | None, int]],
     ) -> int:
-        reference = self._client.collection(LIMITS_COLLECTION).document(uid)
+        reference = self._client.collection(self._collection).document(uid)
         try:
             return run_update(self._client.transaction(), reference, apply)
         except GoogleAPICallError as error:

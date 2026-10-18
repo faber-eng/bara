@@ -27,6 +27,9 @@ InviteCode = Annotated[str, StringConstraints(min_length=1, max_length=128)]
 PersonName = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)
 ]
+ChatText = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
+]
 Scalar = int | float | str
 
 CaseType = Literal["dam_risk", "reignition", "hotspot"]
@@ -515,6 +518,10 @@ class UploadRequest(Contract):
     content_type: str
     size_bytes: Annotated[int, Field(gt=0)]
     sample: bool
+
+
+class ChatRequest(Contract):
+    text: ChatText
 
 
 class UploadTicket(Contract):

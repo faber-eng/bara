@@ -297,6 +297,10 @@ class CaseworkStore:
     def save_note(self, message: Message) -> None:
         self._commit([], [Put(MESSAGES, message.id, message)], "note not saved")
 
+    def save_messages(self, messages: Sequence[Message]) -> None:
+        writes = [Put(MESSAGES, message.id, message) for message in messages]
+        self._commit([], writes, "messages not saved")
+
     def commit_ack(
         self,
         *,
