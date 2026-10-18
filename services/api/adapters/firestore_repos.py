@@ -126,6 +126,12 @@ class CaseRepository:
     def in_cell(self, cell_id: str) -> list[Case]:
         return self._cases.where(Filter("cell_id", "==", cell_id))
 
+    def live_in_cell(self, cell_id: str) -> Case | None:
+        live = [case for case in self.in_cell(cell_id) if case.status != "closed"]
+        if not live:
+            return None
+        return min(live, key=lambda case: (case.opened_at, case.id))
+
     def mark_closed(self, case_id: str, closed_by: str, closed_at: datetime) -> None:
         self._cases.update(
             case_id,
@@ -586,6 +592,10 @@ class RankedDamRepository:
     def top(self, region: str, limit: int) -> list[RankedDam]:
         ranked = self._dams_for(region).where(Filter("rank", "<=", limit))
         return sorted(ranked, key=lambda dam: dam.rank)
+
+    def in_cell(self, region: str, cell_id: str) -> list[RankedDam]:
+        found = self._dams_for(region).where(Filter("cell_id", "==", cell_id))
+        return sorted(found, key=lambda dam: dam.rank)
 
 
 class RankingRunRepository:

@@ -398,6 +398,7 @@ class DryingRanked(Contract):
     week: IsoWeek
     top_cells: list[TopCellRef]
     top_dams: list[TopDamRef]
+    requested_cell: TopCellRef | None = None
 
 
 class EvidenceReceived(Contract):

@@ -18,6 +18,7 @@ from contracts import (
     EventAdapter,
     HistoryFlags,
     RankedDam,
+    TopCellRef,
 )
 from domain.clock import Clock
 
@@ -115,6 +116,31 @@ def case_id_for(message_id: str, dam_id: str) -> str:
     return f"case-{message_id}-{dam_id}"
 
 
+def build_area_case(
+    event: DryingRankedEvent,
+    area: TopCellRef,
+    dam: RankedDam | None,
+    message_id: str,
+    clock: Clock,
+) -> Case:
+    dam_id = None if dam is None else dam.dam_id
+    return Case(
+        id=case_id_for(message_id, dam_id or area.cell_id),
+        type="dam_risk",
+        region=event.region,
+        cell_id=area.cell_id,
+        dam_id=dam_id,
+        event_id=event.id,
+        status="open",
+        risk=CaseRisk(drying_score=area.drying_score, p_reignite=None),
+        opened_at=clock.now(),
+        closed_by=None,
+        closed_at=None,
+        history_flags=HistoryFlags(smoke_seen=False),
+        example=event.example,
+    )
+
+
 def build_dam_case(
     event: DryingRankedEvent, dam: RankedDam, message_id: str, clock: Clock
 ) -> Case:
@@ -176,6 +202,11 @@ class DryingRankedHandler:
                 },
             )
             return
+        area = event.payload.requested_cell
+        if area is not None:
+            opened = self._open_area_case(message_id, event, area)
+            asyncio.run(self._run_all(message_id, event, opened))
+            return
         opened = self._open_cases(message_id, event)
         asyncio.run(self._run_everything(message_id, event, opened))
 
@@ -216,6 +247,24 @@ class DryingRankedHandler:
                 "bulletin write failed",
                 extra={"fields": {"event": "bulletin_write_failed", "region": region}},
             )
+
+    def _open_area_case(
+        self, message_id: str, event: DryingRankedEvent, area: TopCellRef
+    ) -> list[Case]:
+        if self._cases.live_in_cell(area.cell_id) is not None:
+            logger.info(
+                "requested area already has a case",
+                extra={
+                    "fields": {"event": "event_area_has_case", "cell_id": area.cell_id}
+                },
+            )
+            return []
+        dams = self._ranked_dams.in_cell(event.region, area.cell_id)
+        dam = dams[0] if dams else None
+        case = build_area_case(event, area, dam, message_id, self._clock)
+        if not self._cases.create(case):
+            return []
+        return [case]
 
     def _open_cases(self, message_id: str, event: DryingRankedEvent) -> list[Case]:
         dams = self._ranked_dams.top(event.region, self._max_cases)
