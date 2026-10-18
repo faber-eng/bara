@@ -39,13 +39,15 @@ def send_someone(
     principal: Annotated[Principal, Depends(require_role("ops", "judge"))],
 ) -> SendAccepted:
     area_request: AreaRequest = request.app.state.area_request
-    reject_when_limited(request, principal.uid)
     try:
-        message_id = area_request.send_someone(cell_id)
+        cell = area_request.check(cell_id)
     except UnknownCell as error:
         raise HTTPException(status_code=404, detail="unknown_cell") from error
     except AreaHasCase as error:
         raise HTTPException(status_code=409, detail="case_open") from error
+    reject_when_limited(request, principal.uid)
+    try:
+        message_id = area_request.send_someone(cell)
     except PUBLISH_ERRORS as error:
         logger.exception(
             "send someone failed", extra={"fields": {"uid": principal.uid}}
