@@ -23,6 +23,7 @@ export type VolunteerCopy = {
   emptyBody: string;
   taskTitles: Record<TaskType, string>;
   whatToSend: Record<TaskType, string>;
+  areaCheck: { title: string; whatToSend: string };
   deadline: (when: string) => string;
   overdue: string;
   openMap: string;
@@ -120,6 +121,7 @@ const ID: VolunteerCopy = {
     dam_repair: "1 foto setelah perbaikan",
     patrol_recheck: "1 foto lahan, 1 pesan suara jika ada asap",
   },
+  areaCheck: { title: "Cek area", whatToSend: "1 foto area, 1 pesan suara" },
   deadline: (when) => `Sebelum ${when}`,
   overdue: "Lewat batas",
   openMap: "Buka di peta",
@@ -251,6 +253,7 @@ const EN: VolunteerCopy = {
     dam_repair: "1 photo after the repair",
     patrol_recheck: "1 photo of the land, 1 voice note if there is smoke",
   },
+  areaCheck: { title: "Check the area", whatToSend: "1 area photo, 1 voice note" },
   deadline: (when) => `Before ${when}`,
   overdue: "Past the deadline",
   openMap: "Open in maps",

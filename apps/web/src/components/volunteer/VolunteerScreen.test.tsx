@@ -119,6 +119,20 @@ describe("volunteer screen", () => {
     expect(screen.getByText("Halo Ari, sekat kanal perlu dicek.")).toBeInTheDocument();
   });
 
+  it("says area, not dam, for a task whose case has no dam", async () => {
+    const areaInbox = { ...inboxBody, area_case_ids: ["case-1"] };
+    stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(areaInbox) });
+    renderApp("/v/uid-1");
+
+    const card = await screen.findByRole("article", { name: "Cek area" });
+    expect(within(card).getByText("1 foto area, 1 pesan suara")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "EN" }));
+
+    const english = await screen.findByRole("article", { name: "Check the area" });
+    expect(within(english).getByText("1 area photo, 1 voice note")).toBeInTheDocument();
+  });
+
   it("switches the thread to English", async () => {
     stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
     renderApp("/v/uid-1");

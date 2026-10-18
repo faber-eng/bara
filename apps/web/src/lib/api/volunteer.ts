@@ -12,12 +12,18 @@ function readEvidenceList(value: unknown): Evidence[] {
   return readArray(value, "inbox.evidence").map(parseEvidence);
 }
 
+function readStringList(value: unknown): string[] {
+  if (value === undefined || value === null) return [];
+  return readArray(value, "inbox.area_case_ids").map((item) => String(item));
+}
+
 export function parseInbox(body: unknown): Inbox {
   const record = readRecord(body, "inbox");
   return {
     tasks: readArray(record.tasks, "inbox.tasks").map(parseTask),
     messages: readArray(record.messages, "inbox.messages").map(parseMessage),
     evidence: readEvidenceList(record.evidence),
+    area_case_ids: readStringList(record.area_case_ids),
   };
 }
 

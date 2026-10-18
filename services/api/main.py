@@ -258,7 +258,10 @@ def build_intake(adapters: Adapters) -> EvidenceIntake:
 
 def build_inbox(adapters: Adapters) -> InboxReader:
     return InboxReader(
-        tasks=adapters.tasks, messages=adapters.messages, evidence=adapters.evidence
+        cases=adapters.cases,
+        tasks=adapters.tasks,
+        messages=adapters.messages,
+        evidence=adapters.evidence,
     )
 
 

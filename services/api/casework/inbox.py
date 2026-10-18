@@ -1,4 +1,5 @@
 from adapters.firestore_repos import (
+    CaseRepository,
     EvidenceRepository,
     MessageRepository,
     TaskRepository,
@@ -10,13 +11,20 @@ class InboxReader:
     def __init__(
         self,
         *,
+        cases: CaseRepository,
         tasks: TaskRepository,
         messages: MessageRepository,
         evidence: EvidenceRepository,
     ):
+        self._cases = cases
         self._tasks = tasks
         self._messages = messages
         self._evidence = evidence
+
+    def _area_case_ids(self, tasks) -> list[str]:
+        case_ids = sorted({task.case_id for task in tasks})
+        found = (self._cases.get(case_id) for case_id in case_ids)
+        return [case.id for case in found if case is not None and case.dam_id is None]
 
     def read(self, volunteer_id: str) -> Inbox:
         tasks = self._tasks.for_assignee(volunteer_id)
@@ -25,4 +33,5 @@ class InboxReader:
             tasks=sorted(tasks, key=lambda task: task.created_at, reverse=True),
             messages=sorted(messages, key=lambda message: message.created_at),
             evidence=self._evidence.for_uploader(volunteer_id),
+            area_case_ids=self._area_case_ids(tasks),
         )

@@ -10,19 +10,28 @@ type TaskCardProps = {
   language: CopyLanguage;
   volunteerId: string;
   task: Task;
+  isArea: boolean;
   nowMs: number;
 };
+
+type TaskWords = { title: string; whatToSend: string };
+
+function taskWords(task: Task, isArea: boolean, copy: VolunteerCopy): TaskWords {
+  if (isArea && task.type === "dam_check") return copy.areaCheck;
+  return { title: copy.taskTitles[task.type], whatToSend: copy.whatToSend[task.type] };
+}
 
 function mapUrl(task: Task): string {
   return `https://www.google.com/maps/search/?api=1&query=${task.target.lat},${task.target.lon}`;
 }
 
-export function TaskCard({ copy, language, volunteerId, task, nowMs }: TaskCardProps) {
+export function TaskCard({ copy, language, volunteerId, task, isArea, nowMs }: TaskCardProps) {
+  const words = taskWords(task, isArea, copy);
   const late = task.status !== "done" && isPastDeadline(task.deadline_at, nowMs);
   return (
-    <article className="task-card" aria-label={copy.taskTitles[task.type]}>
+    <article className="task-card" aria-label={words.title}>
       <div className="proto-row proto-row--between">
-        <h2 className="task-title">{copy.taskTitles[task.type]}</h2>
+        <h2 className="task-title">{words.title}</h2>
         {late && <span className="chip chip-overdue">{copy.overdue}</span>}
       </div>
       <p className="task-row">
@@ -34,7 +43,7 @@ export function TaskCard({ copy, language, volunteerId, task, nowMs }: TaskCardP
         </span>
       </p>
       <p className="task-row">{copy.deadline(formatDeadline(task.deadline_at, language))}</p>
-      <p className="task-row">{copy.whatToSend[task.type]}</p>
+      <p className="task-row">{words.whatToSend}</p>
       {task.status === "done" && <span className="chip chip-resolved">{copy.doneChip}</span>}
       <CapturePanel
         copy={copy}

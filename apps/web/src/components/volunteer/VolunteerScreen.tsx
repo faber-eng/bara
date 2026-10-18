@@ -64,6 +64,7 @@ function InboxView({ copy, volunteerId, inbox, nowMs }: InboxViewProps) {
           language={language}
           volunteerId={volunteerId}
           task={task}
+          isArea={inbox.area_case_ids.includes(task.case_id)}
           nowMs={nowMs}
         />
       ))}

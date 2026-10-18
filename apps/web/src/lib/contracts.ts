@@ -295,7 +295,12 @@ export type UploadTicket = {
 
 export type CompleteRequest = { point: GeoPoint | null; captured_at: IsoDateTime };
 
-export type Inbox = { tasks: Task[]; messages: Message[]; evidence: Evidence[] };
+export type Inbox = {
+  tasks: Task[];
+  messages: Message[];
+  evidence: Evidence[];
+  area_case_ids: string[];
+};
 
 export type ClockState = { now: IsoDateTime; offset_seconds: number; judge_mode: boolean };
 

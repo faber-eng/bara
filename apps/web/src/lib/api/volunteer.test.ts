@@ -65,6 +65,13 @@ describe("parseInbox", () => {
     expect(inbox.evidence[0]?.verdict?.dam_state).toBe("broken");
   });
 
+  it("reads the area case ids and treats a missing list as empty", () => {
+    expect(parseInbox({ tasks: [], messages: [], area_case_ids: ["c1"] }).area_case_ids).toEqual([
+      "c1",
+    ]);
+    expect(parseInbox({ tasks: [], messages: [] }).area_case_ids).toEqual([]);
+  });
+
   it("treats a missing evidence list as empty", () => {
     expect(parseInbox({ tasks: [], messages: [] }).evidence).toEqual([]);
   });
