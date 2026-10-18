@@ -27,19 +27,44 @@ UNSEEN_DAM_STATES: frozenset[DamState] = frozenset({"unknown", "not_applicable"}
 LOCATION_MISMATCH = "location mismatch"
 NO_LOCATION = "no location"
 MAX_REASONS = 4
+DEFAULT_AUDIO_TYPE = "audio/webm"
+UNKNOWN_AUDIO_EXTENSION = ".audio"
+AUDIO_FALLBACK_TYPES: frozenset[str] = frozenset(
+    {"video/webm", "application/octet-stream"}
+)
 
 
 class UnsupportedMedia(ValueError):
     pass
 
 
+def base_type(content_type: str) -> str:
+    return content_type.split(";")[0].strip().lower()
+
+
+def stored_content_type(kind: EvidenceKind, content_type: str) -> str:
+    base = base_type(content_type)
+    if kind == "audio" and base == "":
+        return DEFAULT_AUDIO_TYPE
+    return base
+
+
+def accepted_extension(kind: EvidenceKind, base: str) -> str | None:
+    known = EXTENSIONS[kind].get(base)
+    if known is not None or kind != "audio":
+        return known
+    if base.startswith("audio/") or base in AUDIO_FALLBACK_TYPES:
+        return UNKNOWN_AUDIO_EXTENSION
+    return None
+
+
 def object_name(
     kind: EvidenceKind, content_type: str, case_id: str, evidence_id: str
 ) -> str:
-    extension = EXTENSIONS[kind].get(content_type)
+    base = stored_content_type(kind, content_type)
+    extension = accepted_extension(kind, base)
     if extension is None:
-        allowed = ", ".join(EXTENSIONS[kind])
-        raise UnsupportedMedia(f"a {kind} must be one of {allowed}, got {content_type}")
+        raise UnsupportedMedia(f"a {kind} cannot be {base or 'untyped'}")
     return f"evidence/{case_id}/{evidence_id}{extension}"
 
 

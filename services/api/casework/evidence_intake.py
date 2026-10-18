@@ -31,7 +31,7 @@ from contracts import (
 )
 from domain.case_machine import can_transition
 from domain.clock import Clock
-from domain.evidence import object_name
+from domain.evidence import object_name, stored_content_type
 from logs import log_extra
 
 logger = logging.getLogger(__name__)
@@ -123,17 +123,16 @@ class EvidenceIntake:
         if request.size_bytes > MAX_UPLOAD_BYTES:
             raise UploadTooLarge(f"a file must be at most {MAX_UPLOAD_BYTES} bytes")
         evidence_id = self._new_id()
-        name = object_name(
-            request.kind, request.content_type, task.case_id, evidence_id
-        )
-        signed = self._storage.signed_put_url(name, request.content_type)
+        content_type = stored_content_type(request.kind, request.content_type)
+        name = object_name(request.kind, content_type, task.case_id, evidence_id)
+        signed = self._storage.signed_put_url(name, content_type)
         self._uploads.save(
             PendingUpload(
                 id=evidence_id,
                 task_id=task.id,
                 case_id=task.case_id,
                 kind=request.kind,
-                content_type=request.content_type,
+                content_type=content_type,
                 object_name=name,
                 sample=request.sample,
                 uploaded_by=volunteer_id,

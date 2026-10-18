@@ -29,6 +29,12 @@ export function baseContentType(mime: string): string {
   return mime.split(";")[0]?.trim() ?? "";
 }
 
+const DEFAULT_AUDIO_TYPE = "audio/webm";
+
+export function audioContentType(mime: string): string {
+  return baseContentType(mime) || DEFAULT_AUDIO_TYPE;
+}
+
 export function micKindOf(error: unknown): MicErrorKind {
   if (!(error instanceof Error)) return "recorder_failed";
   return KIND_BY_ERROR_NAME[error.name] ?? "recorder_failed";

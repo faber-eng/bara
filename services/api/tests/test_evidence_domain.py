@@ -9,6 +9,7 @@ from domain.evidence import (
     needs_human,
     object_name,
     readable_dam_state,
+    stored_content_type,
     verdict_cache_key,
 )
 
@@ -36,6 +37,13 @@ def verdict(**overrides) -> Verdict:
         ("photo", "image/png", ".png"),
         ("audio", "audio/webm", ".webm"),
         ("audio", "audio/ogg", ".ogg"),
+        ("audio", "audio/wav", ".audio"),
+        ("audio", "audio/x-m4a", ".audio"),
+        ("audio", "audio/aac", ".audio"),
+        ("audio", "audio/webm;codecs=opus", ".webm"),
+        ("audio", "", ".webm"),
+        ("audio", "video/webm", ".audio"),
+        ("audio", "application/octet-stream", ".audio"),
         ("video", "video/mp4", ".mp4"),
         ("video", "video/quicktime", ".mov"),
     ],
@@ -48,7 +56,12 @@ def test_the_object_name_carries_the_case_the_id_and_the_extension(
 
 @pytest.mark.parametrize(
     ("kind", "content_type"),
-    [("photo", "audio/webm"), ("audio", "image/jpeg"), ("photo", "image/gif")],
+    [
+        ("photo", "audio/webm"),
+        ("audio", "image/jpeg"),
+        ("photo", "image/gif"),
+        ("video", "audio/wav"),
+    ],
 )
 def test_a_content_type_outside_the_kind_is_unsupported(kind, content_type):
     with pytest.raises(UnsupportedMedia):
@@ -189,3 +202,17 @@ def test_the_cache_key_depends_on_the_task_type():
     patrol = verdict_cache_key("0" * 64, "evidence-v1", "patrol_recheck")
 
     assert dam != patrol
+
+
+@pytest.mark.parametrize(
+    ("kind", "content_type", "expected"),
+    [
+        ("audio", "audio/webm;codecs=opus", "audio/webm"),
+        ("audio", "", "audio/webm"),
+        ("photo", "image/jpeg", "image/jpeg"),
+    ],
+)
+def test_the_stored_content_type_drops_parameters_and_fills_an_empty_audio(
+    kind, content_type, expected
+):
+    assert stored_content_type(kind, content_type) == expected

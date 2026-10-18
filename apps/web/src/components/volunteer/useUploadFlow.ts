@@ -9,6 +9,7 @@ import { type FailureReason, type FlowState, flowReducer, IDLE } from "../../lib
 import { resizePhoto } from "../../lib/volunteer/image";
 import { addOutboxItem } from "../../lib/volunteer/outbox";
 import {
+  audioContentType,
   baseContentType,
   MicError,
   type MicErrorKind,
@@ -50,7 +51,11 @@ type FlowTarget = { volunteerId: string; taskId: string };
 
 async function readPoint(pending: Pending): Promise<GeoPoint | null> {
   if (pending.kind === "audio" || pending.sample) return null;
-  return readDeviceLocation().catch(() => null);
+  try {
+    return await readDeviceLocation();
+  } catch {
+    return null;
+  }
 }
 
 const VIDEO_FAILURES: Record<VideoRefusal, FailureReason> = {
@@ -80,7 +85,9 @@ function sleep(ms: number): Promise<void> {
 }
 
 function contentTypeOf(pending: Pending): string {
-  return pending.kind === "photo" ? "image/jpeg" : baseContentType(pending.blob.type);
+  if (pending.kind === "photo") return "image/jpeg";
+  if (pending.kind === "audio") return audioContentType(pending.blob.type);
+  return baseContentType(pending.blob.type);
 }
 
 export function useUploadFlow({ volunteerId, taskId }: FlowTarget): UploadFlow {
