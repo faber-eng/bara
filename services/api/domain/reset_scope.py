@@ -49,13 +49,18 @@ def plan_reset(snapshot: ResetSnapshot) -> ResetScope:
         case_ids=case_ids,
         task_ids=ids(on_cases(snapshot.tasks, case_ids)),
         evidence_ids=ids(on_cases(snapshot.evidence, case_ids)),
-        message_ids=ids(on_cases(snapshot.messages, case_ids)),
+        message_ids=ids(on_cases(snapshot.messages, case_ids))
+        | ids(caseless_to(snapshot.messages, example_people)),
         escalation_ids=ids(on_cases(snapshot.escalations, case_ids)),
     )
 
 
 def on_cases(items, case_ids: frozenset[str]):
     return [item for item in items if item.case_id in case_ids]
+
+
+def caseless_to(messages, people: frozenset[str]):
+    return [item for item in messages if item.case_id is None and item.to_id in people]
 
 
 def touches_real_uid(

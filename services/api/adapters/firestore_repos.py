@@ -483,14 +483,18 @@ class ResetRepository:
     def snapshot(self) -> ResetSnapshot:
         cases = self._cases.where(Filter("example", "==", True))
         case_ids = [case.id for case in cases]
+        volunteers = self._volunteers.where(Filter("example", "==", True))
+        contacts = self._contacts.where(Filter("example", "==", True))
+        people = [person.id for person in volunteers] + [c.id for c in contacts]
         return ResetSnapshot(
-            volunteers=self._volunteers.where(Filter("example", "==", True)),
-            contacts=self._contacts.where(Filter("example", "==", True)),
+            volunteers=volunteers,
+            contacts=contacts,
             dams=self._dams.where(Filter("example", "==", True)),
             cases=cases,
             tasks=children(self._tasks, case_ids),
             evidence=children(self._evidence, case_ids),
-            messages=children(self._messages, case_ids),
+            messages=children(self._messages, case_ids)
+            + caseless_messages(self._messages, people),
             escalations=children(self._escalations, case_ids),
         )
 
@@ -523,6 +527,16 @@ def matching[T](collection: Collection[T], field: str, values: list[str]) -> lis
 
 def children[T](collection: Collection[T], case_ids: list[str]) -> list[T]:
     return matching(collection, "case_id", case_ids)
+
+
+def caseless_messages(
+    collection: Collection[Message], people: list[str]
+) -> list[Message]:
+    return [
+        message
+        for message in matching(collection, "to_id", people)
+        if message.case_id is None
+    ]
 
 
 class RankingRepository:
