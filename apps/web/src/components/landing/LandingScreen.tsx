@@ -1,0 +1,41 @@
+import "./landing.css";
+import { landingCopy } from "../../lib/copy/landing";
+import { useCopyLanguage } from "../../lib/copy/language";
+import { LanguageToggle } from "../LanguageToggle";
+import { LoopSection } from "./LoopSection";
+import { MomentsSection } from "./MomentsSection";
+import { ProblemSection } from "./ProblemSection";
+import { ProofSection } from "./ProofSection";
+import { TourButtons } from "./TourButtons";
+import { WhereSection } from "./WhereSection";
+
+export function LandingScreen() {
+  const language = useCopyLanguage();
+  const copy = landingCopy(language);
+  return (
+    <div className="landing">
+      <section className="landing-hero">
+        <div className="landing-wrap">
+          <div className="landing-hero-top">
+            <p className="eyebrow landing-eyebrow">{copy.eyebrow}</p>
+            <LanguageToggle label={copy.toggleLabel} />
+          </div>
+          <h1 className="landing-h1">{copy.title}</h1>
+          <p className="landing-audience">{copy.audience}</p>
+          <TourButtons copy={copy} />
+          <p className="landing-small">{copy.tourNote}</p>
+        </div>
+      </section>
+      <ProblemSection copy={copy.problem} />
+      <MomentsSection copy={copy.moments} />
+      <LoopSection copy={copy.loop} />
+      <ProofSection copy={copy.proof} language={language} />
+      <WhereSection copy={copy.where} />
+      <footer className="landing-team">
+        <div className="landing-wrap">
+          <p>{copy.team}</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
