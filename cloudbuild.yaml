@@ -122,7 +122,7 @@ steps:
             --task-timeout=1800s \
             --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID \
             --labels=build_started=$$(cat /workspace/build-started) \
-            --args=jobs.weekly_rankings,--region,riau \
+            --args=jobs.weekly_rankings,--region,riau,--region,congo_cuvette \
             --quiet
         fi
         bash ci/guard.sh jobs bara-reignition $_REGION $PROJECT_ID

@@ -103,7 +103,7 @@ def test_deploy_jobs_runs_the_weekly_job_as_bara_jobs_on_the_new_image(steps):
         in text
     )
     assert "--service-account=bara-jobs@$PROJECT_ID.iam.gserviceaccount.com" in text
-    assert "--args=jobs.weekly_rankings,--region,riau" in text
+    assert "--args=jobs.weekly_rankings,--region,riau,--region,congo_cuvette" in text
     assert "--max-retries=0" in text
     assert "--allow-unauthenticated" not in text
 
