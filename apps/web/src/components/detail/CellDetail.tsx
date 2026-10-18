@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { allCellsQuery, cellFactsQuery } from "../../lib/api/queries";
-import type { CellFacts } from "../../lib/contracts";
+import type { CellFacts, RankExplanation } from "../../lib/contracts";
 import { type DetailCopy, detailCopy } from "../../lib/copy/detail";
 import { type CopyLanguage, useCopyLanguage } from "../../lib/copy/language";
 import { damColor } from "../../lib/ops/cellLayer";
@@ -94,6 +94,18 @@ function PastFires({ facts, copy, language }: Omit<FactsProps, "total">) {
   );
 }
 
+function WhyText({ explanation, copy }: { explanation: RankExplanation | null; copy: DetailCopy }) {
+  if (explanation === null) return <p className="mv-text">{copy.cell.whyMissing}</p>;
+  if ((explanation.points ?? []).length > 0) {
+    return <ExplanationText explanation={explanation} copy={copy} />;
+  }
+  return (
+    <p className="mv-text">
+      <ExplanationText explanation={explanation} copy={copy} />
+    </p>
+  );
+}
+
 function CellFactsSections({ facts, total, copy, language }: FactsProps) {
   const rows = [
     scoreFact(facts.drying_score, copy, language),
@@ -103,13 +115,7 @@ function CellFactsSections({ facts, total, copy, language }: FactsProps) {
   return (
     <>
       <DetailSection label={copy.sections.why}>
-        <p className="mv-text">
-          {facts.explanation === null ? (
-            copy.cell.whyMissing
-          ) : (
-            <ExplanationText explanation={facts.explanation} />
-          )}
-        </p>
+        <WhyText explanation={facts.explanation} copy={copy} />
         {facts.explanation !== null && (
           <ExplanationHow explanation={facts.explanation} copy={copy} />
         )}

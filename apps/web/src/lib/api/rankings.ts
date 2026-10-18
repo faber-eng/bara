@@ -1,5 +1,6 @@
 import type {
   DamState,
+  ExplanationPoint,
   GeoPoint,
   RankExplanation,
   RankedCell,
@@ -8,6 +9,7 @@ import type {
   Rankings,
   Scalar,
 } from "../contracts";
+import { EXPLANATION_EFFECTS } from "../contracts";
 import { sourceFor } from "../sources";
 import { apiRequest } from "./client";
 import {
@@ -70,6 +72,25 @@ function parsePromptVersion(record: JsonRecord): string | null {
   return readNullable(record, "prompt_version", "explanation", readString);
 }
 
+function parseSummary(record: JsonRecord): string | null {
+  if (record.summary === undefined) return null;
+  return readNullable(record, "summary", "explanation", readString);
+}
+
+function parseExplanationPoint(value: unknown): ExplanationPoint {
+  const record = readRecord(value, "explanation.points[]");
+  return {
+    field: readString(record, "field", "explanation.points[]"),
+    effect: readOneOf(record, "effect", "explanation.points[]", EXPLANATION_EFFECTS),
+    text: readString(record, "text", "explanation.points[]"),
+  };
+}
+
+function parsePoints(record: JsonRecord): ExplanationPoint[] {
+  if (record.points === undefined || record.points === null) return [];
+  return readArray(record.points, "explanation.points").map(parseExplanationPoint);
+}
+
 export function parseExplanation(value: unknown): RankExplanation | null {
   if (value === null) return null;
   const record = readRecord(value, "explanation");
@@ -77,6 +98,8 @@ export function parseExplanation(value: unknown): RankExplanation | null {
     text: readString(record, "text", "explanation"),
     cited: parseCited(record.cited),
     prompt_version: parsePromptVersion(record),
+    summary: parseSummary(record),
+    points: parsePoints(record),
   };
 }
 

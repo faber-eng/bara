@@ -68,6 +68,14 @@ function rainDeficitMeaning(share: number, copy: DetailCopy): string {
   return copy.meanings.normalRain;
 }
 
+function rainVsNormalValue(share: number, copy: DetailCopy, language: CopyLanguage): string {
+  const percent = Math.round(Math.abs(share) * PERCENT);
+  if (percent === 0) return copy.facts.rainAboutNormal;
+  const text = formatNumber(percent, language);
+  if (share > 0) return copy.facts.rainLess(text);
+  return copy.facts.rainMore(text);
+}
+
 export function componentFacts(
   components: RankingComponents,
   copy: DetailCopy,
@@ -81,8 +89,8 @@ export function componentFacts(
       meaning: null,
     },
     {
-      label: copy.facts.rainDeficit,
-      value: `${formatNumber(Math.round(components.rain_deficit_pct * PERCENT), language)}%`,
+      label: copy.facts.rainVsNormal,
+      value: rainVsNormalValue(components.rain_deficit_pct, copy, language),
       meaning: rainDeficitMeaning(components.rain_deficit_pct, copy),
     },
     {

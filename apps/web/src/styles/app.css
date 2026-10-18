@@ -1275,3 +1275,25 @@ fieldset.join-fieldset {
 .chip::before {
   display: none;
 }
+.explain-points {
+  display: grid;
+  gap: var(--space-2, 6px);
+  margin: var(--space-2, 6px) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-base, 16px);
+  line-height: var(--lh-body, 1.618);
+}
+.explain-effect {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-strong);
+}
+.explain-effect-raises {
+  color: var(--danger);
+}
+.explain-effect-lowers {
+  color: var(--brand);
+}
+.explain-effect-small {
+  color: var(--text-muted);
+}

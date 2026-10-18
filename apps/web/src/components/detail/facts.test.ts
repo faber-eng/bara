@@ -34,10 +34,26 @@ describe("detail facts", () => {
     expect(rows).toEqual([
       { label: "Radar change", value: "-5.1 dB", meaning: "The surface got drier" },
       { label: "Rain, 30 days", value: "182.6 mm", meaning: null },
-      { label: "Rain deficit", value: "-5%", meaning: "More rain than normal" },
+      { label: "Rain vs normal", value: "5% more", meaning: "More rain than normal" },
       { label: "Canal distance", value: "2,505 m", meaning: null },
       { label: "Peat class", value: "1", meaning: null },
     ]);
+  });
+
+  it.each([
+    [0.3, "en", "30% less"],
+    [-0.05, "en", "5% more"],
+    [0.001, "en", "About normal"],
+    [-0.3, "id", "30% lebih banyak"],
+    [0.3, "id", "30% lebih sedikit"],
+    [0, "id", "Mendekati normal"],
+  ] as const)("words the rain against normal for %s in %s", (share, language, value) => {
+    const rows = componentFacts(
+      { s1_anom_db: 1, rain_30d_mm: 1, rain_deficit_pct: share, canal_dist_m: 1, peat_class: 1 },
+      detailCopy(language),
+      language,
+    );
+    expect(rows[2]?.value).toBe(value);
   });
 
   it("says when there was no radar pass", () => {

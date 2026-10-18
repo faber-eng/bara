@@ -1,4 +1,4 @@
-import type { CaseStatus, CaseType, DamState } from "../contracts";
+import type { CaseStatus, CaseType, DamState, ExplanationEffect } from "../contracts";
 import type { CopyLanguage } from "./language";
 
 export type MapKeyScreen = "ops" | "public" | "area";
@@ -38,7 +38,10 @@ export type DetailCopy = {
     rankChange: string;
     radar: string;
     rain30: string;
-    rainDeficit: string;
+    rainVsNormal: string;
+    rainLess: (percent: string) => string;
+    rainMore: (percent: string) => string;
+    rainAboutNormal: string;
     canal: string;
     peatClass: string;
     trend: string;
@@ -85,6 +88,7 @@ export type DetailCopy = {
     zoom: string;
     openCaseNote: string;
     how: { title: string; model: string; promptVersion: string };
+    drivers: { label: string; effects: Record<ExplanationEffect, string> };
   };
   dam: {
     title: (id: string) => string;
@@ -203,7 +207,10 @@ const EN: DetailCopy = {
     rankChange: "Since last week",
     radar: "Radar change",
     rain30: "Rain, 30 days",
-    rainDeficit: "Rain deficit",
+    rainVsNormal: "Rain vs normal",
+    rainLess: (percent) => `${percent}% less`,
+    rainMore: (percent) => `${percent}% more`,
+    rainAboutNormal: "About normal",
     canal: "Canal distance",
     peatClass: "Peat class",
     trend: "Trend",
@@ -252,6 +259,14 @@ const EN: DetailCopy = {
     zoom: "Zoom to area",
     openCaseNote: "Open case: someone is checking this area.",
     how: { title: "How this was written", model: "Model", promptVersion: "Prompt version" },
+    drivers: {
+      label: "What drives the score",
+      effects: {
+        raises: "Pushes the score up",
+        lowers: "Holds the score down",
+        small: "Adds little",
+      },
+    },
   },
   dam: {
     title: (id) => `Canal dam ${id}`,
@@ -383,7 +398,10 @@ const ID: DetailCopy = {
     rankChange: "Sejak minggu lalu",
     radar: "Perubahan radar",
     rain30: "Hujan, 30 hari",
-    rainDeficit: "Kekurangan hujan",
+    rainVsNormal: "Hujan dibanding normal",
+    rainLess: (percent) => `${percent}% lebih sedikit`,
+    rainMore: (percent) => `${percent}% lebih banyak`,
+    rainAboutNormal: "Mendekati normal",
     canal: "Jarak ke kanal",
     peatClass: "Kelas gambut",
     trend: "Tren",
@@ -434,6 +452,10 @@ const ID: DetailCopy = {
     zoom: "Perbesar ke petak",
     openCaseNote: "Kasus terbuka: ada orang yang sedang mengecek area ini.",
     how: { title: "Cara teks ini ditulis", model: "Model", promptVersion: "Versi prompt" },
+    drivers: {
+      label: "Yang menentukan skor",
+      effects: { raises: "Menaikkan skor", lowers: "Menahan skor", small: "Pengaruh kecil" },
+    },
   },
   dam: {
     title: (id) => `Sekat kanal ${id}`,

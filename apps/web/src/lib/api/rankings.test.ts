@@ -1,6 +1,7 @@
 import fixture from "@fixtures/rankings_riau_200.json";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchRankings, parseRankings } from "./rankings";
+import { ResponseShapeError } from "./parse";
+import { fetchRankings, parseExplanation, parseRankings } from "./rankings";
 
 vi.mock("../auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
 
@@ -40,6 +41,34 @@ describe("parseRankings", () => {
     ],
   ])("rejects %s", (_label, body) => {
     expect(() => parseRankings(body)).toThrow();
+  });
+});
+
+describe("parseExplanation", () => {
+  const base = { text: "Dry.", cited: {} };
+
+  it("defaults a missing summary and points to null and empty", () => {
+    expect(parseExplanation(base)).toMatchObject({ summary: null, points: [] });
+    expect(parseExplanation({ ...base, summary: null, points: [] })).toMatchObject({
+      summary: null,
+      points: [],
+    });
+  });
+
+  it("reads the summary and each point", () => {
+    const points = [{ field: "rain_30d_mm", effect: "raises", text: "Little rain." }];
+    expect(parseExplanation({ ...base, summary: "One.", points })).toMatchObject({
+      summary: "One.",
+      points,
+    });
+  });
+
+  it.each([
+    ["an unknown effect", [{ field: "a", effect: "big", text: "x" }]],
+    ["a point without text", [{ field: "a", effect: "small" }]],
+    ["points that are not a list", "nope"],
+  ])("rejects %s", (_label, points) => {
+    expect(() => parseExplanation({ ...base, points })).toThrow(ResponseShapeError);
   });
 });
 
