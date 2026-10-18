@@ -9,10 +9,11 @@ from pydantic import BaseModel, Field, ValidationError
 
 from config import Role
 from contracts import GeoPoint, Language, TaskType
+from domain.chat_wording import WHAT_TO_SEND
 
 logger = logging.getLogger(__name__)
 
-MESSENGER_PROMPT_VERSION = "messenger-v2"
+MESSENGER_PROMPT_VERSION = "messenger-v3"
 MAX_SENTENCES = 3
 ATTEMPTS = 2
 SENTENCE_END = re.compile(r"[.!?]+(?:\s+|$)")
@@ -24,12 +25,6 @@ LANGUAGE_NAMES: dict[Language, str] = {
     "fr": "French",
 }
 
-WHAT_TO_SEND: dict[TaskType, str] = {
-    "dam_check": "a photo of the dam and the water level in the canal",
-    "dam_repair": "a photo of the repaired dam",
-    "patrol_recheck": "a photo of the ground, showing any smoke or heat",
-}
-
 SYSTEM_INSTRUCTION = f"""\
 You write one task message to a person in a peat-fire prevention programme. \
 The user message holds the task in one block between <<<TASK and TASK>>>.
@@ -39,7 +34,8 @@ Write the message in the language named in the task, in at most \
 1. where: the place and its point, exactly as given;
 2. by when: the deadline as given, with its day and month names in the \
 message language;
-3. what to send: exactly what the task asks for.
+3. what to send: what_to_send, copied as given; it is already in the \
+message language.
 The coordinator_note may add one useful detail. Use only facts from the task. \
 No greeting and no sign-off.
 
@@ -102,7 +98,7 @@ def render_task(brief: TaskBrief, language: Language) -> str:
         "place": brief.place,
         "point": f"{brief.target.lat}, {brief.target.lon}",
         "deadline": brief.deadline_local,
-        "what_to_send": WHAT_TO_SEND[brief.task_type],
+        "what_to_send": WHAT_TO_SEND[language][brief.task_type],
         "coordinator_note": brief.hint,
     }
     return TASK_FENCE.format(data=json.dumps(data, indent=2, ensure_ascii=False))

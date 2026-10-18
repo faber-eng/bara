@@ -19,7 +19,6 @@ from adapters.firestore_repos import (
 from casework.area_ranking import AreaLimitStore
 from casework.messenger import (
     LANGUAGE_NAMES,
-    WHAT_TO_SEND,
     MessengerFailed,
     TextModel,
     check_message,
@@ -29,11 +28,11 @@ from domain.case_view import format_local
 from domain.channels import Channel, OutboundMessage
 from domain.chat_blocked import reports_blocked
 from domain.chat_limit import decide
-from domain.chat_wording import leaks_internal_words, task_phrase
+from domain.chat_wording import WHAT_TO_SEND, leaks_internal_words, task_phrase
 
 logger = logging.getLogger(__name__)
 
-CHAT_PROMPT_VERSION = "chat-v4"
+CHAT_PROMPT_VERSION = "chat-v5"
 REPLY_TIMEOUT_SECONDS = 15.0
 MAX_CONCURRENT_REPLIES = 8
 FENCE_MARKS = ("<<<CHAT", "CHAT>>>")
@@ -70,15 +69,16 @@ when the volunteer cannot do it: its task_phrase, its point and its \
 deadline, copied verbatim. In text copy them from open_task.volunteer_language. \
 In text_en copy them from open_task.english, never from the other set. The \
 task_phrase already holds the object and the place once: do not add the place \
-again.
+again. When the volunteer asks what to send, copy what_to_send from the same \
+set.
 3. When open_task is not null and the volunteer says they cannot do the task \
 (they cannot reach the place, the road or the dam is blocked, flooded or gone, \
 there is no boat, or anything else stops the task), set needs_ops to true and \
 say the case goes back to ops, who will follow up or reassign it. Name no time.
 No greeting and no sign-off.
 Never write an internal id, a code word or a snake_case token, such as a task \
-type or a case id. The task_phrase, point and deadline in the block are plain \
-words, not code words: write them as given.
+type or a case id. The task_phrase, point, deadline and what_to_send in the \
+block are plain words, not code words: write them as given.
 
 Reply with one JSON object:
 - text: the reply.
@@ -103,8 +103,8 @@ point "1.2345, 100.1234", deadline "Mon 5 Jan, 09:00 WIB". \
 open_task.volunteer_language holds the same facts.
 volunteer_text: "What do I need to send?"
 {"text": "Good question. Your open task is to check the canal dam in Sample \
-Region at 1.2345, 100.1234 by Mon 5 Jan, 09:00 WIB. Send a photo of the dam and \
-the water level in the canal.", "text_en": "<the same reply in English>", \
+Region at 1.2345, 100.1234 by Mon 5 Jan, 09:00 WIB. Send a photo of the canal \
+dam and the water level in the canal.", "text_en": "<the same reply in English>", \
 "needs_ops": false}
 """
 
@@ -174,7 +174,6 @@ def task_facts(
     return {
         "volunteer_language": facts_in(context, language),
         "english": facts_in(context, "en"),
-        "what_to_send": WHAT_TO_SEND[context.task.type],
     }
 
 
@@ -185,6 +184,7 @@ def facts_in(context: TaskContext, language: Language) -> dict[str, str]:
         "task_phrase": task_phrase(context.task.type, context.case, language),
         "point": f"{target.lat:.4f}, {target.lon:.4f}",
         "deadline": deadline,
+        "what_to_send": WHAT_TO_SEND[language][context.task.type],
     }
 
 

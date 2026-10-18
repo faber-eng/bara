@@ -25,6 +25,29 @@ TASK_PHRASES: dict[Language, dict[TaskType, str]] = {
     },
 }
 
+WHAT_TO_SEND: dict[Language, dict[TaskType, str]] = {
+    "id": {
+        "dam_check": "foto sekat kanal dan tinggi air di kanal",
+        "dam_repair": "foto sekat kanal yang sudah diperbaiki",
+        "patrol_recheck": "foto tanah yang memperlihatkan asap atau panas, jika ada",
+    },
+    "en": {
+        "dam_check": "a photo of the canal dam and the water level in the canal",
+        "dam_repair": "a photo of the repaired canal dam",
+        "patrol_recheck": "a photo of the ground, showing any smoke or heat",
+    },
+    "ms": {
+        "dam_check": "foto tebatan kanal dan paras air di kanal",
+        "dam_repair": "foto tebatan kanal yang telah dibaiki",
+        "patrol_recheck": "foto tanah yang menunjukkan asap atau haba, jika ada",
+    },
+    "fr": {
+        "dam_check": "une photo du barrage du canal et du niveau d'eau du canal",
+        "dam_repair": "une photo du barrage du canal réparé",
+        "patrol_recheck": "une photo du sol montrant toute fumée ou chaleur",
+    },
+}
+
 AREA_FORMATS: dict[Language, str] = {
     "id": "di {region}",
     "en": "in {region}",

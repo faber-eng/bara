@@ -10,7 +10,6 @@ from casework.messenger import (
     LANGUAGE_NAMES,
     MESSENGER_PROMPT_VERSION,
     SYSTEM_INSTRUCTION,
-    WHAT_TO_SEND,
     Messenger,
     MessengerFailed,
     MessengerOutput,
@@ -18,6 +17,7 @@ from casework.messenger import (
     sentence_count,
 )
 from contracts import GeoPoint, Language, TaskType
+from domain.chat_wording import TASK_PHRASES, WHAT_TO_SEND
 from tests.fakes import FakeModels, api_error
 
 GOOD = {
@@ -97,7 +97,7 @@ def test_the_request_fences_the_task_and_names_the_language(settings):
     assert data["place"] == "dam-7"
     assert data["point"] == "0.51234, 102.12345"
     assert data["deadline"] == "Thursday 23 July 2026, 08:00 WIB"
-    assert data["what_to_send"] == "a photo of the dam and the water level in the canal"
+    assert data["what_to_send"] == "foto sekat kanal dan tinggi air di kanal"
     assert data["coordinator_note"] == "The dam may be broken; check the left side."
 
 
@@ -190,11 +190,27 @@ def test_the_instruction_carries_rule_six():
 
 
 def test_messenger_prompt_version():
-    assert MESSENGER_PROMPT_VERSION == "messenger-v2"
+    assert MESSENGER_PROMPT_VERSION == "messenger-v3"
 
 
-def test_every_task_type_says_what_to_send():
-    assert set(WHAT_TO_SEND) == set(get_args(TaskType))
+@pytest.mark.parametrize("language", get_args(Language))
+def test_every_task_type_says_what_to_send_in_every_language(language):
+    assert set(WHAT_TO_SEND[language]) == set(get_args(TaskType))
+
+
+@pytest.mark.parametrize("language", get_args(Language))
+@pytest.mark.parametrize("task_type", ["dam_check", "dam_repair"])
+def test_what_to_send_names_the_dam_with_the_task_phrase_word(language, task_type):
+    dam_words = {
+        "id": "sekat kanal",
+        "en": "canal dam",
+        "ms": "tebatan kanal",
+        "fr": "barrage du canal",
+    }[language]
+
+    assert dam_words in TASK_PHRASES[language][task_type]
+    assert dam_words in WHAT_TO_SEND[language][task_type]
+    assert "bendungan" not in WHAT_TO_SEND[language][task_type]
 
 
 def test_every_language_has_a_name():

@@ -144,13 +144,14 @@ def test_the_model_sees_the_open_task_in_plain_words():
             "task_phrase": "periksa sekat kanal di Riau",
             "point": "0.5000, 101.4000",
             "deadline": "Sel 20 Okt, 19.00 WIB",
+            "what_to_send": "foto sekat kanal dan tinggi air di kanal",
         },
         "english": {
             "task_phrase": "check the canal dam in Riau",
             "point": "0.5000, 101.4000",
             "deadline": "Tue 20 Oct, 19:00 WIB",
+            "what_to_send": "a photo of the canal dam and the water level in the canal",
         },
-        "what_to_send": "a photo of the dam and the water level in the canal",
     }
     assert "dam_check" not in contents
     assert "dam-1" not in contents
@@ -455,8 +456,8 @@ def test_the_reply_is_logged_with_the_prompt_version(caplog):
     ask(world, "v1", "halo")
 
     fields = [r.fields for r in caplog.records if hasattr(r, "fields")]
-    assert CHAT_PROMPT_VERSION == "chat-v4"
-    assert any(f.get("prompt_version") == "chat-v4" for f in fields)
+    assert CHAT_PROMPT_VERSION == "chat-v5"
+    assert any(f.get("prompt_version") == "chat-v5" for f in fields)
 
 
 def chat_client(settings, world, judge=False):
