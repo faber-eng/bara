@@ -11,12 +11,12 @@ const clockOn = { now: "2026-07-20T08:00:00+07:00", offset_seconds: 0, judge_mod
 const accepted = (event: string) => Response.json({ event, message_id: "m1" }, { status: 202 });
 
 function bar() {
-  return screen.getByRole("region", { name: "Judge mode" });
+  return screen.getByRole("region", { name: "Demo Panel" });
 }
 
 async function openBar() {
   renderApp("/nope");
-  await screen.findByRole("region", { name: "Judge mode" });
+  await screen.findByRole("region", { name: "Demo Panel" });
 }
 
 describe("scenario controls", () => {
@@ -97,7 +97,7 @@ describe("scenario controls", () => {
       const queryClient = new QueryClient();
       const spy = vi.spyOn(queryClient, "invalidateQueries");
       renderApp("/nope", queryClient);
-      await screen.findByRole("region", { name: "Judge mode" });
+      await screen.findByRole("region", { name: "Demo Panel" });
       fireEvent.click(within(bar()).getByRole("button", { name: "Start: weekly ranking" }));
       await screen.findByRole("status");
       const casesCalls = () =>

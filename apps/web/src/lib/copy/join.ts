@@ -81,7 +81,7 @@ const ID: JoinCopy = {
   failures: {
     wrong_code: "Kode undangan salah. Periksa kodenya, lalu coba lagi.",
     already_has_role:
-      "Akun ini sudah punya peran di Bara (ops, brigade, atau juri), jadi tidak bisa gabung sebagai relawan. Pakai akun lain.",
+      "Akun ini sudah punya peran di Bara (ops, brigade, atau Panel Demo), jadi tidak bisa gabung sebagai relawan. Pakai akun lain.",
     too_many_attempts: "Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi.",
     not_signed_in: "Masuk dengan Google dulu, lalu kirim lagi.",
     unavailable: "Layanan gabung sedang tidak bisa dipakai. Coba lagi sebentar lagi.",
@@ -134,7 +134,7 @@ const EN: JoinCopy = {
   failures: {
     wrong_code: "The invite code is wrong. Check it and try again.",
     already_has_role:
-      "This account already has a role in Bara (ops, brigade or judge), so it cannot join as a volunteer. Use another account.",
+      "This account already has a role in Bara (ops, brigade or Demo Panel), so it cannot join as a volunteer. Use another account.",
     too_many_attempts: "Too many tries. Wait a moment, then try again.",
     not_signed_in: "Sign in with Google first, then send again.",
     unavailable: "Joining is not available right now. Try again in a moment.",

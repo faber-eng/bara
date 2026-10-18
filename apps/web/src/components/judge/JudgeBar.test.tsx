@@ -22,7 +22,7 @@ function deferred() {
 }
 
 function bar() {
-  return screen.getByRole("region", { name: "Judge mode" });
+  return screen.getByRole("region", { name: "Demo Panel" });
 }
 
 describe("judge bar", () => {
@@ -68,7 +68,7 @@ describe("judge bar", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Demo Panel" })).not.toBeInTheDocument();
   });
 
   it("is hidden and the page still renders when the clock request fails", async () => {
@@ -78,7 +78,7 @@ describe("judge bar", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "This page does not exist." }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Judge mode" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Demo Panel" })).not.toBeInTheDocument();
   });
 
   it("sends no role header on any call when judge mode is off", async () => {
@@ -96,7 +96,7 @@ describe("judge bar", () => {
   it("lists the five example people in the role switcher", async () => {
     stubApi({ "GET /api/clock": () => Response.json(clockOn) });
     renderApp("/nope");
-    await screen.findByRole("region", { name: "Judge mode" });
+    await screen.findByRole("region", { name: "Demo Panel" });
 
     const options = within(screen.getByRole("combobox", { name: "Role" })).getAllByRole("option");
 
@@ -139,7 +139,7 @@ describe("judge bar", () => {
   it("keeps ops as the first role header", async () => {
     const fetchMock = stubApi({ "GET /api/clock": () => Response.json(clockOn) });
     renderApp("/nope");
-    await screen.findByRole("region", { name: "Judge mode" });
+    await screen.findByRole("region", { name: "Demo Panel" });
 
     expect(headerOf(callsTo(fetchMock, "GET /api/clock")[0], "X-Bara-Role")).toBeNull();
     fireEvent.change(screen.getByRole("combobox", { name: "Role" }), {
@@ -159,7 +159,7 @@ describe("judge bar", () => {
       "POST /api/judge/advance": () => Response.json(clockAdvanced),
     });
     renderApp("/nope");
-    await screen.findByRole("region", { name: "Judge mode" });
+    await screen.findByRole("region", { name: "Demo Panel" });
 
     fireEvent.click(within(bar()).getByRole("button", { name: `+${hours}h` }));
 
@@ -178,7 +178,7 @@ describe("judge bar", () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(["cases", "riau"], []);
     renderApp("/nope", queryClient);
-    await screen.findByRole("region", { name: "Judge mode" });
+    await screen.findByRole("region", { name: "Demo Panel" });
 
     fireEvent.click(within(bar()).getByRole("button", { name: "+48h" }));
 
@@ -200,7 +200,7 @@ describe("judge bar", () => {
       "POST /api/judge/advance": () => new Response("boom", { status: 500 }),
     });
     renderApp("/nope");
-    await screen.findByRole("region", { name: "Judge mode" });
+    await screen.findByRole("region", { name: "Demo Panel" });
 
     fireEvent.click(within(bar()).getByRole("button", { name: "+24h" }));
 
@@ -232,7 +232,7 @@ describe("judge bar", () => {
       "POST /api/judge/reset": () => new Response("slow down", { status: 429 }),
     });
     renderApp("/nope");
-    await screen.findByRole("region", { name: "Judge mode" });
+    await screen.findByRole("region", { name: "Demo Panel" });
 
     fireEvent.click(within(bar()).getByRole("button", { name: "Reset scenario" }));
 
