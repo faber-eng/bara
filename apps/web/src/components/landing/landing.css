@@ -231,6 +231,7 @@
 }
 
 .landing-closing .landing-actions {
+  align-items: center;
   margin-bottom: 0;
 }
 
