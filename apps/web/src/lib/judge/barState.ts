@@ -1,15 +1,23 @@
 const STORAGE_KEY = "bara.judgeBar";
+const PHONE_QUERY = "(max-width: 700px)";
 
 export type JudgeBarState = "open" | "closed";
 
 const listeners = new Set<() => void>();
 let snapshot: JudgeBarState = readStored();
 
+function defaultState(): JudgeBarState {
+  if (typeof window.matchMedia !== "function") return "open";
+  return window.matchMedia(PHONE_QUERY).matches ? "closed" : "open";
+}
+
 function readStored(): JudgeBarState {
   try {
-    return localStorage.getItem(STORAGE_KEY) === "closed" ? "closed" : "open";
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "open" || stored === "closed") return stored;
+    return defaultState();
   } catch {
-    return "open";
+    return defaultState();
   }
 }
 
