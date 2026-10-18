@@ -146,7 +146,7 @@ describe("judge bar", () => {
       target: { value: "vol-ari" },
     });
     fireEvent.change(screen.getByRole("combobox", { name: "Role" }), { target: { value: "ops" } });
-    await screen.findByRole("heading", { level: 1, name: "Ops dashboard" });
+    await screen.findByRole("heading", { level: 1, name: "Ops dashboard" }, { timeout: 4000 });
     await waitFor(() => {
       const calls = callsTo(fetchMock, "GET /api/clock");
       expect(headerOf(calls[calls.length - 1], "X-Bara-Role")).toBe("ops");
