@@ -1,35 +1,59 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { sendChat } from "../../lib/api/volunteer";
 import type { VolunteerCopy } from "../../lib/copy/volunteer";
 import { inboxKey } from "./inboxQuery";
 
+const REPLY_WAIT_MS = 30_000;
+
 type ReplyBarProps = {
   copy: VolunteerCopy;
   volunteerId: string;
-  onSent: (text: string) => void;
+  receivedCount: number;
+  onSent: (text: string, receivedCount: number) => void;
 };
 
-export function ReplyBar({ copy, volunteerId, onSent }: ReplyBarProps) {
+type Outgoing = { text: string; receivedCount: number };
+
+export function ReplyBar({ copy, volunteerId, receivedCount, onSent }: ReplyBarProps) {
   const [text, setText] = useState("");
+  const [awaitingFrom, setAwaitingFrom] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const send = useMutation({
-    mutationFn: (message: string) => sendChat(volunteerId, { text: message }),
-    onSuccess: (_result, message) => {
-      onSent(message);
-      setText((current) => (current.trim() === message ? "" : current));
+    mutationFn: (outgoing: Outgoing) => sendChat(volunteerId, { text: outgoing.text }),
+    onSuccess: (_result, outgoing) => {
+      onSent(outgoing.text, outgoing.receivedCount);
+      setAwaitingFrom(outgoing.receivedCount);
+      setText((current) => (current.trim() === outgoing.text ? "" : current));
       void queryClient.invalidateQueries({ queryKey: inboxKey(volunteerId) });
     },
   });
+  const waitingForReply = awaitingFrom !== null && receivedCount <= awaitingFrom;
+
+  useEffect(() => {
+    if (!waitingForReply) return;
+    const timer = setTimeout(() => setAwaitingFrom(null), REPLY_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [waitingForReply]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = text.trim();
-    if (trimmed !== "") send.mutate(trimmed);
+    if (trimmed !== "") send.mutate({ text: trimmed, receivedCount });
   }
 
   return (
     <form className="reply-bar" onSubmit={handleSubmit}>
+      {send.isPending && (
+        <p role="status" className="reply-status">
+          {copy.chatSending}
+        </p>
+      )}
+      {!send.isPending && waitingForReply && (
+        <p role="status" className="reply-status">
+          {copy.chatReplying}
+        </p>
+      )}
       <input
         className="input"
         value={text}

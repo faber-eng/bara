@@ -89,6 +89,9 @@ export type VolunteerCopy = {
   chatFailed: string;
   chatFrom: string;
   chatYou: string;
+  chatSending: string;
+  chatReplying: string;
+  newMessage: string;
   toggleLabel: string;
   threadLabel: string;
   tasksLabel: string;
@@ -213,6 +216,9 @@ const ID: VolunteerCopy = {
   chatFailed: "Pesan belum terkirim. Coba lagi.",
   chatFrom: "Bara",
   chatYou: "Anda",
+  chatSending: "Mengirim pesan",
+  chatReplying: "Bara sedang menulis balasan",
+  newMessage: "Pesan baru",
   toggleLabel: "Bahasa tampilan",
   threadLabel: "Percakapan dengan Bara",
   tasksLabel: "Tugas Anda",
@@ -336,6 +342,9 @@ const EN: VolunteerCopy = {
   chatFailed: "The message was not sent. Try again.",
   chatFrom: "Bara",
   chatYou: "You",
+  chatSending: "Sending your message",
+  chatReplying: "Bara is writing a reply",
+  newMessage: "New message",
   toggleLabel: "Display language",
   threadLabel: "Conversation with Bara",
   tasksLabel: "Your tasks",

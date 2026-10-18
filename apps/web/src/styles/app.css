@@ -541,12 +541,32 @@ fieldset.join-fieldset {
 .flow-panel > * {
   margin: 0;
 }
+.chat {
+  position: relative;
+}
+.chat-scroll {
+  height: clamp(200px, 42dvh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-2);
+  border-radius: var(--radius-card);
+  background: var(--surface-sunk);
+}
 .chat-thread {
   list-style: none;
   padding: 0;
   margin: 0;
+  min-height: 100%;
   display: grid;
   gap: var(--space-2);
+  align-content: end;
+}
+.chat-jump {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 8px var(--photo-scrim);
 }
 .flow-panel {
   display: grid;
@@ -696,6 +716,23 @@ fieldset.join-fieldset {
   border-radius: 18px 18px 6px 18px;
   justify-self: end;
 }
+.msg-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.msg-time {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.msg-me .msg-time {
+  text-align: right;
+}
+.reply-status {
+  font-size: 13px;
+  color: var(--text-muted);
+}
 .msg-from {
   display: block;
   font-size: 11px;
@@ -704,12 +741,18 @@ fieldset.join-fieldset {
   margin-bottom: 4px;
 }
 .reply-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  background: var(--bg);
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
   align-items: center;
 }
-.reply-bar .field-error {
+.reply-bar .field-error,
+.reply-bar .reply-status {
   grid-column: 1 / -1;
   margin: 0;
 }

@@ -24,3 +24,13 @@ export function formatDeadline(iso: string, language: CopyLanguage): string {
 export function isPastDeadline(iso: string, nowMs: number): boolean {
   return Date.parse(iso) <= nowMs;
 }
+
+export function formatClock(iso: string, language: CopyLanguage): string {
+  const parts = new Intl.DateTimeFormat(LOCALES[language], {
+    timeZone: ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(iso));
+  return `${part(parts, "hour")}${language === "id" ? "." : ":"}${part(parts, "minute")}`;
+}

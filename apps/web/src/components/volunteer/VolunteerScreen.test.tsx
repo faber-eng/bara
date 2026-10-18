@@ -503,4 +503,96 @@ describe("volunteer screen", () => {
       expect(within(dialog).getByRole("button", { name: "Rekam video" })).toHaveFocus();
     });
   });
+
+  describe("chat thread", () => {
+    function stubScrollBox(metrics: { scrollHeight: number; clientHeight: number }) {
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(metrics.scrollHeight);
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(metrics.clientHeight);
+    }
+
+    function replyMessage(id: string, text: string, at: string) {
+      return { ...message, id, text, text_en: text, created_at: at };
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("scrolls to the newest message on load", async () => {
+      stubScrollBox({ scrollHeight: 900, clientHeight: 300 });
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      renderApp("/v/uid-1");
+
+      const log = await screen.findByRole("log", { name: "Percakapan dengan Bara" });
+      await waitFor(() => expect(log.scrollTop).toBe(900));
+    });
+
+    it("shows the sender label and the time on each bubble", async () => {
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json(inboxBody) });
+      renderApp("/v/uid-1");
+
+      const log = await screen.findByRole("log", { name: "Percakapan dengan Bara" });
+      expect(within(log).getByText("Bara")).toBeInTheDocument();
+      expect(within(log).getByText("08.00")).toBeInTheDocument();
+    });
+
+    it("offers a jump button instead of scrolling when the reader is scrolled up", async () => {
+      stubScrollBox({ scrollHeight: 900, clientHeight: 300 });
+      let messages = [message];
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json({ ...inboxBody, messages }) });
+      const { queryClient } = renderApp("/v/uid-1");
+
+      const log = await screen.findByRole("log", { name: "Percakapan dengan Bara" });
+      await waitFor(() => expect(log.scrollTop).toBe(900));
+      log.scrollTop = 0;
+      fireEvent.scroll(log);
+      messages = [message, replyMessage("m2", "Siap, saya cek", "2026-07-20T01:05:00Z")];
+      await queryClient.invalidateQueries({ queryKey: ["inbox", "uid-1"] });
+
+      const jump = await screen.findByRole("button", { name: "Pesan baru" });
+      expect(log.scrollTop).toBe(0);
+      fireEvent.click(jump);
+      expect(log.scrollTop).toBe(900);
+      expect(screen.queryByRole("button", { name: "Pesan baru" })).not.toBeInTheDocument();
+    });
+
+    it("follows a new reply while the reader is at the bottom", async () => {
+      stubScrollBox({ scrollHeight: 900, clientHeight: 300 });
+      let messages = [message];
+      stubApi({ "GET /api/v/uid-1/inbox": () => Response.json({ ...inboxBody, messages }) });
+      const { queryClient } = renderApp("/v/uid-1");
+
+      const log = await screen.findByRole("log", { name: "Percakapan dengan Bara" });
+      await waitFor(() => expect(log.scrollTop).toBe(900));
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(1200);
+      messages = [message, replyMessage("m2", "Siap, saya cek", "2026-07-20T01:05:00Z")];
+      await queryClient.invalidateQueries({ queryKey: ["inbox", "uid-1"] });
+
+      await waitFor(() => expect(log.scrollTop).toBe(1200));
+      expect(screen.queryByRole("button", { name: "Pesan baru" })).not.toBeInTheDocument();
+    });
+
+    it("shows a sending state while the message goes out", async () => {
+      let release: (response: Response) => void = () => {};
+      stubApi({
+        "GET /api/v/uid-1/inbox": () => Response.json(inboxBody),
+        "POST /api/v/uid-1/chat": () =>
+          new Promise<Response>((resolve) => {
+            release = resolve;
+          }),
+      });
+      renderApp("/v/uid-1");
+
+      fireEvent.change(await screen.findByLabelText("Tulis pesan ke Bara"), {
+        target: { value: "Halo" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Kirim" }));
+
+      expect(await screen.findByRole("status")).toHaveTextContent("Mengirim");
+      release(Response.json({}));
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent("Bara sedang menulis balasan"),
+      );
+    });
+  });
 });
