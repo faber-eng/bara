@@ -41,8 +41,8 @@ def write_models_yaml(directory: Path, text: str) -> Path:
 def test_reads_model_ids_from_the_repo_models_yaml():
     settings = load_settings(BASE_ENV, REPO_CONFIG_DIR)
 
-    assert settings.models.reasoning.model == "gemini-3.1-pro-preview"
-    assert settings.models.reasoning.fallback == "gemini-2.5-pro"
+    assert settings.models.reasoning.model == "gemini-3.8-flash"
+    assert settings.models.reasoning.fallback == "gemini-3.5-flash"
     assert settings.models.fast.model == "gemini-3.5-flash"
     assert settings.models.fast.fallback == "gemini-2.5-flash"
     assert settings.models.fast.location == "global"
@@ -51,7 +51,7 @@ def test_reads_model_ids_from_the_repo_models_yaml():
 def test_default_config_dir_is_the_repo_config():
     settings = load_settings(BASE_ENV)
 
-    assert settings.models.reasoning.model == "gemini-3.1-pro-preview"
+    assert settings.models.reasoning.model == "gemini-3.8-flash"
 
 
 def test_config_dir_comes_from_bara_config_dir(tmp_path):
@@ -65,7 +65,7 @@ def test_config_dir_comes_from_bara_config_dir(tmp_path):
 def test_empty_bara_config_dir_uses_the_repo_config():
     settings = load_settings({**BASE_ENV, "BARA_CONFIG_DIR": ""})
 
-    assert settings.models.reasoning.model == "gemini-3.1-pro-preview"
+    assert settings.models.reasoning.model == "gemini-3.8-flash"
 
 
 def test_env_override_replaces_only_the_model_id():
@@ -74,7 +74,7 @@ def test_env_override_replaces_only_the_model_id():
     )
 
     assert settings.models.reasoning.model == "gemini-3.5-flash"
-    assert settings.models.reasoning.fallback == "gemini-2.5-pro"
+    assert settings.models.reasoning.fallback == "gemini-3.5-flash"
     assert settings.models.fast.model == "gemini-3.5-flash"
 
 

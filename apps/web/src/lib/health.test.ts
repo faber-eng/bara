@@ -3,7 +3,7 @@ import { fetchHealth, parseHealth } from "./health";
 
 const validBody = {
   status: "ok",
-  models: { reasoning: "gemini-3.1-pro-preview", fast: "gemini-3.5-flash" },
+  models: { reasoning: "gemini-3.8-flash", fast: "gemini-3.5-flash" },
   fallback_used: false,
   git_sha: "0123456789abcdef",
 };

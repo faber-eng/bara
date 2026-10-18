@@ -130,7 +130,7 @@ GOOGLE_CLOUD_PROJECT=ai-builder-cup-511906 uv run python evidence_eval_job.py
 
 ## ADK agent eval
 
-Run 2026-10-18, model `gemini-3.1-pro-preview`: 9 of 9 cases passed (100.0%).
+Run 2026-10-18, model `gemini-3.8-flash`: 9 of 9 cases passed (100.0%).
 
 | Case | Result |
 |---|---|
