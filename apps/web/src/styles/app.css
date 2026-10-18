@@ -1279,6 +1279,11 @@ fieldset.join-fieldset {
     scrollbar-width: none;
   }
 }
+@media (max-width: 380px) {
+  .appbar-nav a {
+    padding: 8px 7px;
+  }
+}
 
 .ops-map {
   display: flex;
