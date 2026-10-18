@@ -4,6 +4,7 @@ import { ApiError } from "../../lib/api/client";
 import { type ScenarioEvent, triggerScenario } from "../../lib/api/trigger";
 import { useCopyLanguage } from "../../lib/copy/language";
 import { type ScenarioCopy, scenarioCopy } from "../../lib/copy/scenario";
+import { invalidateWorldSettled } from "../../lib/judge/invalidate";
 import { sourceFor } from "../../lib/sources";
 
 const REFETCH_EVERY_MS = 5_000;
@@ -39,10 +40,14 @@ function useCasesRefetch(watchId: number | null, stop: () => void) {
 
 export function ScenarioControls() {
   const copy = scenarioCopy(useCopyLanguage());
+  const queryClient = useQueryClient();
   const [watchId, setWatchId] = useState<number | null>(null);
   const trigger = useMutation({
     mutationFn: triggerScenario,
-    onSuccess: () => setWatchId(Date.now()),
+    onSuccess: () => {
+      setWatchId(Date.now());
+      void invalidateWorldSettled(queryClient);
+    },
   });
   useCasesRefetch(watchId, () => setWatchId(null));
 
