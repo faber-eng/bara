@@ -197,6 +197,81 @@ def test_the_prompt_forbids_internal_ids_and_snake_case():
     assert "snake_case" in instruction
 
 
+def test_the_prompt_orders_acknowledge_restate_and_ops():
+    model = FakeModel(reply_of(GOOD))
+    world = World(model)
+
+    ask(world, "v1", "halo")
+
+    instruction = model.calls[0][2].system_instruction
+    acknowledge = instruction.index("Acknowledge")
+    restate = instruction.index("Restate the open task")
+    escalate = instruction.index("set needs_ops to true")
+    assert acknowledge < restate < escalate
+    assert "copied verbatim" in instruction
+    assert "will follow up or reassign" in instruction
+
+
+def test_the_prompt_keeps_the_plain_facts_out_of_the_code_word_ban():
+    model = FakeModel(reply_of(GOOD))
+    world = World(model)
+
+    ask(world, "v1", "halo")
+
+    instruction = model.calls[0][2].system_instruction
+    assert "are plain words, not code words" in instruction
+
+
+def test_the_prompt_holds_a_blocked_and_a_question_example_with_placeholder_facts():
+    model = FakeModel(reply_of(GOOD))
+    world = World(model)
+
+    ask(world, "v1", "halo")
+
+    instruction = model.calls[0][2].system_instruction
+    assert instruction.count("Example ") == 2
+    assert '"needs_ops": true' in instruction
+    assert '"needs_ops": false' in instruction
+    assert "dam-" not in instruction
+    assert "dam_check" not in instruction
+
+
+@pytest.mark.parametrize(
+    "report",
+    [
+        "I can't reach the dam, the road is flooded",
+        "Saya tidak bisa sampai, jalan banjir",
+        "Jalan banjir, tiada bot",
+        "Je ne peux pas atteindre le barrage",
+    ],
+)
+def test_a_blocked_report_flags_ops_even_when_the_model_misses_it(report):
+    world = World(FakeModel(reply_of(GOOD)))
+
+    reply = ask(world, "v1", report)
+
+    notes = [m for m in world.stored() if m.thread == "ops"]
+    assert reply.text == GOOD["text"]
+    assert len(notes) == 1
+    assert report in notes[0].text
+
+
+def test_a_question_does_not_flag_ops_when_the_model_does_not():
+    world = World(FakeModel(reply_of(GOOD)))
+
+    ask(world, "v1", "What is my deadline?")
+
+    assert [m for m in world.stored() if m.thread == "ops"] == []
+
+
+def test_a_blocked_phrase_with_no_open_task_stores_no_ops_note():
+    world = World(FakeModel(reply_of(GOOD)), task=False)
+
+    ask(world, "v1", "I can't reach the dam")
+
+    assert [m for m in world.stored() if m.thread == "ops"] == []
+
+
 @pytest.mark.parametrize(
     "leak",
     [
@@ -344,8 +419,8 @@ def test_the_reply_is_logged_with_the_prompt_version(caplog):
     ask(world, "v1", "halo")
 
     fields = [r.fields for r in caplog.records if hasattr(r, "fields")]
-    assert CHAT_PROMPT_VERSION == "chat-v2"
-    assert any(f.get("prompt_version") == "chat-v2" for f in fields)
+    assert CHAT_PROMPT_VERSION == "chat-v3"
+    assert any(f.get("prompt_version") == "chat-v3" for f in fields)
 
 
 def chat_client(settings, world, judge=False):
