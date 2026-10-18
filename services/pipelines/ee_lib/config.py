@@ -149,6 +149,14 @@ def load_data_config(config_dir: Path) -> DataConfig:
         raise ConfigError(f"{path} does not match the data config: {error}") from error
 
 
+def load_region_ids(config_dir: Path) -> list[str]:
+    path = config_dir / "regions.yaml"
+    regions = read_yaml(path)
+    if not isinstance(regions, dict):
+        raise ConfigError(f"{path} is not a mapping of regions")
+    return [str(region_id) for region_id in regions]
+
+
 def load_region(config_dir: Path, region_id: str) -> RegionConfig:
     path = config_dir / "regions.yaml"
     regions = read_yaml(path)

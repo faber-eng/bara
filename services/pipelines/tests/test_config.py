@@ -7,6 +7,7 @@ from ee_lib.config import (
     UnknownRegion,
     load_data_config,
     load_region,
+    load_region_ids,
     read_aoi,
 )
 
@@ -150,6 +151,10 @@ def test_loads_the_riau_region(config_dir):
     assert region.s1_relative_orbit == 91
     assert region.s1_pass == "DESCENDING"
     assert region.grid_crs == "EPSG:32648"
+
+
+def test_lists_every_configured_region_in_file_order(config_dir):
+    assert load_region_ids(config_dir) == ["riau", "congo_cuvette"]
 
 
 def test_an_unknown_region_raises(config_dir):
