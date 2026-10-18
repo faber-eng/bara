@@ -25,13 +25,14 @@ from casework.messenger import (
     check_message,
 )
 from contracts import Case, Language, Message, MessageThread, Task, Volunteer
-from domain.assignment import local_deadline
+from domain.case_view import format_local
 from domain.channels import Channel, OutboundMessage
 from domain.chat_limit import decide
+from domain.chat_wording import leaks_internal_words, place_label, task_name
 
 logger = logging.getLogger(__name__)
 
-CHAT_PROMPT_VERSION = "chat-v1"
+CHAT_PROMPT_VERSION = "chat-v2"
 REPLY_TIMEOUT_SECONDS = 15.0
 MAX_CONCURRENT_REPLIES = 8
 FENCE_MARKS = ("<<<CHAT", "CHAT>>>")
@@ -59,12 +60,15 @@ in one block between <<<CHAT and CHAT>>>.
 
 Reply in the language named in the block, in at most 3 short sentences:
 1. Answer what the volunteer wrote, using only facts from the block.
-2. If the volunteer has an open task, name it with its place, its point and \
-its deadline exactly as given.
+2. If the volunteer has an open task, name it with its task, its place, its \
+point and its deadline exactly as given. The words in the block are already in \
+the reply language: copy them as they are.
 3. Only when open_task is not null: if the volunteer says they cannot reach the place, the road or the dam is \
 blocked or flooded, or anything else stops the task, say you have noted it \
 and the case goes back to ops, and set needs_ops to true.
 No greeting and no sign-off. Never promise a reassignment or a time.
+Never write an internal id, a code word or a snake_case token. Say the task \
+and the place only with the plain words given in the block.
 
 Reply with one JSON object:
 - text: the reply.
@@ -119,7 +123,7 @@ def render_chat(turn: ChatTurn, text: str) -> str:
     data = {
         "language": LANGUAGE_NAMES[turn.language],
         "volunteer_text": strip_fence(text),
-        "open_task": task_facts(turn.context),
+        "open_task": task_facts(turn.context, turn.language),
     }
     return CHAT_FENCE.format(data=json.dumps(data, indent=2, ensure_ascii=False))
 
@@ -130,14 +134,16 @@ def strip_fence(text: str) -> str:
     return text
 
 
-def task_facts(context: TaskContext | None) -> dict[str, str] | None:
+def task_facts(
+    context: TaskContext | None, language: Language
+) -> dict[str, str] | None:
     if context is None:
         return None
     target = context.task.target
     return {
-        "task": context.task.type,
-        "place": context.case.dam_id or context.case.cell_id,
-        "point": f"{target.lat}, {target.lon}",
+        "task": task_name(context.task.type, language),
+        "place": place_label(context.case, language),
+        "point": f"{target.lat:.4f}, {target.lon:.4f}",
         "deadline": context.deadline_local,
         "what_to_send": WHAT_TO_SEND[context.task.type],
     }
@@ -166,7 +172,13 @@ def read_output(response: types.GenerateContentResponse) -> ChatOutput:
         raise MessengerFailed(f"the reply is not the chat schema: {error}") from None
     check_message(output.text)
     check_message(output.text_en)
+    check_plain_words(output)
     return output
+
+
+def check_plain_words(output: ChatOutput) -> None:
+    if leaks_internal_words(output.text) or leaks_internal_words(output.text_en):
+        raise MessengerFailed("the reply shows an internal id or a code word")
 
 
 def fallback_answer(turn: ChatTurn) -> ChatAnswer:
@@ -253,7 +265,7 @@ class VolunteerChat:
             self._log_case_missing(task)
             return None
         zone = self._timezones.get(case.region, FALLBACK_TIMEZONE)
-        return TaskContext(task, case, local_deadline(task.deadline_at, zone))
+        return TaskContext(task, case, format_local(task.deadline_at, zone))
 
     def _language(self, volunteer: Volunteer) -> Language:
         if volunteer.language in LANGUAGE_NAMES:

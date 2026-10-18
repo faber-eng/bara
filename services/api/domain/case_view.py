@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from contracts import (
     AgentRun,
@@ -31,10 +32,18 @@ MONTHS = (
 )
 
 
-def format_wib(moment: datetime) -> str:
-    local = moment.astimezone(WIB)
+def format_stamp(local: datetime, zone_label: str) -> str:
     day = f"{WEEKDAYS[local.weekday()]} {local.day} {MONTHS[local.month - 1]}"
-    return f"{day}, {local:%H:%M} WIB"
+    return f"{day}, {local:%H:%M} {zone_label}"
+
+
+def format_wib(moment: datetime) -> str:
+    return format_stamp(moment.astimezone(WIB), "WIB")
+
+
+def format_local(moment: datetime, timezone_name: str) -> str:
+    local = moment.astimezone(ZoneInfo(timezone_name))
+    return format_stamp(local, local.tzname() or timezone_name)
 
 
 def summarize_case(case: Case, tasks: list[Task]) -> CaseSummary:
