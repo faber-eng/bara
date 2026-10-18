@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
+import { casesQuery } from "../../lib/api/queries";
+import type { CaseSummary } from "../../lib/contracts";
 import { regionById } from "../../lib/ops/region";
 import type { OpsTab } from "../../lib/ops/tabs";
-import { CaseDrawer } from "./CaseDrawer";
 import { CasesTab } from "./CasesTab";
 import { RankedAreasTab } from "./RankedAreasTab";
 import { ReviewQueueTab } from "./ReviewQueueTab";
@@ -12,6 +14,17 @@ const TAB_LABELS = {
 } as const satisfies Record<OpsTab, string>;
 const TAB_ORDER: readonly OpsTab[] = ["ranked", "cases", "review"];
 
+type TabCounts = Record<OpsTab, number | null>;
+
+function tabCounts(cases: readonly CaseSummary[] | undefined): TabCounts {
+  if (cases === undefined) return { ranked: null, cases: null, review: null };
+  let review = 0;
+  for (const summary of cases) {
+    if (summary.case.status === "human_review") review += 1;
+  }
+  return { ranked: null, cases: cases.length, review };
+}
+
 type OpsPanelProps = {
   region: string;
   week: string | undefined;
@@ -21,20 +34,10 @@ type OpsPanelProps = {
   onCellSelect: (cellId: string) => void;
   onTabChange: (tab: OpsTab) => void;
   onCaseSelect: (caseId: string) => void;
-  onCaseClear: () => void;
+  onReviewSelect: (caseId: string) => void;
 };
 
-type TabBodyProps = Pick<
-  OpsPanelProps,
-  | "region"
-  | "week"
-  | "tab"
-  | "selectedCaseId"
-  | "selectedCellId"
-  | "onCellSelect"
-  | "onCaseSelect"
-  | "onCaseClear"
->;
+type TabBodyProps = Omit<OpsPanelProps, "onTabChange"> & { onShowCases: () => void };
 
 function TabBody({
   region,
@@ -44,10 +47,9 @@ function TabBody({
   selectedCellId,
   onCellSelect,
   onCaseSelect,
-  onCaseClear,
+  onReviewSelect,
+  onShowCases,
 }: TabBodyProps) {
-  if (selectedCaseId !== undefined && regionById(region).casework)
-    return <CaseDrawer caseId={selectedCaseId} onBack={onCaseClear} />;
   if (tab === "ranked") {
     return (
       <RankedAreasTab
@@ -58,21 +60,17 @@ function TabBody({
       />
     );
   }
-  if (tab === "review") return <ReviewQueueTab region={region} onCaseSelect={onCaseSelect} />;
+  if (tab === "review") {
+    return <ReviewQueueTab region={region} onOpen={onReviewSelect} onShowCases={onShowCases} />;
+  }
   return <CasesTab region={region} selectedCaseId={selectedCaseId} onSelect={onCaseSelect} />;
 }
 
-export function OpsPanel({
-  region,
-  week,
-  tab,
-  selectedCaseId,
-  selectedCellId,
-  onCellSelect,
-  onTabChange,
-  onCaseSelect,
-  onCaseClear,
-}: OpsPanelProps) {
+export function OpsPanel(props: OpsPanelProps) {
+  const { region, tab, onTabChange } = props;
+  const casework = regionById(region).casework;
+  const cases = useQuery({ ...casesQuery(region), enabled: casework });
+  const counts = tabCounts(casework ? cases.data : undefined);
   return (
     <aside className="ops-panel">
       <div className="tabs" role="tablist" aria-label="Ops lists">
@@ -85,20 +83,12 @@ export function OpsPanel({
             onClick={() => onTabChange(name)}
           >
             {TAB_LABELS[name]}
+            {counts[name] !== null && <span className="tab-count">{counts[name]}</span>}
           </button>
         ))}
       </div>
       <div className="ops-panel-body" role="tabpanel" aria-label={TAB_LABELS[tab]}>
-        <TabBody
-          region={region}
-          week={week}
-          tab={tab}
-          selectedCaseId={selectedCaseId}
-          selectedCellId={selectedCellId}
-          onCellSelect={onCellSelect}
-          onCaseSelect={onCaseSelect}
-          onCaseClear={onCaseClear}
-        />
+        <TabBody {...props} onShowCases={() => onTabChange("cases")} />
       </div>
     </aside>
   );

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setCopyLanguage } from "../../lib/copy/language";
@@ -84,10 +84,30 @@ describe("draw an area", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Rank this area" }));
 
-    expect(await screen.findByText("1. riau-1-2, score 80")).toBeInTheDocument();
-    expect(screen.getByText("2. riau-1-3, score 60")).toBeInTheDocument();
+    const first = await screen.findByRole("button", { name: /riau-1-2/ });
+    expect(first).toHaveTextContent("Rank 1 of 2");
+    expect(first).toHaveTextContent("80.0");
+    expect(screen.getByRole("button", { name: /riau-1-3/ })).toHaveTextContent("Rank 2 of 2");
+    expect(screen.queryByText(/1\. 1\./)).not.toBeInTheDocument();
     const sent = JSON.parse(String(initOf(callsTo(fetchMock, "POST /api/areas/rank")[0]).body));
     expect(sent.coordinates[0]).toHaveLength(4);
+  });
+
+  it("opens one cell's detail dialog from its row", async () => {
+    stubApi({ "POST /api/areas/rank": () => Response.json(ranked) });
+    renderApp("/area/new");
+    await screen.findByRole("button", { name: "Rank this area" });
+    drawTriangle();
+    fireEvent.click(screen.getByRole("button", { name: "Rank this area" }));
+
+    fireEvent.click(await screen.findByRole("button", { name: /riau-1-2/ }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Cell riau-1-2" });
+    expect(dialog).toHaveTextContent("This circle is a ranked peat cell inside the area you drew.");
+    expect(dialog).toHaveTextContent("80.0 / 100");
+    expect(within(dialog).getByRole("button", { name: "Copy cell ID" })).toBeInTheDocument();
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("says plainly when the area has no mapped peat", async () => {

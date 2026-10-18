@@ -1,32 +1,49 @@
 import { useMap } from "@vis.gl/react-google-maps";
-import { useEffect } from "react";
-import type { PublicCell } from "../../lib/contracts";
+import { useEffect, useRef } from "react";
+import type { CellPoint } from "../../lib/contracts";
 import { cellRing } from "../../lib/ops/cellGrid";
 
 const OUTLINE_STYLE = {
-  clickable: false,
   fillOpacity: 0,
   strokeColor: "#212529",
   strokeWeight: 3,
-  zIndex: 4,
+  zIndex: 2,
 } as const;
 
-type OpenCaseOutlinesProps = { cells: readonly PublicCell[]; openCellIds: readonly string[] };
+type OutlineCell = Pick<CellPoint, "cell_id" | "centroid">;
 
-export function OpenCaseOutlines({ cells, openCellIds }: OpenCaseOutlinesProps) {
+type OpenCaseOutlinesProps = {
+  cells: readonly OutlineCell[];
+  openCellIds: readonly string[];
+  onSelect?: (cellId: string) => void;
+};
+
+export function OpenCaseOutlines({ cells, openCellIds, onSelect }: OpenCaseOutlinesProps) {
   const map = useMap();
+  const onSelectRef = useRef(onSelect);
+  const clickable = onSelect !== undefined;
+
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
 
   useEffect(() => {
     if (map === null) return;
     const open = new Set(openCellIds);
-    const data = new google.maps.Data({ map, style: OUTLINE_STYLE });
+    const data = new google.maps.Data({ map, style: { ...OUTLINE_STYLE, clickable } });
     for (const cell of cells) {
       if (!open.has(cell.cell_id)) continue;
       const ring = cellRing(cell.centroid).map(([lon, lat]) => new google.maps.LatLng(lat, lon));
-      data.add({ geometry: new google.maps.Data.Polygon([ring]) });
+      data.add({ id: cell.cell_id, geometry: new google.maps.Data.Polygon([ring]) });
     }
-    return () => data.setMap(null);
-  }, [map, cells, openCellIds]);
+    const listener = data.addListener("click", (event: google.maps.Data.MouseEvent) => {
+      onSelectRef.current?.(String(event.feature.getId()));
+    });
+    return () => {
+      listener.remove();
+      data.setMap(null);
+    };
+  }, [map, cells, openCellIds, clickable]);
 
   return null;
 }

@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { casesQuery, clockQuery } from "../../lib/api/queries";
 import type { CaseSummary } from "../../lib/contracts";
+import { detailCopy } from "../../lib/copy/detail";
+import { useCopyLanguage } from "../../lib/copy/language";
 import { regionById } from "../../lib/ops/region";
-import { statusChip } from "../../lib/ops/statusChip";
+import { StatusBadge } from "../detail/badges";
 import { Countdown } from "./Countdown";
 import { QueryState } from "./QueryState";
 
@@ -15,26 +17,27 @@ type CaseRowProps = {
 };
 
 function CaseRow({ summary, nowMs, simClock, selected, onSelect }: CaseRowProps) {
-  const chip = statusChip(summary.case.status);
+  const copy = detailCopy(useCopyLanguage());
+  const record = summary.case;
   return (
-    <li className={selected ? "is-selected" : undefined}>
+    <li>
       <button
         type="button"
-        className="ops-row"
+        className="ops-row mv-row"
         aria-pressed={selected}
-        onClick={() => onSelect(summary.case.id)}
+        onClick={() => onSelect(record.id)}
       >
-        <span className="ops-cell">
-          <strong>
-            {summary.case.cell_id} · {summary.case.type}
+        <span className="mv-row-main">
+          <strong className="mv-row-title">
+            {copy.caseTypes[record.type]} · {record.cell_id}
           </strong>
-          {summary.next_deadline_at === null ? (
-            <span className="ops-meta">No open task</span>
-          ) : (
-            <Countdown deadline={summary.next_deadline_at} nowMs={nowMs} simClock={simClock} />
-          )}
+          <StatusBadge status={record.status} copy={copy} />
         </span>
-        <span className={`chip ${chip.className}`}>{chip.label}</span>
+        {summary.next_deadline_at === null ? (
+          <span className="mv-row-meta">No open task</span>
+        ) : (
+          <Countdown deadline={summary.next_deadline_at} nowMs={nowMs} simClock={simClock} />
+        )}
       </button>
     </li>
   );
@@ -63,7 +66,7 @@ export function CasesTab({ region, selectedCaseId, onSelect }: CasesTabProps) {
     >
       {(data) => (
         <>
-          <ul className="ops-list ops-list--cases">
+          <ul className="ops-list ops-list--cases mv-list">
             {data.map((summary) => (
               <CaseRow
                 key={summary.case.id}

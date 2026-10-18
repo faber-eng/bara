@@ -5,21 +5,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetClock } from "../../lib/api/clock";
 import { clearFixtureOverrides } from "../../lib/api/fixtureOverrides";
 import { callsTo, stubApi } from "../../test-utils";
-import { CaseDrawer } from "./CaseDrawer";
+import { CaseItemDetail } from "./CaseItemDetail";
+import { DetailSheet } from "./DetailSheet";
 
 vi.mock("../../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-1") }));
 
-function renderDrawer(caseId: string, onBack = vi.fn()) {
+function renderDrawer(caseId: string, onOpen = vi.fn()) {
   const queryClient = new QueryClient();
   render(
     <QueryClientProvider client={queryClient}>
-      <CaseDrawer caseId={caseId} onBack={onBack} />
+      <DetailSheet closeLabel="Close" onClose={() => {}}>
+        <CaseItemDetail caseId={caseId} onOpen={onOpen} />
+      </DetailSheet>
     </QueryClientProvider>,
   );
-  return { onBack, queryClient };
+  return { onOpen, queryClient };
 }
 
-describe("CaseDrawer", () => {
+describe("CaseItemDetail", () => {
   beforeEach(async () => {
     clearFixtureOverrides();
     await resetClock();
@@ -146,11 +149,20 @@ describe("CaseDrawer", () => {
     expect(screen.getByText("No events yet.")).toBeInTheDocument();
   });
 
-  it("goes back to the list", async () => {
-    const { onBack } = renderDrawer("case-0001");
+  it("names the case type in plain words, never the raw enum", async () => {
+    renderDrawer("case-0001");
 
-    fireEvent.click(await screen.findByRole("button", { name: "Back to list" }));
+    expect(
+      await screen.findByRole("heading", { name: "Dam risk at riau-0412" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).not.toHaveTextContent("dam_risk");
+  });
 
-    expect(onBack).toHaveBeenCalled();
+  it("opens the area of the case", async () => {
+    const { onOpen } = renderDrawer("case-0001");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Show the area" }));
+
+    expect(onOpen).toHaveBeenCalledWith({ kind: "cell", id: "riau-0412" });
   });
 });

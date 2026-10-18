@@ -2,6 +2,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import type { TileLayerKind } from "../../lib/contracts";
 import { type EnabledLayers, LAYER_DEFINITIONS } from "../../lib/ops/mapLayers";
 import { OPS_REGIONS } from "../../lib/ops/region";
+import { rangeFill } from "./MapControls";
 
 const WEEK_COMMIT_DELAY_MS = 200;
 
@@ -9,13 +10,12 @@ type RegionSwitcherProps = { value: string; onChange: (regionId: string) => void
 
 export function RegionSwitcher({ value, onChange }: RegionSwitcherProps) {
   return (
-    <fieldset className="toolbar-group">
+    <fieldset className="segmented toolbar-group">
       <legend className="visually-hidden">Region</legend>
       {OPS_REGIONS.map((region) => (
         <button
           key={region.id}
           type="button"
-          className="map-type-button"
           aria-pressed={region.id === value}
           onClick={() => onChange(region.id)}
         >
@@ -42,6 +42,7 @@ export function WeekSlider({ weeks, value, onCommit }: WeekSliderProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shown = draft !== null && draft.base === value ? draft.week : value;
   const index = indexOfWeek(weeks, shown);
+  const fill = index / Math.max(1, weeks.length - 1);
 
   useEffect(
     () => () => {
@@ -65,6 +66,7 @@ export function WeekSlider({ weeks, value, onCommit }: WeekSliderProps) {
       <span>Week</span>
       <input
         id="ops-week"
+        className="range"
         type="range"
         min={0}
         max={Math.max(0, weeks.length - 1)}
@@ -72,6 +74,7 @@ export function WeekSlider({ weeks, value, onCommit }: WeekSliderProps) {
         value={index}
         disabled={weeks.length < 2}
         aria-valuetext={weeks[index]}
+        style={rangeFill(fill)}
         onChange={handleChange}
       />
       <output className="num" htmlFor="ops-week">
@@ -91,7 +94,7 @@ export function LayerToggles({ enabled, onToggle }: LayerTogglesProps) {
     <fieldset className="toolbar-group layer-toggles">
       <legend className="visually-hidden">Map layers</legend>
       {LAYER_DEFINITIONS.map((definition) => (
-        <label key={definition.id} className="layer-toggle">
+        <label key={definition.id} className="check layer-toggle">
           <input
             type="checkbox"
             checked={enabled[definition.id]}

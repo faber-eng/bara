@@ -4,13 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import type { PublicQuery } from "../../lib/api/publicData";
 import { publicDamsQuery, publicRecordQuery, publicTilesQuery } from "../../lib/api/publicQueries";
 import type { PublicCell, PublicDam, TileLayerKind } from "../../lib/contracts";
+import { type DetailCopy, detailCopy } from "../../lib/copy/detail";
 import type { CopyLanguage } from "../../lib/copy/language";
 import type { PublicCopy } from "../../lib/copy/public";
-import { type DamMarker, damColor } from "../../lib/ops/cellLayer";
+import type { DamMarker } from "../../lib/ops/cellLayer";
 import { DEFAULT_MAP_TYPE, type MapTypeId } from "../../lib/ops/mapLayers";
-import { formatNumber } from "../../lib/public/format";
 import { openCaseCells } from "../../lib/public/openCases";
 import type { PublicRegion } from "../../lib/public/regions";
+import { DetailSheet } from "../detail/DetailSheet";
+import { PublicCellDetail, PublicDamDetail } from "../detail/PublicDetails";
+import { MapKey, type MapKeyMark } from "../map/MapKey";
 import { CellsLayer, DamsLayer } from "../ops/CellsLayer";
 import { MapTypeControl } from "../ops/MapControls";
 import { TileOverlay } from "../ops/TileOverlay";
@@ -19,6 +22,7 @@ import { OpenCaseOutlines } from "./OpenCaseOutlines";
 type OverlayKind = Extract<TileLayerKind, "drying" | "burn_scars" | "reignition">;
 
 const OVERLAYS: readonly OverlayKind[] = ["drying", "burn_scars", "reignition"];
+const OPEN_DATA_HEADING_ID = "pub-data-title";
 const OVERLAY_OPACITY: Record<OverlayKind, number> = {
   drying: 0.7,
   burn_scars: 0.6,
@@ -79,7 +83,7 @@ type LayerPickerProps = {
 
 function LayerPicker({ copy, active, broken, onToggle }: LayerPickerProps) {
   return (
-    <fieldset className="pub-layers">
+    <fieldset className="pub-layers mv-layers">
       <legend className="visually-hidden">{copy.map.layers}</legend>
       {OVERLAYS.map((kind) => (
         <label key={kind} className="check">
@@ -99,38 +103,64 @@ function LayerPicker({ copy, active, broken, onToggle }: LayerPickerProps) {
   );
 }
 
-function MapLegendKeys({ copy }: { copy: PublicCopy }) {
+type Selection = { kind: "cell" | "dam"; id: string };
+
+function publicMarks(region: PublicRegion, active: OverlayState): MapKeyMark[] {
+  const marks: MapKeyMark[] = ["cell"];
+  if (!region.rankingOnly) marks.push("dam", "case");
+  if (active.burn_scars) marks.push("burnScar");
+  if (active.reignition) marks.push("reignition");
+  return marks;
+}
+
+function scrollToOpenData() {
+  document.getElementById(OPEN_DATA_HEADING_ID)?.scrollIntoView({ block: "start" });
+}
+
+type SelectionBodyProps = {
+  selection: Selection;
+  cells: readonly PublicCell[];
+  dams: readonly PublicDam[];
+  openIds: readonly string[];
+  copy: DetailCopy;
+  language: CopyLanguage;
+  timeZone: string;
+  onDownload: () => void;
+};
+
+function SelectionBody({
+  selection,
+  cells,
+  dams,
+  openIds,
+  copy,
+  language,
+  timeZone,
+  onDownload,
+}: SelectionBodyProps) {
+  if (selection.kind === "dam") {
+    const dam = dams.find((item) => item.id === selection.id);
+    if (dam === undefined) return null;
+    return (
+      <PublicDamDetail
+        dam={dam}
+        copy={copy}
+        language={language}
+        timeZone={timeZone}
+        onDownload={onDownload}
+      />
+    );
+  }
+  const cell = cells.find((item) => item.cell_id === selection.id);
+  if (cell === undefined) return null;
   return (
-    <div className="map-legend pub-legend">
-      <div className="map-legend-title">{copy.map.drying}</div>
-      <div className="risk-ramp" aria-hidden="true">
-        {[1, 2, 3, 4, 5].map((step) => (
-          <span key={step} style={{ background: `var(--risk-${step})` }} />
-        ))}
-      </div>
-      <div className="legend-scale num map-legend-scale">
-        <span>{copy.map.lowScore}</span>
-        <span>{copy.map.highScore}</span>
-      </div>
-      <div className="legend-keys">
-        <span>
-          <i style={{ background: damColor("broken") }} />
-          {copy.map.damBroken}
-        </span>
-        <span>
-          <i style={{ background: damColor("damaged") }} />
-          {copy.map.damDamaged}
-        </span>
-        <span>
-          <i style={{ background: damColor("intact") }} />
-          {copy.map.damIntact}
-        </span>
-        <span>
-          <i className="key-case" />
-          {copy.map.openCase}
-        </span>
-      </div>
-    </div>
+    <PublicCellDetail
+      cell={cell}
+      openCase={openIds.includes(cell.cell_id)}
+      copy={copy}
+      language={language}
+      onDownload={onDownload}
+    />
   );
 }
 
@@ -153,11 +183,25 @@ export function PublicMap({ region, query, cells, copy, language, onReady }: Pub
     reignition: false,
   });
   const [broken, setBroken] = useState<ReadonlySet<OverlayKind>>(new Set());
-  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const [selection, setSelection] = useState<Selection | null>(null);
   const markers = useMemo(() => (dams.data ?? []).map(toMarker), [dams.data]);
   const openIds = useMemo(() => openCaseCells(record.data ?? []), [record.data]);
-  const selected = cells.find((cell) => cell.cell_id === selectedId);
+  const detail = detailCopy(language);
+  const selectedCellId = selection?.kind === "cell" ? selection.id : undefined;
   const mapsKey = readMapsKey();
+
+  function selectCell(cellId: string) {
+    setSelection({ kind: "cell", id: cellId });
+  }
+
+  function selectDam(dam: DamMarker) {
+    setSelection({ kind: "dam", id: dam.dam_id });
+  }
+
+  function handleDownload() {
+    setSelection(null);
+    scrollToOpenData();
+  }
 
   function toggle(kind: OverlayKind) {
     setActive((previous) => ({ ...previous, [kind]: !previous[kind] }));
@@ -179,7 +223,7 @@ export function PublicMap({ region, query, cells, copy, language, onReady }: Pub
   }
 
   return (
-    <div className="ops-map pub-map">
+    <div className="ops-map pub-map mv-host">
       <APIProvider apiKey={mapsKey}>
         <GoogleMap
           defaultCenter={region.center}
@@ -200,21 +244,30 @@ export function PublicMap({ region, query, cells, copy, language, onReady }: Pub
           ))}
           <CellsLayer
             cells={cells}
-            selectedCellId={selectedId}
+            selectedCellId={selectedCellId}
             focus={null}
-            onSelect={setSelectedId}
+            onSelect={selectCell}
           />
-          <DamsLayer dams={markers} onSelect={() => undefined} />
+          <DamsLayer dams={markers} onSelect={selectDam} />
           <OpenCaseOutlines cells={cells} openCellIds={openIds} />
         </GoogleMap>
       </APIProvider>
       <MapTypeControl value={mapType} onChange={setMapType} />
       <LayerPicker copy={copy} active={active} broken={broken} onToggle={toggle} />
-      <MapLegendKeys copy={copy} />
-      {selected !== undefined && (
-        <p role="status" className="map-note pub-cell-note">
-          {copy.map.cell(selected.cell_id, formatNumber(selected.drying_score, language))}
-        </p>
+      <MapKey marks={publicMarks(region, active)} copy={detail} screen="public" />
+      {selection !== null && (
+        <DetailSheet closeLabel={detail.close} onClose={() => setSelection(null)}>
+          <SelectionBody
+            selection={selection}
+            cells={cells}
+            dams={dams.data ?? []}
+            openIds={openIds}
+            copy={detail}
+            language={language}
+            timeZone={region.timeZone}
+            onDownload={handleDownload}
+          />
+        </DetailSheet>
       )}
     </div>
   );

@@ -54,3 +54,14 @@ export function renderApp(path: string, queryClient = new QueryClient()) {
   );
   return { ...view, router, queryClient };
 }
+
+class FakeDataLayer {
+  static Polygon = class {};
+  add() {}
+  addListener() {
+    return { remove: () => {} };
+  }
+  setMap() {}
+}
+
+export const outlineMapsApi = { Data: FakeDataLayer, LatLng: class {} };
