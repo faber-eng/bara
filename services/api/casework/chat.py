@@ -32,7 +32,7 @@ from domain.chat_limit import decide
 logger = logging.getLogger(__name__)
 
 CHAT_PROMPT_VERSION = "chat-v1"
-REPLY_TIMEOUT_SECONDS = 8.0
+REPLY_TIMEOUT_SECONDS = 15.0
 MAX_CONCURRENT_REPLIES = 8
 FENCE_MARKS = ("<<<CHAT", "CHAT>>>")
 BARA_RECIPIENT = "bara"
@@ -153,6 +153,7 @@ def generation_config(timeout_seconds: float) -> types.GenerateContentConfig:
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
         response_schema=ChatOutput,
+        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
     )
 
 

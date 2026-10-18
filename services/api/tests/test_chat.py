@@ -442,4 +442,5 @@ def test_the_model_call_carries_a_one_attempt_timeout_and_a_closed_fence():
     _, contents, config = model.calls[0]
     assert config.http_options.timeout == 1000
     assert config.http_options.retry_options.attempts == 1
+    assert config.thinking_config.thinking_level == types.ThinkingLevel.LOW
     assert contents.count("CHAT>>>") == 1
