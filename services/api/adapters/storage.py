@@ -71,7 +71,7 @@ class EvidenceStorage:
             object_name,
             method="PUT",
             content_type=content_type,
-            headers=length_range,
+            headers=dict(length_range),
         )
         return SignedUpload(url, {"Content-Type": content_type, **length_range})
 

@@ -49,6 +49,14 @@ def test_signed_put_url_signs_and_returns_the_content_type_and_length_range():
     }
 
 
+def test_signed_put_url_never_returns_the_host_header_the_signer_adds():
+    storage, _ = make_storage()
+
+    upload = storage.signed_put_url("evidence/e1.jpg", "image/jpeg")
+
+    assert "Host" not in upload.headers
+
+
 def test_read_returns_the_object_bytes_or_none_when_missing():
     storage, bucket = make_storage()
     bucket.objects["evidence/e1.jpg"] = b"jpeg"

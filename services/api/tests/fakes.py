@@ -276,7 +276,12 @@ class RecordingBlob:
         self._objects = objects
 
     def generate_signed_url(self, **kwargs) -> str:
-        self._calls.append({"name": self.name, **kwargs})
+        headers = kwargs.get("headers")
+        if headers is None:
+            self._calls.append({"name": self.name, **kwargs})
+        else:
+            self._calls.append({"name": self.name, **kwargs, "headers": dict(headers)})
+            headers["Host"] = "storage.googleapis.com"
         return f"https://storage.test/{self.name}?X-Goog-Signature=abc"
 
     def download_as_bytes(self) -> bytes:
