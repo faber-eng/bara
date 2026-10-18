@@ -419,6 +419,10 @@ class VolunteerRepository:
             Filter("role", "==", role), Filter("available", "==", True)
         )
 
+    def names(self, volunteer_ids: list[str]) -> dict[str, str]:
+        found = matching(self._volunteers, "id", volunteer_ids)
+        return {volunteer.id: volunteer.name for volunteer in found}
+
 
 class EventLog:
     def __init__(
@@ -509,12 +513,16 @@ class ResetRepository:
         self._dams.put_many({dam.id: dam for dam in scenario.dams})
 
 
-def children[T](collection: Collection[T], case_ids: list[str]) -> list[T]:
+def matching[T](collection: Collection[T], field: str, values: list[str]) -> list[T]:
     found: list[T] = []
-    for start in range(0, len(case_ids), IN_QUERY_LIMIT):
-        chunk = case_ids[start : start + IN_QUERY_LIMIT]
-        found.extend(collection.where(Filter("case_id", "in", chunk)))
+    for start in range(0, len(values), IN_QUERY_LIMIT):
+        chunk = values[start : start + IN_QUERY_LIMIT]
+        found.extend(collection.where(Filter(field, "in", chunk)))
     return found
+
+
+def children[T](collection: Collection[T], case_ids: list[str]) -> list[T]:
+    return matching(collection, "case_id", case_ids)
 
 
 class RankingRepository:

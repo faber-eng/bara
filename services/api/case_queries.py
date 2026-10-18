@@ -10,13 +10,14 @@ from adapters.firestore_repos import (
     EvidenceRepository,
     MessageRepository,
     TaskRepository,
+    VolunteerRepository,
 )
 from adapters.storage import SIGNING_ERRORS
 from adapters.store import DocumentNotFound
 from contracts import Case, CaseDetail, CaseSummary, Evidence, SignedEvidence, Task
 from domain.case_machine import transition
 from domain.case_page import DEFAULT_LIMIT, page_of
-from domain.case_view import build_timeline, summarize_case
+from domain.case_view import assignee_ids, build_timeline, summarize_case
 from domain.clock import Clock
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ class CaseQueries:
         runs: AgentRunRepository,
         escalations: EscalationRepository,
         messages: MessageRepository,
+        volunteers: VolunteerRepository,
         signer: EvidenceSigner,
         clock: Clock,
     ):
@@ -56,6 +58,7 @@ class CaseQueries:
         self._runs = runs
         self._escalations = escalations
         self._messages = messages
+        self._volunteers = volunteers
         self._clock = clock
 
     def summaries(
@@ -97,6 +100,7 @@ class CaseQueries:
                 runs,
                 self._escalations.for_case(case_id),
                 self._messages.notes_for_case(case_id),
+                self._volunteers.names(assignee_ids(tasks)),
             ),
         )
 

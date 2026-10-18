@@ -15,6 +15,7 @@ from adapters.firestore_repos import (
     EvidenceRepository,
     StatusChange,
     TaskRepository,
+    VolunteerRepository,
 )
 from adapters.storage import SIGNING_ERRORS
 from casework.brief import BRIEF_PROMPT_VERSION, Brief
@@ -35,7 +36,7 @@ from contracts import (
 )
 from domain.brief import BriefFacts
 from domain.case_machine import can_transition
-from domain.case_view import build_timeline
+from domain.case_view import assignee_ids, build_timeline
 from domain.channels import Channel, OutboundMessage
 from domain.clock import Clock
 from domain.escalation import (
@@ -117,6 +118,7 @@ class Escalator:
         dams: DamRepository,
         contacts: ContactRepository,
         escalations: EscalationRepository,
+        volunteers: VolunteerRepository,
         cells: Centroids,
         casework: CaseworkStore,
         brief: Briefer,
@@ -132,6 +134,7 @@ class Escalator:
         self._dams = dams
         self._contacts = contacts
         self._escalations = escalations
+        self._volunteers = volunteers
         self._cells = cells
         self._casework = casework
         self._brief = brief
@@ -158,8 +161,9 @@ class Escalator:
         point = self._point(case)
         evidence = self._evidence.for_cases([case_id])
         tasks = self._tasks.for_case(case_id)
+        names = self._volunteers.names(assignee_ids(tasks))
         timeline = build_timeline(
-            case, tasks, evidence, self._runs.for_case(case_id), [], []
+            case, tasks, evidence, self._runs.for_case(case_id), [], [], names
         )
         url = map_url(point) if point is not None else ""
         return EscalationInputs(

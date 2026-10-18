@@ -144,6 +144,22 @@ def test_volunteer_create_if_absent_creates_once_and_keeps_the_first():
     assert repo.get("u1").name == "First"
 
 
+def test_volunteer_names_reads_the_display_names_of_the_ids_it_finds():
+    from adapters.firestore_repos import VolunteerRepository
+    from contracts import Volunteer
+    from tests.fakes import make_volunteer
+
+    collection = InMemoryCollection(Volunteer)
+    for index in range(35):
+        collection.put(f"u{index}", make_volunteer(id=f"u{index}", name=f"N{index}"))
+    repo = VolunteerRepository(collection)
+
+    wanted = [f"u{index}" for index in range(35)] + ["gone"]
+
+    assert repo.names(wanted) == {f"u{index}": f"N{index}" for index in range(35)}
+    assert repo.names([]) == {}
+
+
 def test_get_returns_the_case_or_none():
     case = make_case(id="c1")
     repo = make_case_repo(case)

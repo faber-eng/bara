@@ -17,6 +17,7 @@ from adapters.firestore_repos import (
     RankedDamRepository,
     RankingRepository,
     TaskRepository,
+    VolunteerRepository,
 )
 from adapters.gemini import ModelGateway
 from area_queries import AreaQueries
@@ -34,6 +35,7 @@ from contracts import (
     RankExplanation,
     Task,
     Verdict,
+    Volunteer,
 )
 from domain.clock import Clock
 from domain.rank_explanation import EXPLAIN_PROMPT_VERSION
@@ -51,6 +53,7 @@ from tests.fakes import (
     make_ranked_cell,
     make_ranked_dam,
     make_task,
+    make_volunteer,
     weekly_row,
 )
 
@@ -89,6 +92,7 @@ class World:
     def __init__(self, weekly_rows=None, all_cell_rows=None):
         self.cases = InMemoryCollection(Case)
         self.tasks = InMemoryCollection(Task)
+        self.volunteers = InMemoryCollection(Volunteer)
         self.evidence = InMemoryCollection(Evidence)
         self.escalations = InMemoryCollection(Escalation)
         self.ranked_cells = InMemoryCollection(RankedCell)
@@ -119,6 +123,7 @@ class World:
             runs=AgentRunRepository(self.runs_for),
             escalations=EscalationRepository(self.escalations),
             messages=MessageRepository(InMemoryCollection(Message)),
+            volunteers=VolunteerRepository(self.volunteers),
             clock=self.clock,
         )
         self.area_queries = AreaQueries(
@@ -707,6 +712,21 @@ def test_the_stored_evidence_keeps_its_gs_uri(settings):
     world.client(settings).get("/api/cases/c1", headers=OPS)
 
     assert world.evidence.get("e1").gcs_uri == "gs://ok/e1.jpg"
+
+
+def test_case_detail_timeline_names_the_assignee(settings):
+    world = World()
+    world.add_case("c1", status="monitoring", opened_at=REAL_NOW)
+    world.volunteers.put("vol-ari", make_volunteer(id="vol-ari", name="Ari Wijaya"))
+    world.tasks.put(
+        "t1",
+        make_task(id="t1", case_id="c1", assignee_id="vol-ari", created_at=REAL_NOW),
+    )
+
+    body = world.client(settings).get("/api/cases/c1", headers=OPS).json()
+
+    texts = [entry["text"] for entry in body["timeline"]]
+    assert any(text.startswith("Task given to Ari Wijaya: ") for text in texts)
 
 
 def test_case_detail_timeline_shows_the_brigade_ack(settings):
