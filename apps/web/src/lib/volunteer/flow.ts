@@ -4,7 +4,11 @@ export type FailureReason =
   | "prepare"
   | "upload"
   | "read"
-  | "mic"
+  | "mic_denied"
+  | "mic_no_device"
+  | "mic_busy"
+  | "mic_unsupported"
+  | "mic_failed"
   | "video_long"
   | "video_big"
   | "video_type";
@@ -13,6 +17,7 @@ export type FlowState =
   | { step: "idle" }
   | { step: "preparing" }
   | { step: "preview"; photo: Blob; sample: boolean }
+  | { step: "mic_gate"; allowed: boolean }
   | { step: "recording" }
   | { step: "uploading"; kind: EvidenceKind; progress: number; sample: boolean }
   | { step: "reading"; kind: EvidenceKind; sample: boolean }
@@ -24,6 +29,8 @@ export type FlowState =
 export type FlowAction =
   | { type: "preparing" }
   | { type: "photo_chosen"; photo: Blob; sample: boolean }
+  | { type: "mic_gate_opened" }
+  | { type: "mic_allowed" }
   | { type: "recording_started" }
   | { type: "upload_started"; kind: EvidenceKind; sample: boolean }
   | { type: "progress"; progress: number }
@@ -64,7 +71,11 @@ function onUnread(state: FlowState): FlowState {
 export function flowReducer(state: FlowState, action: FlowAction): FlowState {
   switch (action.type) {
     case "preparing":
-      return state.step === "idle" ? { step: "preparing" } : state;
+      return state.step === "idle" || state.step === "mic_gate" ? { step: "preparing" } : state;
+    case "mic_gate_opened":
+      return state.step === "preparing" ? { step: "mic_gate", allowed: false } : state;
+    case "mic_allowed":
+      return state.step === "mic_gate" ? { step: "mic_gate", allowed: true } : state;
     case "photo_chosen":
       return onChosen(state, action);
     case "recording_started":

@@ -48,6 +48,12 @@ export type VolunteerCopy = {
   recording: string;
   recordingHint: string;
   micDenied: string;
+  micNoDevice: string;
+  micBusy: string;
+  micUnsupported: string;
+  micFailed: string;
+  micAllow: string;
+  micAllowHint: string;
   cameraHint: string;
   sampleChip: string;
   sampleTitle: string;
@@ -147,7 +153,13 @@ const ID: VolunteerCopy = {
   recording: "Merekam pesan suara",
   recordingHint: "Ceritakan kondisi sekat dengan kata-kata Anda.",
   micDenied:
-    "Mikrofon tidak bisa dipakai. Izinkan mikrofon di pengaturan peramban, lalu coba lagi.",
+    "Akses mikrofon diblokir untuk situs ini. Ketuk ikon gembok di bilah alamat, izinkan mikrofon, lalu muat ulang.",
+  micNoDevice: "Tidak ada mikrofon di perangkat ini.",
+  micBusy: "Aplikasi lain sedang memakai mikrofon. Tutup aplikasi itu lalu coba lagi.",
+  micUnsupported: "Peramban ini tidak bisa merekam suara. Buka halaman ini di Chrome atau Safari.",
+  micFailed: "Perekaman tidak bisa dimulai. Coba lagi, atau pakai contoh.",
+  micAllow: "Izinkan mikrofon",
+  micAllowHint: "Izinkan mikrofon dulu, supaya Anda bisa merekam pesan suara.",
   cameraHint: "Foto dikecilkan ke 1600 px sebelum dikirim, supaya cepat di sinyal lemah.",
   sampleChip: "Sampel",
   sampleTitle: "Pilih contoh",
@@ -289,7 +301,14 @@ const EN: VolunteerCopy = {
   stopRecording: "Stop recording",
   recording: "Recording a voice note",
   recordingHint: "Describe the dam in your own words.",
-  micDenied: "The microphone is not available. Allow it in the browser settings, then try again.",
+  micDenied:
+    "Microphone access is blocked for this site. Tap the lock icon in the address bar, allow the microphone, then reload.",
+  micNoDevice: "No microphone was found on this device.",
+  micBusy: "Another app is using the microphone. Close it and try again.",
+  micUnsupported: "This browser cannot record audio. Open this page in Chrome or Safari.",
+  micFailed: "Recording could not start. Try again, or use a sample.",
+  micAllow: "Allow microphone",
+  micAllowHint: "Allow the microphone first, so you can record a voice note.",
   cameraHint: "The photo is resized to 1600 px before it is sent, so it is quick on a weak signal.",
   sampleChip: "Sample",
   sampleTitle: "Choose a sample",
