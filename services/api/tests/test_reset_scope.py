@@ -154,6 +154,18 @@ def test_a_volunteer_chat_message_to_bara_does_not_keep_the_case():
     assert scope.message_ids == {"m-c-ex", "m-chat"}
 
 
+def test_a_chat_reply_with_no_case_to_an_example_volunteer_is_selected():
+    case = scenario_case()
+    loose = make_message(id="m-loose", case_id=None, to_id="v-ex")
+    real = make_message(id="m-real-loose", case_id=None, to_id="v-real")
+    world = example_world(case)
+    world = snapshot(**{**world.__dict__, "messages": [case["message"], loose, real]})
+
+    scope = plan_reset(world)
+
+    assert scope.message_ids == {"m-c-ex", "m-loose"}
+
+
 def test_a_real_case_is_never_selected():
     real = make_case(id="c-real", example=False)
     task = make_task(id="t1", case_id="c-real", assignee_id="v-ex")
@@ -269,6 +281,22 @@ def test_the_repository_snapshot_loads_example_rows_and_their_children():
     assert {c.id for c in loaded.cases} == {"c-ex"}
     assert {t.id for t in loaded.tasks} == {"t-c-ex"}
     assert {e.id for e in loaded.evidence} == {"e-c-ex"}
+
+
+def test_the_snapshot_loads_chat_replies_with_no_case_to_example_people():
+    world = World()
+    world.volunteers.put("v-ex", make_volunteer(id="v-ex", example=True))
+    world.volunteers.put("v-real", make_volunteer(id="v-real", example=False))
+    world.messages.put(
+        "m-loose", make_message(id="m-loose", case_id=None, to_id="v-ex")
+    )
+    world.messages.put(
+        "m-real", make_message(id="m-real", case_id=None, to_id="v-real")
+    )
+
+    loaded = world.repo.snapshot()
+
+    assert {m.id for m in loaded.messages} == {"m-loose"}
 
 
 def test_a_real_volunteer_with_a_task_on_an_example_case_survives_the_reset():
