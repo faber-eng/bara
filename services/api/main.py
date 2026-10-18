@@ -18,7 +18,7 @@ from adapters.factory import (
 )
 from adapters.gemini import ModelGateway, build_agent_model, build_vertex_clients
 from adapters.reignition import ReignitionScores
-from adapters.trigger_gate import FirestoreTriggerGateStore
+from adapters.trigger_gate import SEND_DOCUMENT, FirestoreTriggerGateStore
 from area_queries import AreaQueries
 from auth import FirebaseTokenVerifier, TokenVerifier
 from bara_agent.agent import build_tools
@@ -67,6 +67,7 @@ from routes import (
     judge_trigger,
     ops_areas,
     ops_cases,
+    ops_send,
     public,
     samples,
     tiles,
@@ -76,7 +77,7 @@ from run_stream import RunStreamer
 from scenario_reset import ScenarioResetter
 from stream_cors import StreamOnlyCors
 from tile_cache import TileUrlCache
-from trigger import JudgeTrigger
+from trigger import AreaRequest, JudgeTrigger
 
 JOIN_MAX_FAILURES = 5
 JOIN_WINDOW_SECONDS = 15 * 60
@@ -133,6 +134,7 @@ def build_app(
     app.include_router(judge_advance.router)
     app.include_router(deadline.router)
     app.include_router(ops_cases.router)
+    app.include_router(ops_send.router)
     app.include_router(ops_areas.router)
     app.include_router(areas.router)
     app.include_router(volunteer.router)
@@ -369,6 +371,23 @@ def build_trigger_gate(settings: Settings) -> TriggerGate:
     return TriggerGate(FirestoreTriggerGateStore(db), utcnow)
 
 
+def build_send_gate(settings: Settings) -> TriggerGate:
+    db = firestore.Client(project=settings.project)
+    return TriggerGate(FirestoreTriggerGateStore(db, SEND_DOCUMENT), utcnow)
+
+
+def build_area_request(settings: Settings, adapters: Adapters) -> AreaRequest:
+    return AreaRequest(
+        rankings=adapters.rankings,
+        cases=adapters.cases,
+        publisher=adapters.publisher,
+        clock=adapters.clock,
+        new_id=lambda: uuid.uuid4().hex,
+        region=full_flow_region(settings.config_dir),
+        example=settings.judge_mode.enabled,
+    )
+
+
 def build_resetter(settings: Settings) -> ScenarioResetter:
     db = firestore.Client(project=settings.project)
     return build_scenario_resetter(db, load_scenario(settings.scenario_dir))
@@ -546,6 +565,8 @@ def create_app() -> FastAPI:
     app.state.brigade_inbox = build_brigade_inbox(app.state.adapters)
     app.state.trigger = build_trigger(settings, app.state.adapters)
     app.state.trigger_gate = build_trigger_gate(settings)
+    app.state.area_request = build_area_request(settings, app.state.adapters)
+    app.state.send_gate = build_send_gate(settings)
     app.state.deadlines = build_deadlines(app.state.adapters)
     app.state.push_verifier = GoogleOidcVerifier()
     app.state.resetter = build_resetter(settings)

@@ -90,6 +90,14 @@ export type DetailCopy = {
     openCase: string;
     zoom: string;
     openCaseNote: string;
+    send: {
+      action: string;
+      sending: string;
+      sent: string;
+      caseOpen: string;
+      noFlow: string;
+      failed: string;
+    };
     how: { title: string; model: string; promptVersion: string };
     drivers: { label: string; effects: Record<ExplanationEffect, string> };
   };
@@ -268,6 +276,14 @@ const EN: DetailCopy = {
     openCase: "Open its case",
     zoom: "Zoom to area",
     openCaseNote: "Open case: someone is checking this area.",
+    send: {
+      action: "Send someone",
+      sending: "Sending…",
+      sent: "Bara is picking the nearest free person. The case shows in Cases in about 30 seconds.",
+      caseOpen: "This area already has an open case.",
+      noFlow: "People are not set up in this region yet.",
+      failed: "Could not send. Try again.",
+    },
     how: { title: "How this was written", model: "Model", promptVersion: "Prompt version" },
     drivers: {
       label: "What drives the score",
@@ -463,6 +479,14 @@ const ID: DetailCopy = {
     openCase: "Buka kasusnya",
     zoom: "Perbesar ke petak",
     openCaseNote: "Kasus terbuka: ada orang yang sedang mengecek area ini.",
+    send: {
+      action: "Kirim orang",
+      sending: "Mengirim…",
+      sent: "Bara sedang memilih orang terdekat yang bisa. Kasus muncul di Kasus dalam sekitar 30 detik.",
+      caseOpen: "Area ini sudah punya kasus terbuka.",
+      noFlow: "Orang belum disiapkan di wilayah ini.",
+      failed: "Tidak bisa mengirim. Coba lagi.",
+    },
     how: { title: "Cara teks ini ditulis", model: "Model", promptVersion: "Versi prompt" },
     drivers: {
       label: "Yang menentukan skor",

@@ -719,6 +719,7 @@ APP_BUILDER_STUBS = {
     "build_agent_service": "agent",
     "build_dispatcher": "dispatcher",
     "build_trigger": "trigger",
+    "build_area_request": "area_request",
     "build_deadlines": "deadlines",
     "build_resetter": "resetter",
     "build_case_queries": "cases",

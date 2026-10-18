@@ -61,6 +61,34 @@ def build_drying_ranked_event(
     )
 
 
+def build_area_requested_event(
+    *,
+    region: str,
+    cell: RankedCell,
+    event_id: str,
+    occurred_at: datetime,
+    example: bool,
+) -> DryingRankedEvent:
+    area = TopCellRef(
+        cell_id=cell.cell_id, drying_score=cell.drying_score, rank=cell.rank
+    )
+    payload = DryingRanked(
+        region=region,
+        week=iso_week_label(cell.week_start),
+        top_cells=[],
+        top_dams=[],
+        requested_cell=area,
+    )
+    return DryingRankedEvent(
+        id=event_id,
+        occurred_at=occurred_at,
+        region=region,
+        example=example,
+        type="drying.ranked",
+        payload=payload,
+    )
+
+
 def build_fire_quiet_event(
     *, scenario: Scenario, event_id: str, occurred_at: datetime
 ) -> FireQuietEvent:

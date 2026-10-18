@@ -4,6 +4,7 @@ import type { CellFacts, RankExplanation } from "../../lib/contracts";
 import { type DetailCopy, detailCopy } from "../../lib/copy/detail";
 import { type CopyLanguage, useCopyLanguage } from "../../lib/copy/language";
 import { damColor } from "../../lib/ops/cellLayer";
+import { regionById } from "../../lib/ops/region";
 import { formatFixed, formatNumber } from "../../lib/public/format";
 import { ExplanationHow, ExplanationText } from "../ops/ExplanationText";
 import { QueryState } from "../ops/QueryState";
@@ -16,6 +17,7 @@ import {
 } from "./DetailSheet";
 import { chanceText, componentGroups } from "./facts";
 import { ScoreKeyFact } from "./ScoreKeyFact";
+import { SendSomeone } from "./SendSomeone";
 import { Sparkline } from "./Sparkline";
 import type { OpsDetail } from "./selection";
 import { useOpenCase } from "./useOpenCase";
@@ -126,15 +128,18 @@ function CellFactsSections({ facts, copy, language }: Omit<FactsProps, "total">)
 type CellActionsProps = {
   cellId: string;
   caseId: string | undefined;
+  canSend: boolean;
   copy: DetailCopy;
   onOpen: (detail: OpsDetail) => void;
   onZoom: (cellId: string) => void;
 };
 
-function CellActions({ cellId, caseId, copy, onOpen, onZoom }: CellActionsProps) {
-  const zoomClass = caseId === undefined ? "btn btn-primary" : "btn btn-secondary";
+function CellActions({ cellId, caseId, canSend, copy, onOpen, onZoom }: CellActionsProps) {
+  const zoomIsPrimary = caseId === undefined && !canSend;
+  const zoomClass = zoomIsPrimary ? "btn btn-primary" : "btn btn-secondary";
   return (
     <>
+      {canSend && <SendSomeone cellId={cellId} copy={copy.cell.send} />}
       {caseId !== undefined && (
         <button
           type="button"
@@ -164,6 +169,7 @@ export function CellDetail({ cellId, region, onOpen, onZoom }: CellDetailProps) 
   const facts = useQuery(cellFactsQuery(cellId));
   const total = useQuery(allCellsQuery(region)).data?.cells.length ?? null;
   const caseId = useOpenCase(region, (record) => record.cell_id === cellId);
+  const canSend = caseId === undefined && regionById(region).casework;
 
   return (
     <DetailLayout title={copy.cell.title(cellId)}>
@@ -171,7 +177,14 @@ export function CellDetail({ cellId, region, onOpen, onZoom }: CellDetailProps) 
         <CellKeyFact facts={facts.data} total={total} copy={copy} language={language} />
       )}
       <DetailActions>
-        <CellActions cellId={cellId} caseId={caseId} copy={copy} onOpen={onOpen} onZoom={onZoom} />
+        <CellActions
+          cellId={cellId}
+          caseId={caseId}
+          canSend={canSend}
+          copy={copy}
+          onOpen={onOpen}
+          onZoom={onZoom}
+        />
       </DetailActions>
       {caseId !== undefined && <p className="mv-note">{copy.cell.openCaseNote}</p>}
       <QueryState

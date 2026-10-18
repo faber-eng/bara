@@ -449,3 +449,74 @@ def test_a_fill_that_runs_past_the_hard_limit_is_cut_and_logged(monkeypatch, cap
 
     assert outcome == "processed"
     assert len(world.agent.runs) == 3
+
+
+def requested(cell_id="cell-7", drying_score=91.0, example=False):
+    from contracts import DryingRanked, TopCellRef
+
+    return make_drying_ranked_event(
+        id="evt-send",
+        example=example,
+        payload=DryingRanked(
+            region="riau",
+            week="2026-W42",
+            top_cells=[],
+            top_dams=[],
+            requested_cell=TopCellRef(
+                cell_id=cell_id, drying_score=drying_score, rank=7
+            ),
+        ),
+    )
+
+
+def test_a_requested_area_with_no_dam_gets_one_case_with_no_dam():
+    world = World(five_dams())
+
+    world.deliver(message_id="m-s", event=requested())
+
+    [case] = world.all_cases()
+    assert (case.cell_id, case.dam_id, case.type) == ("cell-7", None, "dam_risk")
+    assert case.risk.drying_score == 91.0
+    assert case.id == "case-m-s-cell-7"
+    assert world.agent.runs == [("drying.ranked", case.id, f"m-s-{case.id}")]
+
+
+def test_a_requested_area_with_dams_gets_a_case_for_its_top_dam():
+    dams = [
+        make_ranked_dam(dam_id="dam-b", cell_id="cell-7", rank=9),
+        make_ranked_dam(dam_id="dam-a", cell_id="cell-7", rank=4),
+        make_ranked_dam(dam_id="dam-1", cell_id="cell-1", rank=1),
+    ]
+    world = World(dams)
+
+    world.deliver(event=requested())
+
+    [case] = world.all_cases()
+    assert (case.cell_id, case.dam_id) == ("cell-7", "dam-a")
+
+
+def test_a_requested_area_with_a_live_case_opens_nothing():
+    live = make_case(id="case-old", cell_id="cell-7", dam_id=None, status="assigned")
+    world = World(five_dams(), open_cases=[live])
+
+    world.deliver(event=requested())
+
+    assert [case.id for case in world.all_cases()] == ["case-old"]
+    assert world.agent.runs == []
+
+
+def test_a_requested_area_skips_the_explanation_and_bulletin_refill():
+    world = World(five_dams())
+
+    world.deliver(event=requested())
+
+    assert world.explanations.regions == []
+    assert world.bulletin.regions == []
+
+
+def test_a_requested_area_keeps_the_event_example_flag():
+    world = World(five_dams())
+
+    world.deliver(event=requested(example=True))
+
+    assert world.all_cases()[0].example is True
