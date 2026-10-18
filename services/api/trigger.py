@@ -7,6 +7,7 @@ from adapters.firestore_repos import (
     RankingRepository,
 )
 from adapters.pubsub import EventPublisher
+from contracts import RankedCell
 from domain.clock import Clock
 from domain.scenario import Scenario
 from domain.scenario_events import (
@@ -100,12 +101,16 @@ class AreaRequest:
         self._region = region
         self._example = example
 
-    def send_someone(self, cell_id: str) -> str:
+    def check(self, cell_id: str) -> RankedCell:
         cell = self._rankings.cell(self._region, cell_id)
         if cell is None:
             raise UnknownCell(cell_id)
         if self._cases.live_in_cell(cell_id) is not None:
             raise AreaHasCase(cell_id)
+        return cell
+
+    def send_someone(self, cell: RankedCell) -> str:
+        cell_id = cell.cell_id
         event = build_area_requested_event(
             region=self._region,
             cell=cell,

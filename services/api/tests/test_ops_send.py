@@ -27,6 +27,7 @@ def make_send_client(settings, cases=(), publisher=None, example=True):
     cells.put(
         "riau-1-1", make_ranked_cell(cell_id="riau-1-1", rank=4, drying_score=93.5)
     )
+    cells.put("riau-2-2", make_ranked_cell(cell_id="riau-2-2", rank=5))
     case_store = InMemoryCollection(Case)
     for case in cases:
         case_store.put(case.id, case)
@@ -105,6 +106,31 @@ def test_a_second_send_within_a_minute_is_429(settings):
 
     assert response.status_code == 429
     assert "Retry-After" in response.headers
+
+
+def test_an_unknown_area_does_not_use_the_send_slot(settings):
+    client, _ = make_send_client(settings)
+
+    send(client, cell_id="riau-9-9")
+
+    assert send(client).status_code == 202
+
+
+def test_an_area_with_a_live_case_does_not_use_the_send_slot(settings):
+    live = make_case(id="case-1", cell_id="riau-1-1", dam_id=None, status="assigned")
+    client, _ = make_send_client(settings, cases=[live])
+
+    assert send(client).status_code == 409
+
+    assert send(client, cell_id="riau-2-2").status_code == 202
+
+
+def test_a_valid_send_uses_the_slot_for_the_next_area(settings):
+    client, _ = make_send_client(settings)
+
+    assert send(client).status_code == 202
+
+    assert send(client, cell_id="riau-2-2").status_code == 429
 
 
 def test_a_volunteer_cannot_send_someone(settings):
