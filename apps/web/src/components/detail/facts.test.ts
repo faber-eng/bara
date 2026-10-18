@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detailCopy } from "../../lib/copy/detail";
-import { componentFacts, rankChangeShort, scoreBand, scoreLevel } from "./facts";
+import { componentFacts, decisionLine, rankChangeShort, scoreBand, scoreLevel } from "./facts";
 
 const copy = detailCopy("en");
 
@@ -52,5 +52,12 @@ describe("detail facts", () => {
       value: "n/a",
       meaning: "No radar pass this week",
     });
+  });
+
+  it("joins the agent decision and its reason with one stop", () => {
+    expect(decisionLine("Wait for the volunteer to check the dam.", "The area ranks 6.")).toBe(
+      "Wait for the volunteer to check the dam. The area ranks 6.",
+    );
+    expect(decisionLine("assign", "riau-0412 ranks first.")).toBe("assign: riau-0412 ranks first.");
   });
 });
