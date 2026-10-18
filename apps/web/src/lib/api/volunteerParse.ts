@@ -14,6 +14,7 @@ import type {
   TaskStatus,
   TaskType,
   Verdict,
+  VolunteerRole,
 } from "../contracts";
 import {
   type JsonRecord,
@@ -43,6 +44,7 @@ const EVIDENCE_KINDS: readonly EvidenceKind[] = ["photo", "video", "audio"];
 const TASK_TYPES: readonly TaskType[] = ["dam_check", "dam_repair", "patrol_recheck"];
 const TASK_STATUSES: readonly TaskStatus[] = ["open", "done", "overdue", "reassigned", "cancelled"];
 const THREADS: readonly MessageThread[] = ["volunteer", "brigade", "ops"];
+const VOLUNTEER_ROLES: readonly VolunteerRole[] = ["volunteer", "repair_team", "patrol"];
 const CHANNELS: readonly Channel[] = ["web", "whatsapp"];
 
 function readStringItem(value: unknown, label: string): string {
@@ -143,5 +145,26 @@ export function parseMessage(value: unknown): Message {
     channel: readOneOf(record, "channel", "message", CHANNELS),
     created_at: readString(record, "created_at", "message"),
     delivered: readBoolean(record, "delivered", "message"),
+  };
+}
+
+function tryRead<T>(read: () => T): T | null {
+  try {
+    return read();
+  } catch (error) {
+    if (error instanceof ResponseShapeError) return null;
+    throw error;
+  }
+}
+
+export function parseHome(record: JsonRecord): {
+  home: GeoPoint | null;
+  name: string | null;
+  role: VolunteerRole | null;
+} {
+  return {
+    home: tryRead(() => readPoint(record, "home", "inbox")),
+    name: tryRead(() => readString(record, "name", "inbox")),
+    role: tryRead(() => readOneOf(record, "role", "inbox", VOLUNTEER_ROLES)),
   };
 }

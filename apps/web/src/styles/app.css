@@ -1253,3 +1253,27 @@ fieldset.join-fieldset {
 .explain-effect-small {
   color: var(--text-muted);
 }
+
+.home-location {
+  min-width: 0;
+}
+.home-location > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.home-location-body {
+  display: grid;
+  gap: var(--space-2, 8px);
+  min-width: 0;
+}
+.home-location-body > * {
+  margin: 0;
+}
+.home-location .link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

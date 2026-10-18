@@ -2,7 +2,7 @@ import type { CompleteRequest, Evidence, Inbox, UploadRequest, UploadTicket } fr
 import { sourceFor } from "../sources";
 import { apiRequest } from "./client";
 import { ResponseShapeError, readArray, readRecord, readString, readStringRecord } from "./parse";
-import { parseEvidence, parseMessage, parseTask } from "./volunteerParse";
+import { parseEvidence, parseHome, parseMessage, parseTask } from "./volunteerParse";
 import type { ChatRequest } from "./volunteerTypes";
 
 const COMPLETE_TIMEOUT_MS = 30_000;
@@ -24,6 +24,7 @@ export function parseInbox(body: unknown): Inbox {
     messages: readArray(record.messages, "inbox.messages").map(parseMessage),
     evidence: readEvidenceList(record.evidence),
     area_case_ids: readStringList(record.area_case_ids),
+    ...parseHome(record),
   };
 }
 

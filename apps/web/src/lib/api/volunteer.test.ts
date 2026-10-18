@@ -72,6 +72,26 @@ describe("parseInbox", () => {
     expect(parseInbox({ tasks: [], messages: [] }).area_case_ids).toEqual([]);
   });
 
+  it("reads the home point, name and role", () => {
+    const inbox = parseInbox({
+      tasks: [],
+      messages: [],
+      home: { lat: 0.51234, lon: 101.44567 },
+      name: "Sari",
+      role: "repair_team",
+    });
+    expect(inbox.home).toEqual({ lat: 0.51234, lon: 101.44567 });
+    expect(inbox.name).toBe("Sari");
+    expect(inbox.role).toBe("repair_team");
+  });
+
+  it("treats a missing or unreadable home as no home without failing the inbox", () => {
+    const older = parseInbox({ tasks: [], messages: [] });
+    expect([older.home, older.name, older.role]).toEqual([null, null, null]);
+    const odd = parseInbox({ tasks: [], messages: [], home: { lat: "x" }, name: 4, role: "boss" });
+    expect([odd.home, odd.name, odd.role]).toEqual([null, null, null]);
+  });
+
   it("treats a missing evidence list as empty", () => {
     expect(parseInbox({ tasks: [], messages: [] }).evidence).toEqual([]);
   });

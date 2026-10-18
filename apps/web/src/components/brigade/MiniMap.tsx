@@ -7,10 +7,17 @@ import { readMapsKey } from "../join/HomeMap";
 const COORD_DIGITS = 4;
 const MINI_MAP_ZOOM = 13;
 
-function MapUnavailable() {
+export type MiniMapLabels = { unavailable: string; open: string };
+
+const DEFAULT_LABELS: MiniMapLabels = {
+  unavailable: "Map not available",
+  open: "Open in Google Maps",
+};
+
+function MapUnavailable({ label }: { label: string }) {
   return (
-    <div className="mini-map-box mini-map-empty" role="img" aria-label="Map not available">
-      Map not available
+    <div className="mini-map-box mini-map-empty" role="img" aria-label={label}>
+      {label}
     </div>
   );
 }
@@ -34,21 +41,27 @@ function PointMap({ point, onError }: { point: GeoPoint; onError: () => void }) 
   );
 }
 
-export function MiniMap({ mapUrl }: { mapUrl: string }) {
+type MiniMapProps = { mapUrl: string; digits?: number; labels?: MiniMapLabels };
+
+export function MiniMap({ mapUrl, digits = COORD_DIGITS, labels = DEFAULT_LABELS }: MiniMapProps) {
   const point = mapPoint(mapUrl);
   const [failed, setFailed] = useState(false);
   const canDraw = point !== null && !failed && readMapsKey() !== "";
   return (
     <div className="mini-map">
-      {canDraw ? <PointMap point={point} onError={() => setFailed(true)} /> : <MapUnavailable />}
+      {canDraw ? (
+        <PointMap point={point} onError={() => setFailed(true)} />
+      ) : (
+        <MapUnavailable label={labels.unavailable} />
+      )}
       {point !== null && (
         <p className="ops-meta">
-          {point.lat.toFixed(COORD_DIGITS)}, {point.lon.toFixed(COORD_DIGITS)}
+          {point.lat.toFixed(digits)}, {point.lon.toFixed(digits)}
         </p>
       )}
       {isSafeMapUrl(mapUrl) && (
         <a className="link" href={mapUrl} target="_blank" rel="noreferrer">
-          Open in Google Maps
+          {labels.open}
         </a>
       )}
     </div>
