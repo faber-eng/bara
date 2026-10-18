@@ -8,7 +8,7 @@ from bara_agent.output import ToolName
 from contracts import Case, CaseType, Dam, TaskType, VolunteerRole
 from domain.escalation import DRYING_LIMIT, REIGNITE_LIMIT, REPEAT_ATTEMPT
 
-PROMPT_VERSION = "agent-v7"
+PROMPT_VERSION = "agent-v8"
 AGENT_NAME = "bara_coordinator"
 CASE_TYPE: CaseType = "dam_risk"
 PEOPLE_ROLE: VolunteerRole = "volunteer"
@@ -33,7 +33,9 @@ the run (or null) and "now", the current time.
 3. Call find_people with the case cell_id and role "{PEOPLE_ROLE}".
 4. Call assign_task once, with the case id, the id of the first person in the \
 find_people result, task_type "{TASK_TYPE}" and an instructions_hint from the \
-facts above. Leave deadline_hours out. If find_people returns no people, do not \
+facts above. Leave deadline_hours out. When the case dam is null, the task is \
+an area check: the task_type stays "{TASK_TYPE}", and the instructions_hint asks \
+to look at the area and the canal water level, not at a dam. If find_people returns no people, do not \
 call assign_task and say so in decision.
 Then decide what should happen next for the case.
 
@@ -85,21 +87,35 @@ run_area_ranking for the case cell or the weekly ranked cells: rank_areas has th
 run. Never estimate a number or take one from memory.
 - You never close a case. Only a person can close one.
 
+## Writing decision and reason
+An ops person reads them on a small screen. Write short, plain English.
+- Name a person by name: name in find_people, assignee_name in assign_task. \
+You never write an id of a person, task, case, evidence or cell.
+- Give the deadline as deadline_local, copied as given, never deadline_at.
+- Copy numbers as the tools give them; they are already rounded. Write a case \
+risk drying_score with 1 decimal. Give distances in km.
+- When the case dam is null there is no dam: call the task an area check, \
+never a dam check.
+- An instructions_hint follows the same rules: no id, no score, no number.
+
 ## Fields in tool results
-- drying_score: 0 to 100. Higher means drier peat.
+- drying_score: 0 to 100, 1 decimal. Higher means drier peat.
 - rank: position in the region this week. Rank 1 is the driest cell.
-- s1_anom_db: radar backscatter in dB against the cell's wet-season median. More \
-negative means drier. It is a proxy for surface wetness, never a water-table \
+- s1_anom_db: radar backscatter in dB against the cell's wet-season median, 1 \
+decimal. More negative means drier. It is a proxy for surface wetness, never a water-table \
 measurement.
 - stale_s1: true when no new radar pass came in and s1_anom_db is the previous \
 window's value or null.
-- rain_30d_mm: rain in the last 30 days, in millimetres.
+- rain_30d_mm: rain in the last 30 days, in whole millimetres.
 - rain_deficit_pct: a fraction, not a percent. 0.62 means 62% less rain than \
 normal; a negative value means more rain than normal.
-- canal_dist_m and distance_m: metres. area_km2: square kilometres.
+- canal_dist_m: metres. distance_km: kilometres, 1 decimal. area_km2: square \
+kilometres.
 - peat_class: 1 or 2. Class 1 weighs more in the drying score than class 2.
 - example: true for a sample person or dam, false for a real one.
-- deadline_at: when the assigned task is due, ISO 8601 with a UTC offset.
+- deadline_at: when the assigned task is due, ISO 8601 with a UTC offset. \
+deadline_local: the same time in the region's local time, for people to read.
+- assignee_name: the name of the person who got the task.
 - verdict: what the photo shows. confidence is 0.0 to 1.0. location_ok is true \
 when the photo was taken at the task point, false when it was not, and null \
 when the photo had no location.
@@ -107,7 +123,7 @@ when the photo had no location.
 ## Final output
 Reply with one JSON object with exactly these fields:
 - decision: what should happen next, in a few English words.
-- reason: 1 to 3 English sentences. Give each number with its unit.
+- reason: 1 to 2 short English sentences. Give each number with its unit.
 - evidence: the names of the tools whose results you used, written exactly as \
 one of: {TOOL_NAMES}.
 - next_check_at: when to look at this case again, as ISO 8601 with a UTC offset, \
@@ -130,10 +146,25 @@ class RunInput:
     now: datetime
 
 
+def rounded_or_none(value: float | None, digits: int) -> float | None:
+    if value is None:
+        return None
+    return round(value, digits)
+
+
+def case_data(case: Case) -> dict[str, object]:
+    data = case.model_dump(mode="json")
+    data["risk"] = {
+        "drying_score": rounded_or_none(case.risk.drying_score, 1),
+        "p_reignite": rounded_or_none(case.risk.p_reignite, 2),
+    }
+    return data
+
+
 def render_run_input(run: RunInput) -> str:
     data = {
         "trigger": run.trigger,
-        "case": run.case.model_dump(mode="json"),
+        "case": case_data(run.case),
         "dam": run.dam.model_dump(mode="json") if run.dam is not None else None,
         "event": dict(run.event) if run.event is not None else None,
         "now": run.now.isoformat(),

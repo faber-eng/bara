@@ -28,6 +28,8 @@ def done() -> Assignment:
     return Assignment(
         task=make_task(id="task-1", deadline_at=DEADLINE),
         message=make_message(text="Cek sekat dam-7."),
+        assignee_name="Eko Prasetyo",
+        deadline_local="Tuesday 20 October 2026, 19:00 WIB",
     )
 
 
@@ -48,7 +50,7 @@ def test_assign_task_is_an_async_tool_named_assign_task():
     assert inspect.iscoroutinefunction(tool.function)
 
 
-def test_assign_task_returns_the_task_id_deadline_and_message():
+def test_assign_task_returns_the_task_id_deadlines_name_and_message():
     assigner = FakeAssigner(done())
 
     result = call(AssignTask(assigner), deadline_hours=48)
@@ -56,6 +58,8 @@ def test_assign_task_returns_the_task_id_deadline_and_message():
     assert result == {
         "task_id": "task-1",
         "deadline_at": "2026-10-20T12:00:00+00:00",
+        "deadline_local": "Tuesday 20 October 2026, 19:00 WIB",
+        "assignee_name": "Eko Prasetyo",
         "message": "Cek sekat dam-7.",
     }
     request = assigner.requests[0]

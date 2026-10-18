@@ -42,6 +42,13 @@ class RunRecorder(BasePlugin):
     def called_tools(self) -> set[str]:
         return {call.name for call in self.tool_calls}
 
+    def assignee_ids(self) -> list[str]:
+        return [
+            str(call.args["assignee_id"])
+            for call in self.tool_calls
+            if call.name == "assign_task" and "assignee_id" in call.args
+        ]
+
     async def before_tool_callback(
         self, *, tool: BaseTool, tool_args: dict[str, Any], tool_context: ToolContext
     ) -> None:

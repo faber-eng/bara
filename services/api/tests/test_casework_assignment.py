@@ -201,6 +201,15 @@ def test_the_messenger_gets_the_volunteer_language_place_and_local_deadline():
     assert sent.hint == "Check the left side."
 
 
+def test_the_assignment_names_the_person_and_the_local_deadline():
+    world = World(volunteers=[make_volunteer(id="v1", name="Eko Prasetyo")])
+
+    assignment = world.assign(deadline_hours=48)
+
+    assert assignment.assignee_name == "Eko Prasetyo"
+    assert assignment.deadline_local == "Monday 19 October 2026, 18:00 WIB"
+
+
 def test_a_requested_deadline_is_used():
     world = World()
 

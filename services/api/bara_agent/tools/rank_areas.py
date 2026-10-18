@@ -4,7 +4,14 @@ from collections.abc import Callable, Coroutine, Mapping
 from typing import Any
 
 from adapters.firestore_repos import RankingRepository
-from bara_agent.tools.result import ToolResult, count_label, entries, tool_error
+from bara_agent.tools.result import (
+    ToolResult,
+    components_entry,
+    count_label,
+    entries,
+    score,
+    tool_error,
+)
 from contracts import RankedCell
 from domain.rankings import newest_week_by_rank
 from domain.weeks import iso_week_label
@@ -16,9 +23,9 @@ REGION_ID = re.compile(r"^[a-z][a-z0-9_]*$")
 def cell_entry(cell: RankedCell) -> ToolResult:
     return {
         "cell_id": cell.cell_id,
-        "drying_score": cell.drying_score,
+        "drying_score": score(cell.drying_score),
         "rank": cell.rank,
-        "components": cell.components.model_dump(mode="json"),
+        "components": components_entry(cell.components),
     }
 
 

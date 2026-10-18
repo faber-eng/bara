@@ -9,14 +9,15 @@ from pydantic import BaseModel, Field, ValidationError
 
 from config import Role
 from contracts import GeoPoint, Language, TaskType
-from domain.chat_wording import WHAT_TO_SEND
+from domain.chat_wording import what_to_send
 
 logger = logging.getLogger(__name__)
 
-MESSENGER_PROMPT_VERSION = "messenger-v3"
+MESSENGER_PROMPT_VERSION = "messenger-v4"
 MAX_SENTENCES = 3
 ATTEMPTS = 2
 SENTENCE_END = re.compile(r"[.!?]+(?:\s+|$)")
+CELL_ID = re.compile(r"\b[a-z]+-\d+-\d+\b")
 
 LANGUAGE_NAMES: dict[Language, str] = {
     "id": "Indonesian",
@@ -31,17 +32,21 @@ The user message holds the task in one block between <<<TASK and TASK>>>.
 
 Write the message in the language named in the task, in at most \
 {MAX_SENTENCES} short sentences. Say:
-1. where: the place and its point, exactly as given;
+1. where: the place and its point, exactly as given; when place is null the \
+task is for the area at the point, with no dam: never mention a dam;
 2. by when: the deadline as given, with its day and month names in the \
 message language;
 3. what to send: what_to_send, copied as given; it is already in the \
 message language.
-The coordinator_note may add one useful detail. Use only facts from the task. \
-No greeting and no sign-off.
+The coordinator_note may add one thing to look at, in plain words: never copy \
+an id, a cell name, a score or another number from it. Use only facts from \
+the task. No greeting and no sign-off. Every word of text is in the message \
+language.
 
 Reply with one JSON object:
 - text: the message.
-- text_en: the same message in English.
+- text_en: the same message in English, with what_to_send_en copied as given \
+in place of what_to_send; every word in English.
 """
 
 TASK_FENCE = """\
@@ -91,14 +96,19 @@ def sentence_count(text: str) -> int:
     return len([part for part in parts if part.strip() != ""])
 
 
+def brief_what_to_send(brief: TaskBrief, language: Language) -> str:
+    return what_to_send(brief.task_type, brief.place is not None, language)
+
+
 def render_task(brief: TaskBrief, language: Language) -> str:
     data = {
         "language": LANGUAGE_NAMES[language],
         "task_type": brief.task_type,
         "place": brief.place,
-        "point": f"{brief.target.lat}, {brief.target.lon}",
+        "point": f"{brief.target.lat:.5f}, {brief.target.lon:.5f}",
         "deadline": brief.deadline_local,
-        "what_to_send": WHAT_TO_SEND[language][brief.task_type],
+        "what_to_send": brief_what_to_send(brief, language),
+        "what_to_send_en": brief_what_to_send(brief, "en"),
         "coordinator_note": brief.hint,
     }
     return TASK_FENCE.format(data=json.dumps(data, indent=2, ensure_ascii=False))
@@ -112,7 +122,9 @@ def generation_config() -> types.GenerateContentConfig:
     )
 
 
-def read_reply(response: types.GenerateContentResponse) -> MessengerOutput:
+def read_reply(
+    response: types.GenerateContentResponse, brief: TaskBrief, language: Language
+) -> MessengerOutput:
     text = response.text
     if text is None:
         raise MessengerFailed("the model returned no text")
@@ -122,12 +134,26 @@ def read_reply(response: types.GenerateContentResponse) -> MessengerOutput:
         raise MessengerFailed(f"the reply is not the message schema: {error}") from None
     for value in (output.text, output.text_en):
         check_message(value)
+    check_one_language(output, brief, language)
     return output
+
+
+def check_one_language(
+    output: MessengerOutput, brief: TaskBrief, language: Language
+) -> None:
+    if language == "en":
+        return
+    if brief_what_to_send(brief, language) in output.text_en:
+        raise MessengerFailed("text_en copies the volunteer-language words")
+    if brief_what_to_send(brief, "en") in output.text:
+        raise MessengerFailed("text copies the English words")
 
 
 def check_message(text: str) -> None:
     if text.strip() == "":
         raise MessengerFailed("the message is empty")
+    if CELL_ID.search(text) is not None:
+        raise MessengerFailed("the message shows a cell id")
     count = sentence_count(text)
     if count > MAX_SENTENCES:
         raise MessengerFailed(
@@ -147,7 +173,7 @@ class Messenger:
         for attempt in range(1, ATTEMPTS + 1):
             response = await self._generate(contents)
             try:
-                output = read_reply(response)
+                output = read_reply(response, brief, language)
             except MessengerFailed as error:
                 failure = error
                 self._log_rejected(attempt, error)

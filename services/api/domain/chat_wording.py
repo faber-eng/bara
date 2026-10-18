@@ -48,6 +48,20 @@ WHAT_TO_SEND: dict[Language, dict[TaskType, str]] = {
     },
 }
 
+AREA_TASK_PHRASES: dict[Language, str] = {
+    "id": "periksa lokasi dan tinggi air kanal",
+    "en": "check the area and the canal water level",
+    "ms": "periksa kawasan dan paras air kanal",
+    "fr": "vérifier la zone et le niveau d'eau du canal",
+}
+
+AREA_WHAT_TO_SEND: dict[Language, str] = {
+    "id": "foto lokasi dan tinggi air di kanal terdekat",
+    "en": "a photo of the area and the water level in the nearest canal",
+    "ms": "foto kawasan dan paras air di kanal terdekat",
+    "fr": "une photo de la zone et du niveau d'eau du canal le plus proche",
+}
+
 AREA_FORMATS: dict[Language, str] = {
     "id": "di {region}",
     "en": "in {region}",
@@ -58,9 +72,26 @@ AREA_FORMATS: dict[Language, str] = {
 INTERNAL_WORDS = re.compile(r"\b[a-z]+(?:_[a-z0-9]+)+\b|\bdam-[a-z]+-\d+\b")
 
 
+def is_area_check(task_type: TaskType, has_dam: bool) -> bool:
+    return task_type == "dam_check" and not has_dam
+
+
+def task_words(task_type: TaskType, has_dam: bool, language: Language) -> str:
+    if is_area_check(task_type, has_dam):
+        return AREA_TASK_PHRASES[language]
+    return TASK_PHRASES[language][task_type]
+
+
+def what_to_send(task_type: TaskType, has_dam: bool, language: Language) -> str:
+    if is_area_check(task_type, has_dam):
+        return AREA_WHAT_TO_SEND[language]
+    return WHAT_TO_SEND[language][task_type]
+
+
 def task_phrase(task_type: TaskType, case: Case, language: Language) -> str:
     area = AREA_FORMATS[language].format(region=case.region.title())
-    return f"{TASK_PHRASES[language][task_type]} {area}"
+    words = task_words(task_type, case.dam_id is not None, language)
+    return f"{words} {area}"
 
 
 def leaks_internal_words(text: str) -> bool:

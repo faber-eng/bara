@@ -59,6 +59,8 @@ class AssignTask:
         return {
             "task_id": assignment.task.id,
             "deadline_at": assignment.task.deadline_at.isoformat(),
+            "deadline_local": assignment.deadline_local,
+            "assignee_name": assignment.assignee_name,
             "message": assignment.message.text,
         }
 

@@ -130,7 +130,7 @@ GOOGLE_CLOUD_PROJECT=ai-builder-cup-511906 uv run python evidence_eval_job.py
 
 ## ADK agent eval
 
-Run 2026-10-18, model `gemini-3.8-flash`: 9 of 9 cases passed (100.0%).
+Run 2026-10-18, model `gemini-3.8-flash`, prompt `agent-v8`: 9 of 9 cases passed (100.0%).
 
 | Case | Result |
 |---|---|
@@ -148,7 +148,7 @@ How it was made. `services/api/evals/agent.test.json` holds 9 cases, the §6.5 l
 
 ```sh
 cd services/api
-GOOGLE_CLOUD_PROJECT=ai-builder-cup-511906 GOOGLE_GENAI_USE_ENTERPRISE=True \
+PYTHONPATH=.:../pipelines GOOGLE_CLOUD_PROJECT=ai-builder-cup-511906 GOOGLE_GENAI_USE_ENTERPRISE=True \
   uv run --with "google-adk[eval]==2.12.0" python -m evals.run_agent_eval
 ```
 

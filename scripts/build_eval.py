@@ -29,7 +29,7 @@ cd services/api
 GOOGLE_CLOUD_PROJECT=ai-builder-cup-511906 uv run python evidence_eval_job.py"""
 AGENT_COMMANDS = """\
 cd services/api
-GOOGLE_CLOUD_PROJECT=ai-builder-cup-511906 GOOGLE_GENAI_USE_ENTERPRISE=True \\
+PYTHONPATH=.:../pipelines GOOGLE_CLOUD_PROJECT=ai-builder-cup-511906 GOOGLE_GENAI_USE_ENTERPRISE=True \\
   uv run --with "google-adk[eval]==2.12.0" python -m evals.run_agent_eval"""
 LATENCY_COMMANDS = "python3 scripts/measure_latency.py"
 BUILD_COMMAND = "python3 scripts/build_eval.py"
@@ -262,13 +262,19 @@ How it was made. `evidence_eval_job.py` reads every row of `data/eval/labels.csv
 """
 
 
+def prompt_label(agent):
+    if "prompt_version" not in agent:
+        return ""
+    return f", prompt `{agent['prompt_version']}`"
+
+
 def agent_section(agent):
     if agent is None:
         return not_run("ADK agent eval")
     rows = [[f"`{result['case']}`", "pass" if result["passed"] else "fail"] for result in agent["results"]]
     return f"""## ADK agent eval
 
-Run {day(agent["run_at"])}, model `{agent["model"]}`: {agent["passed"]} of {agent["cases"]} cases passed ({percent(agent["pass_rate"])}).
+Run {day(agent["run_at"])}, model `{agent["model"]}`{prompt_label(agent)}: {agent["passed"]} of {agent["cases"]} cases passed ({percent(agent["pass_rate"])}).
 
 {table(["Case", "Result"], rows)}
 

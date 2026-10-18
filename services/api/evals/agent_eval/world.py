@@ -8,7 +8,7 @@ from adapters.firestore_repos import (
     VolunteerRepository,
 )
 from bara_agent.agent import AgentTool, build_tools
-from casework.assignment import Assignment, AssignmentRequest
+from casework.assignment import Assignment, AssignmentRejected, AssignmentRequest
 from casework.evidence_check import CheckedEvidence, UnknownEvidence
 from contracts import (
     AreaCell,
@@ -19,7 +19,8 @@ from contracts import (
     RankedCell,
     Volunteer,
 )
-from evals.agent_eval.scenarios import NOW, Scenario
+from domain.assignment import local_deadline
+from evals.agent_eval.scenarios import NOW, PEOPLE_NAMES, REGION_TIMEZONE, Scenario
 from tests.fakes import InMemoryCollection, make_escalation, make_message, make_task
 
 DEFAULT_DEADLINE_HOURS = 48
@@ -51,6 +52,8 @@ class FixedChecker:
 
 class AcceptingAssigner:
     async def assign(self, request: AssignmentRequest) -> Assignment:
+        if request.assignee_id not in PEOPLE_NAMES:
+            raise AssignmentRejected(f"unknown person {request.assignee_id!r}")
         hours = request.deadline_hours or DEFAULT_DEADLINE_HOURS
         task = make_task(
             id=f"task-new-{request.case_id}",
@@ -68,7 +71,12 @@ class AcceptingAssigner:
             text_en=request.instructions_hint,
             created_at=NOW,
         )
-        return Assignment(task=task, message=message)
+        return Assignment(
+            task=task,
+            message=message,
+            assignee_name=PEOPLE_NAMES[request.assignee_id],
+            deadline_local=local_deadline(task.deadline_at, REGION_TIMEZONE),
+        )
 
 
 class AcceptingEscalator:

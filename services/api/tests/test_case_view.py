@@ -239,6 +239,7 @@ def texts_for(case=None, tasks=(), evidence=(), runs=(), names=None):
         ("reignition", None, "Case opened: fire may restart, cell riau-1-1"),
         ("hotspot", None, "Case opened: hotspot, cell riau-1-1"),
         ("dam_risk", "dam-x", "Case opened: dam at risk, canal dam dam-x"),
+        ("dam_risk", None, "Case opened: area at risk, cell riau-1-1"),
     ],
 )
 def test_the_case_opened_entry_is_plain(case_type, dam_id, expected):
@@ -260,6 +261,15 @@ def test_a_task_names_the_person_and_the_plain_task():
         "Task given to Ari Wijaya: check the canal dam, due Wed 21 Oct, 10:59 WIB",
         "Task done: check the canal dam",
     ]
+
+
+def test_a_check_on_a_case_without_a_dam_is_an_area_check():
+    case = make_case(dam_id=None, opened_at=at(0))
+    task = make_task(type="dam_check", assignee_id="vol-ari", created_at=at(1))
+
+    assert texts_for(case, tasks=[task])[1].startswith(
+        "Task given to Ari Wijaya: check the area and the canal water level, due"
+    )
 
 
 @pytest.mark.parametrize(

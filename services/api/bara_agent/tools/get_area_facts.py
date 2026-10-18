@@ -4,7 +4,15 @@ from typing import Any
 
 from adapters.cells import CellRepository, CellWeek
 from adapters.firestore_repos import DamRepository
-from bara_agent.tools.result import ToolResult, count_label, entries, tool_error
+from bara_agent.tools.result import (
+    ToolResult,
+    components_entry,
+    count_label,
+    entries,
+    point_entry,
+    score,
+    tool_error,
+)
 from domain.geo import nearby
 from domain.weeks import iso_week_label
 
@@ -14,7 +22,10 @@ TREND_WEEKS = 8
 def trend(weeks: list[CellWeek]) -> list[ToolResult]:
     oldest_first = sorted(weeks, key=lambda week: week.week_start)
     return [
-        {"week": iso_week_label(week.week_start), "drying_score": week.drying_score}
+        {
+            "week": iso_week_label(week.week_start),
+            "drying_score": score(week.drying_score),
+        }
         for week in oldest_first
     ]
 
@@ -50,9 +61,9 @@ class GetAreaFacts:
             "cell_id": latest.cell_id,
             "region": latest.region,
             "week": iso_week_label(latest.week_start),
-            "centroid": latest.centroid.model_dump(mode="json"),
-            "components": latest.components.model_dump(mode="json"),
-            "drying_score": latest.drying_score,
+            "centroid": point_entry(latest.centroid),
+            "components": components_entry(latest.components),
+            "drying_score": score(latest.drying_score),
             "rank": latest.rank,
             "stale_s1": latest.stale_s1,
             "trend": trend(weeks),
