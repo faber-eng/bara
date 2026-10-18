@@ -29,11 +29,11 @@ from domain.case_view import format_local
 from domain.channels import Channel, OutboundMessage
 from domain.chat_blocked import reports_blocked
 from domain.chat_limit import decide
-from domain.chat_wording import leaks_internal_words, place_label, task_name
+from domain.chat_wording import leaks_internal_words, task_phrase
 
 logger = logging.getLogger(__name__)
 
-CHAT_PROMPT_VERSION = "chat-v3"
+CHAT_PROMPT_VERSION = "chat-v4"
 REPLY_TIMEOUT_SECONDS = 15.0
 MAX_CONCURRENT_REPLIES = 8
 FENCE_MARKS = ("<<<CHAT", "CHAT>>>")
@@ -57,35 +57,40 @@ RECEIVED_REPLIES: dict[Language, str] = {
 SYSTEM_INSTRUCTION = """\
 You are Bara, the coordinator of a peat-fire prevention programme. A volunteer \
 wrote to you. The user message holds the volunteer's text and their open task \
-in one block between <<<CHAT and CHAT>>>.
+in one block between <<<CHAT and CHAT>>>. The open task comes twice: \
+open_task.volunteer_language holds its facts in the reply language and \
+open_task.english holds the same facts in English.
 
 Reply in the language named in the block, in at most 3 short sentences, in this \
 order:
 1. Acknowledge what the volunteer wrote in one short sentence, using only facts \
 from the block.
 2. Restate the open task when open_task is not null, in every reply and also \
-when the volunteer cannot do it: its task, its place, its point and its \
-deadline, copied verbatim from the block. The words are already in the reply \
-language.
+when the volunteer cannot do it: its task_phrase, its point and its \
+deadline, copied verbatim. In text copy them from open_task.volunteer_language. \
+In text_en copy them from open_task.english, never from the other set. The \
+task_phrase already holds the object and the place once: do not add the place \
+again.
 3. When open_task is not null and the volunteer says they cannot do the task \
 (they cannot reach the place, the road or the dam is blocked, flooded or gone, \
 there is no boat, or anything else stops the task), set needs_ops to true and \
 say the case goes back to ops, who will follow up or reassign it. Name no time.
 No greeting and no sign-off.
 Never write an internal id, a code word or a snake_case token, such as a task \
-type or a case id. The task, place, point and deadline in the block are plain \
+type or a case id. The task_phrase, point and deadline in the block are plain \
 words, not code words: write them as given.
 
 Reply with one JSON object:
 - text: the reply.
-- text_en: the same reply in English.
+- text_en: the same reply in English, with the facts from open_task.english.
 - needs_ops: true when the task is blocked and ops must look at the case.
 
 The examples use made-up facts. Never copy their facts.
 
 Example 1, a blocked report in English:
-open_task: task "check the canal dam", place "the canal dam in Sample Region", \
-point "1.2345, 100.1234", deadline "Mon 5 Jan, 09:00 WIB".
+open_task.english: task_phrase "check the canal dam in Sample Region", \
+point "1.2345, 100.1234", deadline "Mon 5 Jan, 09:00 WIB". \
+open_task.volunteer_language holds the same facts.
 volunteer_text: "The road is flooded, I can't get there."
 {"text": "Thank you for telling us about the flooded road. Your open task is to \
 check the canal dam in Sample Region at 1.2345, 100.1234 by Mon 5 Jan, 09:00 \
@@ -93,8 +98,9 @@ WIB. We noted it and the case goes back to ops, who will follow up or \
 reassign it.", "text_en": "<the same reply in English>", "needs_ops": true}
 
 Example 2, a question in English:
-open_task: task "check the canal dam", place "the canal dam in Sample Region", \
-point "1.2345, 100.1234", deadline "Mon 5 Jan, 09:00 WIB".
+open_task.english: task_phrase "check the canal dam in Sample Region", \
+point "1.2345, 100.1234", deadline "Mon 5 Jan, 09:00 WIB". \
+open_task.volunteer_language holds the same facts.
 volunteer_text: "What do I need to send?"
 {"text": "Good question. Your open task is to check the canal dam in Sample \
 Region at 1.2345, 100.1234 by Mon 5 Jan, 09:00 WIB. Send a photo of the dam and \
@@ -129,7 +135,7 @@ class ChatOutput(BaseModel):
 class TaskContext:
     task: Task
     case: Case
-    deadline_local: str
+    timezone_name: str
 
 
 @dataclass(frozen=True)
@@ -162,16 +168,23 @@ def strip_fence(text: str) -> str:
 
 def task_facts(
     context: TaskContext | None, language: Language
-) -> dict[str, str] | None:
+) -> dict[str, object] | None:
     if context is None:
         return None
-    target = context.task.target
     return {
-        "task": task_name(context.task.type, language),
-        "place": place_label(context.case, language),
-        "point": f"{target.lat:.4f}, {target.lon:.4f}",
-        "deadline": context.deadline_local,
+        "volunteer_language": facts_in(context, language),
+        "english": facts_in(context, "en"),
         "what_to_send": WHAT_TO_SEND[context.task.type],
+    }
+
+
+def facts_in(context: TaskContext, language: Language) -> dict[str, str]:
+    target = context.task.target
+    deadline = format_local(context.task.deadline_at, context.timezone_name, language)
+    return {
+        "task_phrase": task_phrase(context.task.type, context.case, language),
+        "point": f"{target.lat:.4f}, {target.lon:.4f}",
+        "deadline": deadline,
     }
 
 
@@ -297,7 +310,7 @@ class VolunteerChat:
             self._log_case_missing(task)
             return None
         zone = self._timezones.get(case.region, FALLBACK_TIMEZONE)
-        return TaskContext(task, case, format_local(task.deadline_at, zone))
+        return TaskContext(task, case, zone)
 
     def _language(self, volunteer: Volunteer) -> Language:
         if volunteer.language in LANGUAGE_NAMES:

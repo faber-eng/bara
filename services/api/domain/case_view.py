@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
 from contracts import (
@@ -7,6 +8,7 @@ from contracts import (
     CaseSummary,
     Escalation,
     Evidence,
+    Language,
     Message,
     PastCheck,
     Task,
@@ -15,35 +17,59 @@ from contracts import (
 
 LISTED_TASK_STATUSES = frozenset({"open", "overdue"})
 WIB = timezone(timedelta(hours=7))
-WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-MONTHS = (
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-)
 
 
-def format_stamp(local: datetime, zone_label: str) -> str:
-    day = f"{WEEKDAYS[local.weekday()]} {local.day} {MONTHS[local.month - 1]}"
-    return f"{day}, {local:%H:%M} {zone_label}"
+class StampLocale(NamedTuple):
+    weekdays: tuple[str, ...]
+    months: tuple[str, ...]
+    clock: str
+
+
+STAMP_LOCALES: dict[Language, StampLocale] = {
+    "en": StampLocale(
+        ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+        ("Jan", "Feb", "Mar", "Apr", "May", "Jun")
+        + ("Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+        "{hour:02d}:{minute:02d}",
+    ),
+    "id": StampLocale(
+        ("Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"),
+        ("Jan", "Feb", "Mar", "Apr", "Mei", "Jun")
+        + ("Jul", "Agu", "Sep", "Okt", "Nov", "Des"),
+        "{hour:02d}.{minute:02d}",
+    ),
+    "ms": StampLocale(
+        ("Isn", "Sel", "Rab", "Kha", "Jum", "Sab", "Ahd"),
+        ("Jan", "Feb", "Mac", "Apr", "Mei", "Jun")
+        + ("Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"),
+        "{hour:02d}:{minute:02d}",
+    ),
+    "fr": StampLocale(
+        ("lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."),
+        ("janv.", "févr.", "mars", "avr.", "mai", "juin")
+        + ("juil.", "août", "sept.", "oct.", "nov.", "déc."),
+        "{hour} h {minute:02d}",
+    ),
+}
+
+
+def format_stamp(local: datetime, zone_label: str, language: Language = "en") -> str:
+    locale = STAMP_LOCALES[language]
+    weekday = locale.weekdays[local.weekday()]
+    month = locale.months[local.month - 1]
+    clock = locale.clock.format(hour=local.hour, minute=local.minute)
+    return f"{weekday} {local.day} {month}, {clock} {zone_label}"
 
 
 def format_wib(moment: datetime) -> str:
     return format_stamp(moment.astimezone(WIB), "WIB")
 
 
-def format_local(moment: datetime, timezone_name: str) -> str:
+def format_local(
+    moment: datetime, timezone_name: str, language: Language = "en"
+) -> str:
     local = moment.astimezone(ZoneInfo(timezone_name))
-    return format_stamp(local, local.tzname() or timezone_name)
+    return format_stamp(local, local.tzname() or timezone_name, language)
 
 
 def summarize_case(case: Case, tasks: list[Task]) -> CaseSummary:

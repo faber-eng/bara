@@ -1,20 +1,17 @@
 import re
-from typing import Literal
 
 from contracts import Case, Language, TaskType
 
-PlaceKind = Literal["dam", "area"]
-
-TASK_NAMES: dict[Language, dict[TaskType, str]] = {
+TASK_PHRASES: dict[Language, dict[TaskType, str]] = {
     "id": {
-        "dam_check": "cek sekat kanal",
+        "dam_check": "periksa sekat kanal",
         "dam_repair": "perbaiki sekat kanal",
-        "patrol_recheck": "cek ulang lahan bekas terbakar",
+        "patrol_recheck": "periksa ulang lahan bekas terbakar",
     },
     "en": {
         "dam_check": "check the canal dam",
         "dam_repair": "repair the canal dam",
-        "patrol_recheck": "re-check the burned area",
+        "patrol_recheck": "re-check the burned land",
     },
     "ms": {
         "dam_check": "periksa tebatan kanal",
@@ -28,32 +25,19 @@ TASK_NAMES: dict[Language, dict[TaskType, str]] = {
     },
 }
 
-PLACE_KINDS: dict[Language, dict[PlaceKind, str]] = {
-    "id": {"dam": "sekat kanal", "area": "lahan bekas terbakar"},
-    "en": {"dam": "the canal dam", "area": "the burned area"},
-    "ms": {"dam": "tebatan kanal", "area": "kawasan terbakar"},
-    "fr": {"dam": "le barrage du canal", "area": "la zone brûlée"},
-}
-
-PLACE_FORMATS: dict[Language, str] = {
-    "id": "{kind} di {region}",
-    "en": "{kind} in {region}",
-    "ms": "{kind} di {region}",
-    "fr": "{kind} à {region}",
+AREA_FORMATS: dict[Language, str] = {
+    "id": "di {region}",
+    "en": "in {region}",
+    "ms": "di {region}",
+    "fr": "à {region}",
 }
 
 INTERNAL_WORDS = re.compile(r"\b[a-z]+(?:_[a-z0-9]+)+\b|\bdam-[a-z]+-\d+\b")
 
 
-def task_name(task_type: TaskType, language: Language) -> str:
-    return TASK_NAMES[language][task_type]
-
-
-def place_label(case: Case, language: Language) -> str:
-    kind: PlaceKind = "area" if case.dam_id is None else "dam"
-    return PLACE_FORMATS[language].format(
-        kind=PLACE_KINDS[language][kind], region=case.region.title()
-    )
+def task_phrase(task_type: TaskType, case: Case, language: Language) -> str:
+    area = AREA_FORMATS[language].format(region=case.region.title())
+    return f"{TASK_PHRASES[language][task_type]} {area}"
 
 
 def leaks_internal_words(text: str) -> bool:

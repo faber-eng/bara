@@ -140,10 +140,16 @@ def test_the_model_sees_the_open_task_in_plain_words():
     facts = json.loads(contents.split("<<<CHAT\n")[1].split("\nCHAT>>>")[0])
     assert role == "fast"
     assert facts["open_task"] == {
-        "task": "cek sekat kanal",
-        "place": "sekat kanal di Riau",
-        "point": "0.5000, 101.4000",
-        "deadline": "Tue 20 Oct, 19:00 WIB",
+        "volunteer_language": {
+            "task_phrase": "periksa sekat kanal di Riau",
+            "point": "0.5000, 101.4000",
+            "deadline": "Sel 20 Okt, 19.00 WIB",
+        },
+        "english": {
+            "task_phrase": "check the canal dam in Riau",
+            "point": "0.5000, 101.4000",
+            "deadline": "Tue 20 Oct, 19:00 WIB",
+        },
         "what_to_send": "a photo of the dam and the water level in the canal",
     }
     assert "dam_check" not in contents
@@ -154,36 +160,66 @@ def test_the_model_sees_the_open_task_in_plain_words():
 
 
 @pytest.mark.parametrize(
-    ("language", "kind", "task", "place"),
+    ("language", "kind", "phrase"),
     [
-        ("en", "dam_check", "check the canal dam", "the canal dam in Riau"),
-        ("en", "dam_repair", "repair the canal dam", "the canal dam in Riau"),
-        ("id", "dam_repair", "perbaiki sekat kanal", "sekat kanal di Riau"),
-        ("ms", "dam_check", "periksa tebatan kanal", "tebatan kanal di Riau"),
-        (
-            "fr",
-            "dam_check",
-            "vérifier le barrage du canal",
-            "le barrage du canal à Riau",
-        ),
-        ("en", "patrol_recheck", "re-check the burned area", "the burned area in Riau"),
-        ("fr", "patrol_recheck", "revérifier la zone brûlée", "la zone brûlée à Riau"),
+        ("en", "dam_check", "check the canal dam in Riau"),
+        ("en", "dam_repair", "repair the canal dam in Riau"),
+        ("id", "dam_check", "periksa sekat kanal di Riau"),
+        ("id", "dam_repair", "perbaiki sekat kanal di Riau"),
+        ("id", "patrol_recheck", "periksa ulang lahan bekas terbakar di Riau"),
+        ("ms", "dam_check", "periksa tebatan kanal di Riau"),
+        ("ms", "patrol_recheck", "periksa semula kawasan terbakar di Riau"),
+        ("fr", "dam_check", "vérifier le barrage du canal à Riau"),
+        ("fr", "patrol_recheck", "revérifier la zone brûlée à Riau"),
+        ("en", "patrol_recheck", "re-check the burned land in Riau"),
     ],
 )
-def test_the_task_and_place_use_plain_words_in_the_volunteer_language(
-    language, kind, task, place
-):
+def test_the_task_phrase_holds_the_object_once_and_the_area(language, kind, phrase):
     model = FakeModel(reply_of(GOOD))
     world = World(model, volunteer=make_volunteer(language=language))
     world.collections[TASKS].put("t1", make_task(type=kind))
-    if kind == "patrol_recheck":
-        world.collections[CASES].put("c1", make_case(dam_id=None))
 
     ask(world, "v1", "halo")
 
     facts = json.loads(model.calls[0][1].split("<<<CHAT\n")[1].split("\nCHAT>>>")[0])
-    assert facts["open_task"]["task"] == task
-    assert facts["open_task"]["place"] == place
+    assert facts["open_task"]["volunteer_language"]["task_phrase"] == phrase
+
+
+def test_the_english_facts_stay_english_for_an_indonesian_volunteer():
+    model = FakeModel(reply_of(GOOD))
+    world = World(model, volunteer=make_volunteer(language="id"))
+
+    ask(world, "v1", "halo")
+
+    facts = json.loads(model.calls[0][1].split("<<<CHAT\n")[1].split("\nCHAT>>>")[0])
+    english = facts["open_task"]["english"]
+    assert english["task_phrase"] == "check the canal dam in Riau"
+    assert english["deadline"] == "Tue 20 Oct, 19:00 WIB"
+    assert "cek" not in json.dumps(english)
+
+
+def test_the_task_phrase_never_repeats_the_object():
+    model = FakeModel(reply_of(GOOD))
+    world = World(model)
+
+    ask(world, "v1", "halo")
+
+    phrase = json.loads(model.calls[0][1].split("<<<CHAT\n")[1].split("\nCHAT>>>")[0])[
+        "open_task"
+    ]["volunteer_language"]["task_phrase"]
+    assert phrase.count("sekat kanal") == 1
+
+
+def test_the_prompt_sends_text_the_volunteer_facts_and_text_en_the_english_facts():
+    model = FakeModel(reply_of(GOOD))
+    world = World(model)
+
+    ask(world, "v1", "halo")
+
+    instruction = model.calls[0][2].system_instruction
+    assert "open_task.volunteer_language" in instruction
+    assert "open_task.english" in instruction
+    assert "text_en" in instruction
 
 
 def test_the_prompt_forbids_internal_ids_and_snake_case():
@@ -419,8 +455,8 @@ def test_the_reply_is_logged_with_the_prompt_version(caplog):
     ask(world, "v1", "halo")
 
     fields = [r.fields for r in caplog.records if hasattr(r, "fields")]
-    assert CHAT_PROMPT_VERSION == "chat-v3"
-    assert any(f.get("prompt_version") == "chat-v3" for f in fields)
+    assert CHAT_PROMPT_VERSION == "chat-v4"
+    assert any(f.get("prompt_version") == "chat-v4" for f in fields)
 
 
 def chat_client(settings, world, judge=False):

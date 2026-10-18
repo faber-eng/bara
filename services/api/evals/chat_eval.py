@@ -20,7 +20,6 @@ from casework.chat import (
 )
 from config import load_settings
 from contracts import Language
-from domain.case_view import format_local
 from domain.chat_wording import leaks_internal_words
 from tests.fakes import make_case, make_task, make_volunteer
 
@@ -67,6 +66,8 @@ class Sample:
     needs_ops: bool
     names_task: bool
     names_deadline: bool
+    facts_in_text: bool
+    facts_in_text_en: bool
     code_word: bool
     seconds: float
 
@@ -75,12 +76,16 @@ def build_turn(language: Language) -> ChatTurn:
     volunteer = make_volunteer(language=language)
     case = make_case()
     task = make_task(deadline_at=DEADLINE)
-    context = TaskContext(task, case, format_local(DEADLINE, ZONE))
+    context = TaskContext(task, case, ZONE)
     return ChatTurn(volunteer, language, context)
 
 
 def contains(reply: str, fact: str) -> bool:
     return fact.casefold() in reply.casefold()
+
+
+def has_facts(reply: str, facts: dict[str, str]) -> bool:
+    return contains(reply, facts["task_phrase"]) and contains(reply, facts["deadline"])
 
 
 async def run_message(
@@ -97,6 +102,8 @@ async def run_message(
     output = ChatOutput.model_validate_json(response.text or "")
     flagged = flag_blocked(turn, message, output)
     facts = task_facts(turn.context, language) or {}
+    own = facts["volunteer_language"]
+    english = facts["english"]
     return Sample(
         language=language,
         kind=kind,
@@ -104,8 +111,10 @@ async def run_message(
         reply=output.text,
         needs_ops_model=output.needs_ops,
         needs_ops=flagged.needs_ops,
-        names_task=contains(output.text, facts["task"]),
-        names_deadline=contains(output.text, facts["deadline"]),
+        names_task=contains(output.text, own["task_phrase"]),
+        names_deadline=contains(output.text, own["deadline"]),
+        facts_in_text=has_facts(output.text, own),
+        facts_in_text_en=has_facts(output.text_en, english),
         code_word=leaks_internal_words(output.text)
         or leaks_internal_words(output.text_en),
         seconds=seconds,
@@ -132,6 +141,8 @@ def summarize(samples: list[Sample]) -> dict:
         "names_task_and_deadline": rate(
             samples, lambda s: s.names_task and s.names_deadline
         ),
+        "facts_in_text_language": rate(samples, lambda s: s.facts_in_text),
+        "facts_in_text_en_english": rate(samples, lambda s: s.facts_in_text_en),
         "code_words": sum(1 for sample in samples if sample.code_word),
         "latency_p50_s": round(percentile(seconds, 0.5), 2),
         "latency_p95_s": round(percentile(seconds, 0.95), 2),
