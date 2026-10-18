@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  audioContentType,
   baseContentType,
   MicError,
   micKindOf,
@@ -117,5 +118,15 @@ describe("readMicPermission", () => {
     expect(await readMicPermission()).toBe("granted");
     vi.stubGlobal("navigator", { permissions: { query: async () => ({ state: "denied" }) } });
     expect(await readMicPermission()).toBe("denied");
+  });
+});
+
+describe("audioContentType", () => {
+  it("sends audio/webm when the recording has no type", () => {
+    expect(audioContentType("")).toBe("audio/webm");
+  });
+
+  it("keeps the base type of a labelled recording", () => {
+    expect(audioContentType("audio/mp4;codecs=mp4a.40.2")).toBe("audio/mp4");
   });
 });
