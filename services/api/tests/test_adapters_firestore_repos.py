@@ -321,3 +321,18 @@ def test_ranking_runs_read_the_week_document_the_pipeline_writes():
     assert run is not None
     assert run.s1_pass_date.isoformat() == "2026-10-12"
     assert repos.ranking_runs.get("riau", "2026-W41") is None
+
+
+def test_open_assignees_are_the_people_holding_an_open_or_overdue_task():
+    store = InMemoryCollection(Task)
+    tasks = [
+        make_task(id="t1", assignee_id="a", status="open"),
+        make_task(id="t2", assignee_id="b", status="overdue"),
+        make_task(id="t3", assignee_id="c", status="done"),
+        make_task(id="t4", assignee_id="d", status="reassigned"),
+        make_task(id="t5", assignee_id="e", status="cancelled"),
+    ]
+    for task in tasks:
+        store.put(task.id, task)
+
+    assert TaskRepository(store).open_assignees() == {"a", "b"}

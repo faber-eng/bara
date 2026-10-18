@@ -3,7 +3,7 @@ from collections.abc import Callable, Coroutine, Mapping
 from typing import Any, get_args
 
 from adapters.cells import CellRepository
-from adapters.firestore_repos import VolunteerRepository
+from adapters.firestore_repos import TaskRepository, VolunteerRepository
 from bara_agent.tools.result import ToolResult, count_label, entries, tool_error
 from contracts import VolunteerRole
 from domain.people import PersonMatch, nearest_people
@@ -22,13 +22,20 @@ def person_entry(match: PersonMatch) -> ToolResult:
         "language": volunteer.language,
         "distance_km": round(match.distance_m / METRES_PER_KM, 1),
         "example": volunteer.example,
+        "busy": match.busy,
     }
 
 
 class FindPeople:
-    def __init__(self, cells: CellRepository, volunteers: VolunteerRepository):
+    def __init__(
+        self,
+        cells: CellRepository,
+        volunteers: VolunteerRepository,
+        tasks: TaskRepository,
+    ):
         self._cells = cells
         self._volunteers = volunteers
+        self._tasks = tasks
 
     @property
     def function(self) -> Callable[..., Coroutine[Any, Any, ToolResult]]:
@@ -37,8 +44,10 @@ class FindPeople:
     async def find_people(
         self, cell_id: str, role: VolunteerRole, k: int = 3
     ) -> ToolResult:
-        """Finds the nearest available people of one role for a grid cell,
-        nearest first. Real people and example people are listed together.
+        """Finds the nearest available people of one role for a grid cell.
+        People with no open task come first, nearest first; people who already
+        hold an open task (busy true) come after them. Real people and example
+        people are listed together.
 
         Args:
             cell_id: Grid cell id from the case.
@@ -55,7 +64,12 @@ class FindPeople:
         centroid = self._cells.centroid(cell_id)
         if centroid is None:
             return tool_error(f"unknown cell {cell_id!r}")
-        matches = nearest_people(centroid, self._volunteers.available(role), k)
+        matches = nearest_people(
+            centroid,
+            self._volunteers.available(role),
+            k,
+            self._tasks.open_assignees(),
+        )
         return {
             "cell_id": cell_id,
             "role": role,

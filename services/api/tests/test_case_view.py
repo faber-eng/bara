@@ -324,6 +324,16 @@ def test_an_agent_decision_reads_as_one_plain_line():
 
 
 def test_a_failed_run_names_its_trigger_in_plain_words():
-    run = make_agent_run(started_at=at(2), final_json=None, trigger="task.overdue")
+    run = make_agent_run(
+        started_at=at(2), final_json=None, trigger="task.overdue", status="failed"
+    )
 
     assert texts_for(runs=[run])[1] == "Agent run failed (task overdue)"
+
+
+def test_a_running_run_says_the_agent_is_working():
+    run = make_agent_run(
+        started_at=at(2), final_json=None, trigger="task.overdue", status="running"
+    )
+
+    assert texts_for(runs=[run])[1] == "Agent is working (task overdue)"

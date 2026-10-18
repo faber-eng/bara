@@ -194,6 +194,11 @@ def decision_text(decision: str, reason: str) -> str:
 
 
 def run_entry(run: AgentRun) -> TimelineEntry:
+    if run.status == "running":
+        return TimelineEntry(
+            at=run.started_at,
+            text=f"Agent is working ({plain_token(run.trigger)})",
+        )
     if run.final_json is None:
         return TimelineEntry(
             at=run.started_at,

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Set as AbstractSet
 from typing import Protocol
 
 from adapters.firestore_repos import CaseRepository, TaskRepository, VolunteerRepository
@@ -132,24 +133,33 @@ class FireQuietHandler:
 
     async def _schedule_all(self, case: Case, spots: list[QuietCell]) -> list[str]:
         patrols = self._volunteers.available("patrol")
+        busy_ids = self._tasks.open_assignees()
         first, rest = spots[0], spots[1:]
         done = {
-            first.cell_id: await self._schedule_recheck(case, first.cell_id, patrols)
+            first.cell_id: await self._schedule_recheck(
+                case, first.cell_id, patrols, busy_ids
+            )
         }
         gate = asyncio.Semaphore(MAX_PARALLEL_MESSAGES)
 
         async def bounded(spot: QuietCell) -> bool:
             async with gate:
-                return await self._schedule_recheck(case, spot.cell_id, patrols)
+                return await self._schedule_recheck(
+                    case, spot.cell_id, patrols, busy_ids
+                )
 
         outcomes = await asyncio.gather(*(bounded(spot) for spot in rest))
         done.update(zip((spot.cell_id for spot in rest), outcomes, strict=True))
         return [cell_id for cell_id, ok in done.items() if not ok]
 
     async def _schedule_recheck(
-        self, case: Case, cell_id: str, patrols: list[Volunteer]
+        self,
+        case: Case,
+        cell_id: str,
+        patrols: list[Volunteer],
+        busy_ids: AbstractSet[str],
     ) -> bool:
-        patrol = self._nearest_patrol(cell_id, patrols)
+        patrol = self._nearest_patrol(cell_id, patrols, busy_ids)
         if patrol is None:
             logger.warning(
                 "no patrol for recheck",
@@ -194,10 +204,10 @@ class FireQuietHandler:
         )
 
     def _nearest_patrol(
-        self, cell_id: str, patrols: list[Volunteer]
+        self, cell_id: str, patrols: list[Volunteer], busy_ids: AbstractSet[str]
     ) -> Volunteer | None:
         centroid = self._cells.centroid(cell_id)
         if centroid is None:
             return None
-        nearest = nearest_people(centroid, patrols, 1)
+        nearest = nearest_people(centroid, patrols, 1, busy_ids)
         return nearest[0].volunteer if nearest else None

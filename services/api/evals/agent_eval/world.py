@@ -5,6 +5,7 @@ from adapters.cells import CENTROID_SQL, CellRepository
 from adapters.firestore_repos import (
     DamRepository,
     RankingRepository,
+    TaskRepository,
     VolunteerRepository,
 )
 from bara_agent.agent import AgentTool, build_tools
@@ -17,6 +18,7 @@ from contracts import (
     Escalation,
     GeoPoint,
     RankedCell,
+    Task,
     Volunteer,
 )
 from domain.assignment import local_deadline
@@ -157,6 +159,7 @@ def build_world_tools(
         cells=cells,
         dams=DamRepository(collection_of(Dam, dams)),
         volunteers=VolunteerRepository(collection_of(Volunteer, people)),
+        tasks=TaskRepository(InMemoryCollection(Task)),
         assigner=AcceptingAssigner(),
         checker=FixedChecker(checked),
         escalator=AcceptingEscalator(),

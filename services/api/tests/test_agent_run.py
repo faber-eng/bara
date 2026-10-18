@@ -14,6 +14,7 @@ from adapters.firestore_repos import (
     CaseRepository,
     DamRepository,
     RankingRepository,
+    TaskRepository,
     VolunteerRepository,
 )
 from adapters.gemini import compose_agent_model
@@ -30,6 +31,7 @@ from contracts import (
     ClockSettings,
     Dam,
     RankedCell,
+    Task,
     Volunteer,
 )
 from domain.clock import Clock
@@ -162,6 +164,7 @@ class World:
                 cells=CellRepository(warehouse),
                 dams=dams,
                 volunteers=VolunteerRepository(volunteers),
+                tasks=TaskRepository(InMemoryCollection(Task)),
                 assigner=self.assigner,
                 checker=UnusedChecker(),
                 escalator=UnusedEscalator(),

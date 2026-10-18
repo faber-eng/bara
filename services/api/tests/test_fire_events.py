@@ -86,13 +86,15 @@ def quiet_event(**overrides):
 
 
 class World:
-    def __init__(self, patrols=None, fail_for=(), spots=3, hours=48):
+    def __init__(self, patrols=None, fail_for=(), spots=3, hours=48, open_tasks=()):
         self.case_store = InMemoryCollection(Case)
         people = InMemoryCollection(Volunteer)
         for person in patrols if patrols is not None else default_patrols():
             people.put(person.id, person)
         self.cases = CaseRepository(self.case_store)
         self.task_store = InMemoryCollection(Task)
+        for task in open_tasks:
+            self.task_store.put(task.id, task)
         self.assigner = FakeAssigner(self.case_store, self.task_store, fail_for)
         self.handler = FireQuietHandler(
             cases=self.cases,
@@ -393,3 +395,16 @@ def test_at_most_four_volunteer_messages_are_composed_at_once():
     assert Slow.peak == 4
     assert len(world.task_store.where()) == 9
     assert elapsed < 0.1 * 3 + 0.25
+
+
+def test_a_patrol_with_an_open_task_is_used_after_a_free_one():
+    patrols = [
+        make_volunteer(id="busy", role="patrol", home=GeoPoint(lat=0.551, lon=102.151)),
+        make_volunteer(id="free", role="patrol", home=GeoPoint(lat=0.1, lon=102.0)),
+    ]
+    held = make_task(id="held", assignee_id="busy", status="open")
+    world = World(patrols=patrols, spots=1, open_tasks=[held])
+
+    world.deliver()
+
+    assert {r.assignee_id for r in world.assigner.requests} == {"free"}

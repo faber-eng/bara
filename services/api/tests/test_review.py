@@ -72,7 +72,12 @@ class FakeAssigner:
 
 class World:
     def __init__(
-        self, status="human_review", escalator_error=None, tasks=True, people=True
+        self,
+        status="human_review",
+        escalator_error=None,
+        tasks=True,
+        people=True,
+        near_busy=False,
     ):
         self.cases = InMemoryCollection(Case)
         self.cases.put("c1", make_case(id="c1", status=status))
@@ -82,6 +87,13 @@ class World:
         task_docs = InMemoryCollection(Task)
         if tasks:
             task_docs.put("t1", make_task(id="t1", type="dam_repair", status="done"))
+        if near_busy:
+            task_docs.put(
+                "t2",
+                make_task(
+                    id="t2", type="dam_repair", assignee_id="near", status="open"
+                ),
+            )
         volunteers = InMemoryCollection(Volunteer)
         if people:
             volunteers.put(
@@ -160,6 +172,15 @@ def test_assign_gives_the_nearest_person_for_the_last_task_type_a_new_task():
     )
     assert request.instructions_hint == "Go back and check the gate."
     assert world.messages.get("m1").text == "Go back and check the gate."
+
+
+def test_assign_prefers_a_free_person_over_a_nearer_busy_one():
+    world = World(near_busy=True)
+
+    world.resolve("assign")
+
+    [request] = world.assigner.requests
+    assert request.assignee_id == "far"
 
 
 def test_assign_without_a_prior_task_is_rejected_and_the_case_stays_in_review():

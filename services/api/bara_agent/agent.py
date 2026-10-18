@@ -8,6 +8,7 @@ from adapters.cells import CellRepository
 from adapters.firestore_repos import (
     DamRepository,
     RankingRepository,
+    TaskRepository,
     VolunteerRepository,
 )
 from bara_agent.output import AgentOutput
@@ -55,6 +56,7 @@ def build_tools(
     cells: CellRepository,
     dams: DamRepository,
     volunteers: VolunteerRepository,
+    tasks: TaskRepository,
     assigner: Assigner,
     checker: Checker,
     escalator: EscalationSource,
@@ -65,7 +67,7 @@ def build_tools(
     return [
         RankAreas(rankings),
         GetAreaFacts(cells, dams, radius_m),
-        FindPeople(cells, volunteers),
+        FindPeople(cells, volunteers, tasks),
         AssignTask(assigner),
         CheckEvidence(checker),
         Escalate(escalator),
