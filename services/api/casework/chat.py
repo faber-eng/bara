@@ -27,12 +27,13 @@ from casework.messenger import (
 from contracts import Case, Language, Message, MessageThread, Task, Volunteer
 from domain.case_view import format_local
 from domain.channels import Channel, OutboundMessage
+from domain.chat_blocked import reports_blocked
 from domain.chat_limit import decide
 from domain.chat_wording import leaks_internal_words, place_label, task_name
 
 logger = logging.getLogger(__name__)
 
-CHAT_PROMPT_VERSION = "chat-v2"
+CHAT_PROMPT_VERSION = "chat-v3"
 REPLY_TIMEOUT_SECONDS = 15.0
 MAX_CONCURRENT_REPLIES = 8
 FENCE_MARKS = ("<<<CHAT", "CHAT>>>")
@@ -58,22 +59,47 @@ You are Bara, the coordinator of a peat-fire prevention programme. A volunteer \
 wrote to you. The user message holds the volunteer's text and their open task \
 in one block between <<<CHAT and CHAT>>>.
 
-Reply in the language named in the block, in at most 3 short sentences:
-1. Answer what the volunteer wrote, using only facts from the block.
-2. If the volunteer has an open task, name it with its task, its place, its \
-point and its deadline exactly as given. The words in the block are already in \
-the reply language: copy them as they are.
-3. Only when open_task is not null: if the volunteer says they cannot reach the place, the road or the dam is \
-blocked or flooded, or anything else stops the task, say you have noted it \
-and the case goes back to ops, and set needs_ops to true.
-No greeting and no sign-off. Never promise a reassignment or a time.
-Never write an internal id, a code word or a snake_case token. Say the task \
-and the place only with the plain words given in the block.
+Reply in the language named in the block, in at most 3 short sentences, in this \
+order:
+1. Acknowledge what the volunteer wrote in one short sentence, using only facts \
+from the block.
+2. Restate the open task when open_task is not null, in every reply and also \
+when the volunteer cannot do it: its task, its place, its point and its \
+deadline, copied verbatim from the block. The words are already in the reply \
+language.
+3. When open_task is not null and the volunteer says they cannot do the task \
+(they cannot reach the place, the road or the dam is blocked, flooded or gone, \
+there is no boat, or anything else stops the task), set needs_ops to true and \
+say the case goes back to ops, who will follow up or reassign it. Name no time.
+No greeting and no sign-off.
+Never write an internal id, a code word or a snake_case token, such as a task \
+type or a case id. The task, place, point and deadline in the block are plain \
+words, not code words: write them as given.
 
 Reply with one JSON object:
 - text: the reply.
 - text_en: the same reply in English.
 - needs_ops: true when the task is blocked and ops must look at the case.
+
+The examples use made-up facts. Never copy their facts.
+
+Example 1, a blocked report in English:
+open_task: task "check the canal dam", place "the canal dam in Sample Region", \
+point "1.2345, 100.1234", deadline "Mon 5 Jan, 09:00 WIB".
+volunteer_text: "The road is flooded, I can't get there."
+{"text": "Thank you for telling us about the flooded road. Your open task is to \
+check the canal dam in Sample Region at 1.2345, 100.1234 by Mon 5 Jan, 09:00 \
+WIB. We noted it and the case goes back to ops, who will follow up or \
+reassign it.", "text_en": "<the same reply in English>", "needs_ops": true}
+
+Example 2, a question in English:
+open_task: task "check the canal dam", place "the canal dam in Sample Region", \
+point "1.2345, 100.1234", deadline "Mon 5 Jan, 09:00 WIB".
+volunteer_text: "What do I need to send?"
+{"text": "Good question. Your open task is to check the canal dam in Sample \
+Region at 1.2345, 100.1234 by Mon 5 Jan, 09:00 WIB. Send a photo of the dam and \
+the water level in the canal.", "text_en": "<the same reply in English>", \
+"needs_ops": false}
 """
 
 CHAT_FENCE = """\
@@ -191,6 +217,12 @@ def fallback_answer(turn: ChatTurn) -> ChatAnswer:
     return ChatAnswer(output, True)
 
 
+def flag_blocked(turn: ChatTurn, text: str, output: ChatOutput) -> ChatOutput:
+    if turn.context is None or output.needs_ops or not reports_blocked(text):
+        return output
+    return output.model_copy(update={"needs_ops": True})
+
+
 def note_text(turn: ChatTurn, text: str, answer: ChatAnswer) -> str:
     name = turn.volunteer.name
     if answer.fallback:
@@ -285,7 +317,7 @@ class VolunteerChat:
             return fallback_answer(turn)
         if turn.context is None and output.needs_ops:
             return fallback_answer(turn)
-        return ChatAnswer(output, False)
+        return ChatAnswer(flag_blocked(turn, text, output), False)
 
     async def _generate(self, turn: ChatTurn, text: str) -> ChatOutput:
         async with self._slots:
