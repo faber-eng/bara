@@ -3,9 +3,11 @@ import { ApiError } from "../api/client";
 export type SendFailure =
   | { kind: "case_open" }
   | { kind: "no_flow" }
+  | { kind: "not_ranked" }
   | { kind: "rate_limited"; detail: string }
   | { kind: "failed" };
 
+const STATUS_NOT_FOUND = 404;
 const STATUS_CONFLICT = 409;
 const STATUS_RATE_LIMITED = 429;
 const FAILED: SendFailure = { kind: "failed" };
@@ -18,6 +20,7 @@ function conflictFailure(detail: string | null): SendFailure {
 
 export function sendFailure(error: unknown): SendFailure {
   if (!(error instanceof ApiError)) return FAILED;
+  if (error.status === STATUS_NOT_FOUND) return { kind: "not_ranked" };
   if (error.status === STATUS_CONFLICT) return conflictFailure(error.detail);
   if (error.status === STATUS_RATE_LIMITED && error.detail !== null) {
     return { kind: "rate_limited", detail: error.detail };

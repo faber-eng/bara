@@ -9,18 +9,26 @@ import type { OpsDetail } from "./selection";
 
 type OpsDetailSheetProps = {
   region: string;
+  week: string | undefined;
   detail: OpsDetail;
   onOpen: (detail: OpsDetail) => void;
   onZoom: (cellId: string) => void;
   onClose: () => void;
 };
 
-function OpsDetailBody({ region, detail, onOpen, onZoom, onClose }: OpsDetailSheetProps) {
+function OpsDetailBody({ region, week, detail, onOpen, onZoom, onClose }: OpsDetailSheetProps) {
   const key = `${detail.kind}-${detail.id}`;
   switch (detail.kind) {
     case "cell":
       return (
-        <CellDetail key={key} cellId={detail.id} region={region} onOpen={onOpen} onZoom={onZoom} />
+        <CellDetail
+          key={key}
+          cellId={detail.id}
+          region={region}
+          week={week}
+          onOpen={onOpen}
+          onZoom={onZoom}
+        />
       );
     case "dam":
       return <DamDetail key={key} damId={detail.id} region={region} onOpen={onOpen} />;

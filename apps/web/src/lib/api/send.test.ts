@@ -62,8 +62,11 @@ describe("sendFailure", () => {
     });
   });
 
+  it("maps 404 to not_ranked", () => {
+    expect(sendFailure(new ApiError("x", 404, "unknown_cell"))).toEqual({ kind: "not_ranked" });
+  });
+
   it.each([
-    new ApiError("x", 404, "unknown_cell"),
     new ApiError("x", 502, "publish_failed"),
     new ApiError("x", 429, null),
     new ApiError("x", 409, "other"),

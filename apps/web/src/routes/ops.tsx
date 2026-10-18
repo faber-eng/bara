@@ -103,6 +103,7 @@ function OpsScreen() {
       {detail !== null && (
         <OpsDetailSheet
           region={region}
+          week={week}
           detail={detail}
           onOpen={openDetail}
           onZoom={handleZoom}

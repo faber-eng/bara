@@ -36,12 +36,18 @@ function caseSummary() {
   ];
 }
 
-function renderDetail(region: string) {
+function renderDetail(region: string, week?: string) {
   const queryClient = new QueryClient();
   render(
     <QueryClientProvider client={queryClient}>
       <DetailSheet closeLabel="Close" onClose={() => {}}>
-        <CellDetail cellId="riau-1" region={region} onOpen={() => {}} onZoom={() => {}} />
+        <CellDetail
+          cellId="riau-1"
+          region={region}
+          week={week}
+          onOpen={() => {}}
+          onZoom={() => {}}
+        />
       </DetailSheet>
     </QueryClientProvider>,
   );
@@ -87,6 +93,29 @@ describe("CellDetail send someone", () => {
 
     expect(await screen.findByRole("button", { name: "Open its case" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Send someone" })).not.toBeInTheDocument();
+  });
+
+  it("offers no button for a past week and says why", async () => {
+    stubApi({ [FACTS]: () => Response.json(facts), [CASES]: () => Response.json([]) });
+    renderDetail("riau", "2026-W41");
+
+    expect(await screen.findByText("Send someone works on this week's ranking.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Send someone" })).not.toBeInTheDocument();
+  });
+
+  it("says the area is not in this week's ranking on 404", async () => {
+    stubApi({
+      [FACTS]: () => Response.json(facts),
+      [CASES]: () => Response.json([]),
+      [SEND]: () => Response.json({ detail: "unknown_cell" }, { status: 404 }),
+    });
+    renderDetail("riau");
+
+    fireEvent.click(await sendButton());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "This area is not in this week's ranking.",
+    );
   });
 
   it("disables the button and says Sending while the request runs", async () => {

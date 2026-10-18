@@ -129,17 +129,27 @@ type CellActionsProps = {
   cellId: string;
   caseId: string | undefined;
   canSend: boolean;
+  pastWeek: boolean;
   copy: DetailCopy;
   onOpen: (detail: OpsDetail) => void;
   onZoom: (cellId: string) => void;
 };
 
-function CellActions({ cellId, caseId, canSend, copy, onOpen, onZoom }: CellActionsProps) {
+function CellActions({
+  cellId,
+  caseId,
+  canSend,
+  pastWeek,
+  copy,
+  onOpen,
+  onZoom,
+}: CellActionsProps) {
   const zoomIsPrimary = caseId === undefined && !canSend;
   const zoomClass = zoomIsPrimary ? "btn btn-primary" : "btn btn-secondary";
   return (
     <>
-      {canSend && <SendSomeone cellId={cellId} copy={copy.cell.send} />}
+      {canSend && !pastWeek && <SendSomeone cellId={cellId} copy={copy.cell.send} />}
+      {canSend && pastWeek && <p className="mv-note">{copy.cell.send.pastWeek}</p>}
       {caseId !== undefined && (
         <button
           type="button"
@@ -159,11 +169,12 @@ function CellActions({ cellId, caseId, canSend, copy, onOpen, onZoom }: CellActi
 type CellDetailProps = {
   cellId: string;
   region: string;
+  week: string | undefined;
   onOpen: (detail: OpsDetail) => void;
   onZoom: (cellId: string) => void;
 };
 
-export function CellDetail({ cellId, region, onOpen, onZoom }: CellDetailProps) {
+export function CellDetail({ cellId, region, week, onOpen, onZoom }: CellDetailProps) {
   const language = useCopyLanguage();
   const copy = detailCopy(language);
   const facts = useQuery(cellFactsQuery(cellId));
@@ -181,6 +192,7 @@ export function CellDetail({ cellId, region, onOpen, onZoom }: CellDetailProps) 
           cellId={cellId}
           caseId={caseId}
           canSend={canSend}
+          pastWeek={week !== undefined}
           copy={copy}
           onOpen={onOpen}
           onZoom={onZoom}

@@ -96,6 +96,8 @@ export type DetailCopy = {
       sent: string;
       caseOpen: string;
       noFlow: string;
+      notRanked: string;
+      pastWeek: string;
       failed: string;
     };
     how: { title: string; model: string; promptVersion: string };
@@ -282,6 +284,8 @@ const EN: DetailCopy = {
       sent: "Bara is picking the nearest free person. The case shows in Cases in about 30 seconds.",
       caseOpen: "This area already has an open case.",
       noFlow: "People are not set up in this region yet.",
+      notRanked: "This area is not in this week's ranking.",
+      pastWeek: "Send someone works on this week's ranking.",
       failed: "Could not send. Try again.",
     },
     how: { title: "How this was written", model: "Model", promptVersion: "Prompt version" },
@@ -485,6 +489,8 @@ const ID: DetailCopy = {
       sent: "Bara sedang memilih orang terdekat yang bisa. Kasus muncul di Kasus dalam sekitar 30 detik.",
       caseOpen: "Area ini sudah punya kasus terbuka.",
       noFlow: "Orang belum disiapkan di wilayah ini.",
+      notRanked: "Area ini tidak ada di peringkat minggu ini.",
+      pastWeek: "Kirim orang hanya bisa dari peringkat minggu ini.",
       failed: "Tidak bisa mengirim. Coba lagi.",
     },
     how: { title: "Cara teks ini ditulis", model: "Model", promptVersion: "Versi prompt" },
