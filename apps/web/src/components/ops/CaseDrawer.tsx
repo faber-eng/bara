@@ -1,12 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { closeCase } from "../../lib/api/caseDetail";
-import { caseDetailQuery } from "../../lib/api/queries";
+
 import type { CaseDetail } from "../../lib/contracts";
 import { canCloseCase, spaced } from "../../lib/ops/caseDrawer";
 import { statusChip } from "../../lib/ops/statusChip";
 import { ruleEscalationEntries } from "../../lib/ops/timelineOrigin";
-import { useCaseFollow } from "../../lib/ops/useCaseFollow";
+import { useCaseDetail } from "../../lib/ops/useCaseDetail";
 import { AgentRuns } from "./AgentRuns";
 import { CaseTimeline } from "./CaseTimeline";
 import { EvidenceCard } from "./EvidenceCard";
@@ -99,8 +99,7 @@ function DrawerBody({ detail }: { detail: CaseDetail }) {
 type CaseDrawerProps = { caseId: string; onBack: () => void };
 
 export function CaseDrawer({ caseId, onBack }: CaseDrawerProps) {
-  const detail = useQuery(caseDetailQuery(caseId));
-  useCaseFollow(caseId);
+  const detail = useCaseDetail(caseId);
   return (
     <section className="drawer" aria-label="Case detail">
       <button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>

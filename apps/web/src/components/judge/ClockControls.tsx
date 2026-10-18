@@ -3,7 +3,7 @@ import { ApiError } from "../../lib/api/client";
 import { advanceClock, resetClock } from "../../lib/api/clock";
 import { clockQuery } from "../../lib/api/queries";
 import type { ClockState } from "../../lib/contracts";
-import { invalidateWorld } from "../../lib/judge/invalidate";
+import { invalidateWorldSettled } from "../../lib/judge/invalidate";
 
 const ADVANCE_HOURS = [6, 24, 48] as const;
 const RATE_LIMITED = 429;
@@ -20,7 +20,7 @@ export function ClockControls() {
 
   async function applyClock(state: ClockState) {
     queryClient.setQueryData(clockQuery.queryKey, state);
-    await invalidateWorld(queryClient);
+    await invalidateWorldSettled(queryClient);
   }
 
   const advance = useMutation({ mutationFn: advanceClock, onSuccess: applyClock });

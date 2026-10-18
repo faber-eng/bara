@@ -14,6 +14,7 @@ const CLOCK_REFRESH_MS = 60_000;
 const CLOCK_RETRIES = 2;
 const CLOCK_RETRY_DELAY_MS = 1_000;
 const OPS_STALE_MS = 30_000;
+export const OPS_REFRESH_MS = 10_000;
 const WEEK_STALE_MS = 10 * 60_000;
 const TILES_STALE_MS = 30 * 60_000;
 const ALL_CELLS_STALE_MS = 30 * 60_000;
@@ -52,6 +53,8 @@ export function casesQuery(region: string) {
     queryKey: ["cases", region],
     queryFn: ({ signal }) => fetchCases(region, signal),
     staleTime: OPS_STALE_MS,
+    refetchInterval: OPS_REFRESH_MS,
+    refetchIntervalInBackground: false,
     retry: false,
   });
 }
@@ -103,6 +106,8 @@ export function brigadeInboxQuery(contactId: string | undefined) {
     queryFn: ({ signal }) => fetchBrigadeInbox(contactId ?? "", signal),
     enabled: contactId !== undefined,
     staleTime: OPS_STALE_MS,
+    refetchInterval: OPS_REFRESH_MS,
+    refetchIntervalInBackground: false,
     retry: false,
   });
 }
