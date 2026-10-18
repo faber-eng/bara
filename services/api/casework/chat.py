@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated
 
+import httpx
 from google.genai import errors, types
 from pydantic import BaseModel, Field, ValidationError
 
@@ -32,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 CHAT_PROMPT_VERSION = "chat-v1"
 REPLY_TIMEOUT_SECONDS = 8.0
+MAX_CONCURRENT_REPLIES = 8
+FENCE_MARKS = ("<<<CHAT", "CHAT>>>")
 BARA_RECIPIENT = "bara"
 OPS_RECIPIENT = "ops"
 FALLBACK_TIMEZONE = "UTC"
@@ -42,7 +45,12 @@ FALLBACK_REPLIES: dict[Language, str] = {
     "ms": "Mesej anda telah kami terima dan dihantar kepada pasukan ops.",
     "fr": "Nous avons reçu votre message et l'avons transmis à l'équipe ops.",
 }
-FALLBACK_REPLY_EN = FALLBACK_REPLIES["en"]
+RECEIVED_REPLIES: dict[Language, str] = {
+    "id": "Pesan Anda sudah kami terima. Bara akan membalas segera.",
+    "en": "We received your message. Bara will answer soon.",
+    "ms": "Mesej anda telah kami terima. Bara akan membalas tidak lama lagi.",
+    "fr": "Nous avons reçu votre message. Bara répondra bientôt.",
+}
 
 SYSTEM_INSTRUCTION = """\
 You are Bara, the coordinator of a peat-fire prevention programme. A volunteer \
@@ -53,7 +61,7 @@ Reply in the language named in the block, in at most 3 short sentences:
 1. Answer what the volunteer wrote, using only facts from the block.
 2. If the volunteer has an open task, name it with its place, its point and \
 its deadline exactly as given.
-3. If the volunteer says they cannot reach the place, the road or the dam is \
+3. Only when open_task is not null: if the volunteer says they cannot reach the place, the road or the dam is \
 blocked or flooded, or anything else stops the task, say you have noted it \
 and the case goes back to ops, and set needs_ops to true.
 No greeting and no sign-off. Never promise a reassignment or a time.
@@ -110,10 +118,16 @@ class ChatAnswer:
 def render_chat(turn: ChatTurn, text: str) -> str:
     data = {
         "language": LANGUAGE_NAMES[turn.language],
-        "volunteer_text": text,
+        "volunteer_text": strip_fence(text),
         "open_task": task_facts(turn.context),
     }
     return CHAT_FENCE.format(data=json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def strip_fence(text: str) -> str:
+    for mark in FENCE_MARKS:
+        text = text.replace(mark, "")
+    return text
 
 
 def task_facts(context: TaskContext | None) -> dict[str, str] | None:
@@ -129,8 +143,13 @@ def task_facts(context: TaskContext | None) -> dict[str, str] | None:
     }
 
 
-def generation_config() -> types.GenerateContentConfig:
+def generation_config(timeout_seconds: float) -> types.GenerateContentConfig:
+    http_options = types.HttpOptions(
+        timeout=int(timeout_seconds * 1000),
+        retry_options=types.HttpRetryOptions(attempts=1),
+    )
     return types.GenerateContentConfig(
+        http_options=http_options,
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
         response_schema=ChatOutput,
@@ -150,19 +169,23 @@ def read_output(response: types.GenerateContentResponse) -> ChatOutput:
 
 
 def fallback_answer(turn: ChatTurn) -> ChatAnswer:
+    replies = RECEIVED_REPLIES if turn.context is None else FALLBACK_REPLIES
     output = ChatOutput(
-        text=FALLBACK_REPLIES[turn.language],
-        text_en=FALLBACK_REPLY_EN,
+        text=replies[turn.language],
+        text_en=replies["en"],
         needs_ops=turn.context is not None,
     )
     return ChatAnswer(output, True)
 
 
-def note_text(turn: ChatTurn, text: str) -> str:
-    return (
-        f"Volunteer {turn.volunteer.name} reported a problem on the task: {text}. "
-        "The case goes back to ops."
-    )
+def note_text(turn: ChatTurn, text: str, answer: ChatAnswer) -> str:
+    name = turn.volunteer.name
+    if answer.fallback:
+        return (
+            f"Volunteer {name} wrote: {text} The automatic reply failed and "
+            "the message was not read. Ops should look at the case."
+        )
+    return f"Volunteer {name} reported a problem on the task: {text} The case goes back to ops."
 
 
 class VolunteerChat:
@@ -180,6 +203,7 @@ class VolunteerChat:
         default_language: Language,
         timezones: Mapping[str, str],
         timeout_seconds: float = REPLY_TIMEOUT_SECONDS,
+        max_concurrent: int = MAX_CONCURRENT_REPLIES,
     ):
         self._volunteers = volunteers
         self._tasks = tasks
@@ -192,6 +216,7 @@ class VolunteerChat:
         self._default_language = default_language
         self._timezones = timezones
         self._timeout = timeout_seconds
+        self._slots = asyncio.Semaphore(max_concurrent)
 
     async def reply(self, volunteer_id: str, text: str) -> Message:
         turn = await asyncio.to_thread(self._open_turn, volunteer_id)
@@ -224,6 +249,7 @@ class VolunteerChat:
         task = min(open_tasks, key=lambda item: item.deadline_at)
         case = self._cases.get(task.case_id)
         if case is None:
+            self._log_case_missing(task)
             return None
         zone = self._timezones.get(case.region, FALLBACK_TIMEZONE)
         return TaskContext(task, case, local_deadline(task.deadline_at, zone))
@@ -236,15 +262,23 @@ class VolunteerChat:
     async def _answer(self, turn: ChatTurn, text: str) -> ChatAnswer:
         try:
             output = await asyncio.wait_for(self._generate(turn, text), self._timeout)
-        except (errors.APIError, MessengerFailed, TimeoutError) as error:
+        except (
+            errors.APIError,
+            httpx.HTTPError,
+            MessengerFailed,
+            TimeoutError,
+        ) as error:
             self._log_fallback(turn, error)
+            return fallback_answer(turn)
+        if turn.context is None and output.needs_ops:
             return fallback_answer(turn)
         return ChatAnswer(output, False)
 
     async def _generate(self, turn: ChatTurn, text: str) -> ChatOutput:
-        response = await self._model.generate(
-            "fast", render_chat(turn, text), generation_config()
-        )
+        async with self._slots:
+            response = await self._model.generate(
+                "fast", render_chat(turn, text), generation_config(self._timeout)
+            )
         return read_output(response)
 
     def _commit(self, turn: ChatTurn, text: str, answer: ChatAnswer) -> Message:
@@ -263,7 +297,7 @@ class VolunteerChat:
     ) -> list[Message]:
         if case_id is None or not answer.output.needs_ops:
             return []
-        note = note_text(turn, text)
+        note = note_text(turn, text, answer)
         return [self._message(OPS_RECIPIENT, turn, case_id, note, note, "ops")]
 
     def _message(
@@ -284,6 +318,19 @@ class VolunteerChat:
                 text=text,
                 text_en=text_en,
             )
+        )
+
+    @staticmethod
+    def _log_case_missing(task: Task) -> None:
+        logger.warning(
+            "chat task has no case",
+            extra={
+                "fields": {
+                    "event": "chat_case_missing",
+                    "task_id": task.id,
+                    "case_id": task.case_id,
+                }
+            },
         )
 
     @staticmethod
