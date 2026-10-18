@@ -175,21 +175,21 @@ export function PublicScreen({ regionId, week, onRegionChange, onWeekChange }: P
             />
           </div>
           <div className="pub-grid pub-grid-low">
-            {region.rankingOnly ? (
-              <div />
-            ) : (
-              <ResponseRecord
-                region={region.id}
-                copy={copy}
-                language={lang}
-                timeZone={region.timeZone}
-              />
-            )}
+            <div className="pub-low-main">
+              {!region.rankingOnly && (
+                <ResponseRecord
+                  region={region.id}
+                  copy={copy}
+                  language={lang}
+                  timeZone={region.timeZone}
+                />
+              )}
+              <EvalPanel />
+            </div>
             <OpenDataBlock region={region.id} week={summary.data.week} copy={copy} />
           </div>
         </>
       )}
-      <EvalPanel />
     </div>
   );
 }

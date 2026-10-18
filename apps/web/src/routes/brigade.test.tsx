@@ -1,5 +1,5 @@
 import escalation from "@fixtures/escalation.json";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetClock } from "../lib/api/clock";
 import { getIdToken } from "../lib/auth";
@@ -41,6 +41,24 @@ describe("/brigade", () => {
       escalation.pack.map_url,
     );
     expect(screen.getByText("1 open")).toBeInTheDocument();
+  });
+
+  it("titles the screen and the card with the shared styles, the case id without a prefix", async () => {
+    renderApp("/brigade");
+
+    const title = await screen.findByRole("heading", { level: 1, name: "Brigade inbox" });
+    expect(title).toHaveClass("screen-title");
+    const cardTitle = await screen.findByRole("heading", { level: 2, name: "case-0007" });
+    expect(cardTitle).toHaveClass("brigade-title");
+  });
+
+  it("credits Gemini on the brief label, not as a chip", async () => {
+    renderApp("/brigade");
+
+    const card = await screen.findByRole("article");
+    expect(within(card).queryByText("Gemini")).not.toBeInTheDocument();
+    expect(within(card).getByText("Bahasa Indonesia · written by Gemini")).toBeInTheDocument();
+    expect(within(card).getByText("English · written by Gemini")).toBeInTheDocument();
   });
 
   it("acknowledges and removes the card, and the case becomes monitoring", async () => {

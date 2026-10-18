@@ -25,7 +25,7 @@ export function BrigadeInbox() {
   return (
     <section className="brigade-inbox">
       <div className="brigade-head">
-        <h1>Brigade inbox</h1>
+        <h1 className="screen-title">Brigade inbox</h1>
         {inbox.data !== undefined && (
           <span className="chip chip-plain">{inbox.data.length} open</span>
         )}

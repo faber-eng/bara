@@ -59,16 +59,15 @@ export function EscalationCard({ escalation, example }: EscalationCardProps) {
         <p className="brigade-chips">
           <span className="chip chip-escalated">Escalated</span>
           {example && <span className="chip chip-example">Example data</span>}
-          <span className="chip chip-gemini">Gemini</span>
         </p>
-        <h2>Case {escalation.case_id}</h2>
+        <h2 className="brigade-title">{escalation.case_id}</h2>
         <Photos photos={escalation.pack.photos} />
         <div className="brief-lang">
-          <span className="brief-label">Bahasa Indonesia</span>
+          <span className="brief-label">Bahasa Indonesia · written by Gemini</span>
           <p lang="id">{escalation.brief_id}</p>
         </div>
         <div className="brief-lang">
-          <span className="brief-label">English</span>
+          <span className="brief-label">English · written by Gemini</span>
           <p lang="en">{escalation.brief_en}</p>
         </div>
         <AckButton escalationId={escalation.id} caseId={escalation.case_id} />
