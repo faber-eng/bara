@@ -7,7 +7,7 @@ from adapters.identity import IdentityUnavailable
 from adapters.secrets import SecretUnavailable
 from auth import Principal, require_signed_in_user
 from config import Settings, full_flow_region
-from contracts import JoinRequest, JoinResponse
+from contracts import JoinRequest, JoinResponse, Volunteer
 from domain.join import (
     build_volunteer,
     claims_after_join,
@@ -81,6 +81,13 @@ def assert_claim(request: Request, uid: str) -> None:
         raise HTTPException(status_code=502, detail="role_update_failed") from error
 
 
+def move_home(volunteers, volunteer: Volunteer) -> None:
+    existing = volunteers.get(volunteer.id)
+    if existing is None or existing.example:
+        return
+    volunteers.set_home(volunteer.id, volunteer.home)
+
+
 @router.post("/join", response_model=JoinResponse)
 def join(
     body: JoinRequest,
@@ -94,7 +101,10 @@ def join(
     volunteer = build_volunteer(
         principal.uid, body, full_flow_region(settings.config_dir)
     )
-    created = request.app.state.adapters.volunteers.create_if_absent(volunteer)
+    volunteers = request.app.state.adapters.volunteers
+    created = volunteers.create_if_absent(volunteer)
+    if not created:
+        move_home(volunteers, volunteer)
     assert_claim(request, principal.uid)
     logger.info("join", extra={"fields": {"uid": principal.uid, "created": created}})
     return JoinResponse(volunteer_id=principal.uid, created=created)

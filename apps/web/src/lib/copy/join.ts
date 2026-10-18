@@ -31,6 +31,9 @@ export type JoinCopy = {
   homeMapNote: string;
   homeMapMissing: string;
   homeChosen: (lat: string, lon: string) => string;
+  homePaste: string;
+  homePasteHint: string;
+  homePasteError: string;
   submit: string;
   submitting: string;
   fieldErrors: Record<JoinField, string>;
@@ -69,7 +72,10 @@ const ID: JoinCopy = {
     "Lokasi tidak bisa dibaca. Izinkan lokasi di pengaturan peramban, lalu coba lagi.",
   homeMapNote: "Atau ketuk peta untuk menaruh pin.",
   homeMapMissing: "Peta tidak tersedia. Pakai lokasi saya.",
-  homeChosen: (lat, lon) => `Lokasi rumah: ${lat}, ${lon}`,
+  homeChosen: (lat, lon) => `Pin terpasang: ${lat}, ${lon}`,
+  homePaste: "Tempel koordinat",
+  homePasteHint: "Contoh: 0.79990, 102.47081",
+  homePasteError: "Tulis lintang, bujur, misalnya 0.79990, 102.47081.",
   submit: "Gabung",
   submitting: "Mengirim",
   fieldErrors: {
@@ -122,7 +128,10 @@ const EN: JoinCopy = {
     "Could not read your location. Allow location in the browser settings, then try again.",
   homeMapNote: "Or tap the map to drop a pin.",
   homeMapMissing: "The map is not available. Use my location.",
-  homeChosen: (lat, lon) => `Home location: ${lat}, ${lon}`,
+  homeChosen: (lat, lon) => `Pin set: ${lat}, ${lon}`,
+  homePaste: "Paste coordinates",
+  homePasteHint: "Example: 0.79990, 102.47081",
+  homePasteError: "Write latitude, longitude, for example 0.79990, 102.47081.",
   submit: "Join",
   submitting: "Sending",
   fieldErrors: {

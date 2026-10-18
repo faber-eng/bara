@@ -40,7 +40,7 @@ function fillForm(code: string) {
 
 async function chooseGps() {
   fireEvent.click(screen.getByRole("button", { name: "Pakai lokasi saya" }));
-  await screen.findByText("Lokasi rumah: 0.51000, 101.45000");
+  await screen.findByText("Pin terpasang: 0.51000, 101.45000");
 }
 
 describe("join screen", () => {

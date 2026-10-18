@@ -19,6 +19,11 @@ export type HomeCopy = {
   mapUnavailable: string;
   openInMaps: string;
   roles: Record<VolunteerRole, string>;
+  change: string;
+  save: string;
+  saving: string;
+  saved: string;
+  saveFailed: string;
 };
 
 export type VolunteerCopy = {
@@ -247,6 +252,11 @@ const ID: VolunteerCopy = {
     mapUnavailable: "Peta tidak tersedia",
     openInMaps: "Buka di Google Maps",
     roles: { volunteer: "Relawan", repair_team: "Tim perbaikan", patrol: "Patroli" },
+    change: "Ubah",
+    save: "Simpan sebagai rumah saya",
+    saving: "Menyimpan",
+    saved: "Tersimpan sebagai rumah Anda.",
+    saveFailed: "Lokasi rumah belum tersimpan. Coba lagi.",
   },
 };
 
@@ -380,6 +390,11 @@ const EN: VolunteerCopy = {
     mapUnavailable: "Map not available",
     openInMaps: "Open in Google Maps",
     roles: { volunteer: "Volunteer", repair_team: "Repair team", patrol: "Patrol" },
+    change: "Change",
+    save: "Save this as my home",
+    saving: "Saving",
+    saved: "Saved as your home.",
+    saveFailed: "Your home did not save. Try again.",
   },
 };
 

@@ -328,3 +328,18 @@ def test_the_judge_header_does_not_change_a_real_join(settings):
 
     assert response.status_code == 200
     assert admin.claims_by_uid["u-google"] == {"role": "volunteer"}
+
+
+def test_a_repeat_join_moves_the_home_and_keeps_the_rest(settings):
+    client, volunteers = make_join_app(settings)
+    join(client)
+    moved = {"lat": 0.7999, "lon": 102.47081}
+
+    response = join(client, body={**BODY, "name": "Other", "home": moved})
+
+    assert response.status_code == 200
+    assert response.json() == {"volunteer_id": "u-google", "created": False}
+    stored = volunteers.get("u-google")
+    assert stored.home.lat == 0.7999
+    assert stored.home.lon == 102.47081
+    assert stored.name == "Sari"

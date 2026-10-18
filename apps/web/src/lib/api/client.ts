@@ -23,7 +23,7 @@ export function isNotFoundError(error: Error | null): boolean {
 }
 
 export type RequestOptions = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PUT";
   body?: unknown;
   signal?: AbortSignal;
   timeoutMs?: number;
