@@ -52,23 +52,23 @@ POINTS = [
     (
         "s1_anom_db",
         "raises",
-        (
-            "The radar dryness signal is -4.2 dB, so the peat is drier than usual, "
-            "which pushes the score up."
-        ),
+        ("The radar dryness signal is -4.2 dB, so the peat is drier than usual."),
     ),
     (
         "rain_deficit_pct",
         "raises",
-        "It had 31% less rain than normal, which pushes the score up.",
+        "It had 31% less rain than normal, so the peat could dry.",
     ),
     (
         "canal_dist_m",
         "raises",
-        "A canal 140 m away drains the peat, which pushes the score up.",
+        "A canal 140 m away drains the peat.",
     ),
 ]
-REPLY_TEXT = " ".join([SUMMARY, *(text for _, _, text in POINTS)])
+REPLY_TEXT = (
+    f"{SUMMARY} Pushes the score up: {POINTS[0][2]} "
+    f"Pushes the score up: {POINTS[1][2]} Pushes the score up: {POINTS[2][2]}"
+)
 REPLY_CITED = {
     "drying_score": 90.5,
     "s1_anom_db": -4.2,
@@ -310,7 +310,7 @@ def test_a_ranking_document_of_another_week_is_left_alone():
 
 
 def test_the_prompt_version_is_named():
-    assert EXPLAIN_PROMPT_VERSION == "explain-v4"
+    assert EXPLAIN_PROMPT_VERSION == "explain-v5"
 
 
 def test_an_integer_written_for_a_whole_value_passes():
@@ -632,6 +632,17 @@ def test_the_explainer_reads_facts_from_the_real_area_facts_tool():
 def test_a_point_that_contradicts_the_data_is_retried():
     flipped = [(POINTS[0]), ("rain_deficit_pct", "lowers", POINTS[1][2]), POINTS[2]]
     world = World([reply(points=flipped), reply()])
+
+    assert world.explain().text == REPLY_TEXT
+    assert len(world.model.calls) == 2
+
+
+def test_a_point_that_names_the_score_is_retried():
+    wordy = [
+        ("s1_anom_db", "raises", "The signal is -4.2 dB, which raises the score."),
+        *POINTS[1:],
+    ]
+    world = World([reply(points=wordy), reply()])
 
     assert world.explain().text == REPLY_TEXT
     assert len(world.model.calls) == 2

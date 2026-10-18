@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 from contracts import ExplanationEffect, RankExplanation
 from ee_lib.canals import CANAL_DECAY_M
 
-EXPLAIN_PROMPT_VERSION = "explain-v4"
+EXPLAIN_PROMPT_VERSION = "explain-v5"
 METRES_PER_KM = 1000
 NUMBER = re.compile(r"(?<![\w.-])(-?\d+(?:\.\d+)?)(?:st|nd|rd|th)?(?![\w])")
 EXACT_TOLERANCE = 1e-9
@@ -91,6 +91,13 @@ def check_points(points: Sequence[tuple[str, str]], expected: Sequence[Driver]) 
             raise ExplanationRejected(
                 f"{field} effect is {effect}, the data says {driver.effect}"
             )
+
+
+def check_point_text(field: str, text: str) -> None:
+    if "score" in text.lower():
+        raise ExplanationRejected(
+            f"the {field} point names the score; the label says it"
+        )
 
 
 @dataclass(frozen=True)
