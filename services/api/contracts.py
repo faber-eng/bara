@@ -564,6 +564,7 @@ class Inbox(Contract):
     tasks: list[Task]
     messages: list[Message]
     evidence: list[Evidence]
+    area_case_ids: list[str] = []
 
 
 class ClockState(Contract):

@@ -1,18 +1,25 @@
 from datetime import UTC, datetime, timedelta
 
 from adapters.firestore_repos import (
+    CaseRepository,
     EvidenceRepository,
     MessageRepository,
     TaskRepository,
 )
 from casework.inbox import InboxReader
-from contracts import Evidence, Message, Task
-from tests.fakes import InMemoryCollection, make_evidence, make_message, make_task
+from contracts import Case, Evidence, Message, Task
+from tests.fakes import (
+    InMemoryCollection,
+    make_case,
+    make_evidence,
+    make_message,
+    make_task,
+)
 
 NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
 
 
-def reader_with(tasks=(), messages=(), evidence=()):
+def reader_with(tasks=(), messages=(), evidence=(), cases=()):
     task_store = InMemoryCollection(Task)
     for task in tasks:
         task_store.put(task.id, task)
@@ -22,7 +29,11 @@ def reader_with(tasks=(), messages=(), evidence=()):
     evidence_store = InMemoryCollection(Evidence)
     for item in evidence:
         evidence_store.put(item.id, item)
+    case_store = InMemoryCollection(Case)
+    for case in cases:
+        case_store.put(case.id, case)
     return InboxReader(
+        cases=CaseRepository(case_store),
         tasks=TaskRepository(task_store),
         messages=MessageRepository(message_store),
         evidence=EvidenceRepository(evidence_store),
@@ -73,3 +84,24 @@ def test_an_unknown_volunteer_gets_an_empty_inbox():
     assert inbox.tasks == []
     assert inbox.messages == []
     assert inbox.evidence == []
+
+
+def test_the_inbox_names_the_cases_that_have_no_dam():
+    reader = reader_with(
+        tasks=[
+            make_task(id="t1", assignee_id="v1", case_id="area"),
+            make_task(id="t2", assignee_id="v1", case_id="dam"),
+        ],
+        cases=[
+            make_case(id="area", dam_id=None),
+            make_case(id="dam", dam_id="dam-1"),
+        ],
+    )
+
+    assert reader.read("v1").area_case_ids == ["area"]
+
+
+def test_a_task_whose_case_is_gone_is_not_an_area_case():
+    reader = reader_with(tasks=[make_task(id="t1", assignee_id="v1", case_id="gone")])
+
+    assert reader.read("v1").area_case_ids == []

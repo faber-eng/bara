@@ -97,7 +97,7 @@ def test_the_owner_reads_their_inbox_of_tasks_messages_and_evidence(settings):
 
     assert response.status_code == 200
     body = response.json()
-    assert set(body) == {"tasks", "messages", "evidence"}
+    assert set(body) == {"tasks", "messages", "evidence", "area_case_ids"}
     assert body["tasks"][0]["id"] == "t1"
     assert body["messages"][0]["id"] == "m1"
     assert body["evidence"][0]["id"] == "e1"
