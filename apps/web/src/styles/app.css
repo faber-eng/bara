@@ -1250,13 +1250,14 @@ fieldset.join-fieldset {
   }
   .appbar-nav {
     width: 100%;
+    gap: 2px;
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
   }
   .appbar-nav a {
     flex: 0 0 auto;
-    padding: 8px 12px;
+    padding: 8px 9px;
   }
   .map-toolbar,
   .toolbar-group {
