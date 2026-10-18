@@ -15,7 +15,7 @@ from pydantic import ValidationError
 
 from adapters.firestore_repos import AgentRunRepository, CaseRepository, DamRepository
 from bara_agent.agent import AgentTool, build_coordinator, summarizers
-from bara_agent.output import AgentOutput
+from bara_agent.output import AgentOutput, readability_problems
 from bara_agent.prompts import PROMPT_VERSION, RunInput, render_run_input
 from bara_agent.recorder import RunRecorder, elapsed_ms
 from contracts import AgentDecision, AgentRun, AgentRunStatus, Case, Dam
@@ -162,6 +162,7 @@ class AgentService:
             await saves.finish(self._store_failed_run, context)
             raise
         self._warn_on_evidence_mismatch(context, output)
+        self._warn_on_unreadable_text(context, output)
         return await saves.finish(self._save, context, output.to_decision())
 
     def _dam_for(self, case: Case) -> Dam | None:
@@ -202,6 +203,18 @@ class AgentService:
             extra=context.log_fields(
                 "agent_evidence_mismatch", uncalled=uncalled, called=sorted(called)
             ),
+        )
+
+    def _warn_on_unreadable_text(
+        self, context: RunContext, output: AgentOutput
+    ) -> None:
+        text = f"{output.decision} {output.reason}"
+        problems = readability_problems(text, context.recorder.assignee_ids())
+        if not problems:
+            return
+        logger.warning(
+            "agent decision text is not plain",
+            extra=context.log_fields("agent_text_unreadable", problems=problems),
         )
 
     def _store_failed_run(self, context: RunContext) -> None:

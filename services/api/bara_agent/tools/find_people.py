@@ -9,6 +9,7 @@ from contracts import VolunteerRole
 from domain.people import PersonMatch, nearest_people
 
 MAX_K = 10
+METRES_PER_KM = 1000
 ROLES = get_args(VolunteerRole)
 
 
@@ -19,7 +20,7 @@ def person_entry(match: PersonMatch) -> ToolResult:
         "name": volunteer.name,
         "role": volunteer.role,
         "language": volunteer.language,
-        "distance_m": match.distance_m,
+        "distance_km": round(match.distance_m / METRES_PER_KM, 1),
         "example": volunteer.example,
     }
 
@@ -68,4 +69,4 @@ class FindPeople:
         if not people:
             return label
         nearest = people[0]
-        return f"{label}, nearest {nearest['id']} at {nearest['distance_m']} m"
+        return f"{label}, nearest {nearest['id']} at {nearest['distance_km']} km"

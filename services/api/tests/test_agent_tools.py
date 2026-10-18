@@ -12,7 +12,7 @@ from adapters.firestore_repos import (
 from bara_agent.tools.find_people import FindPeople
 from bara_agent.tools.get_area_facts import GetAreaFacts
 from bara_agent.tools.rank_areas import RankAreas
-from contracts import Dam, GeoPoint, RankedCell, Volunteer
+from contracts import Dam, GeoPoint, RankedCell, RankingComponents, Volunteer
 from tests.fakes import (
     FakeWarehouse,
     InMemoryCollection,
@@ -206,8 +206,8 @@ def test_find_people_never_returns_home_or_contact_details():
 
     [person] = asyncio.run(tool.find_people("riau-1-1", "volunteer"))["people"]
 
-    assert set(person) == {"id", "name", "role", "language", "distance_m", "example"}
-    assert isinstance(person["distance_m"], int)
+    assert set(person) == {"id", "name", "role", "language", "distance_km", "example"}
+    assert person["distance_km"] == 1.1
 
 
 def test_find_people_keeps_real_and_example_people_together():
@@ -259,7 +259,54 @@ def test_find_people_summary():
 
     summary = tool.summarize(asyncio.run(tool.find_people("riau-1-1", "volunteer")))
 
-    assert summary == "1 person, nearest v1 at 1112 m"
+    assert summary == "1 person, nearest v1 at 1.1 km"
     assert tool.summarize({"cell_id": "c", "role": "volunteer", "people": []}) == (
         "0 people"
     )
+
+
+def test_rank_areas_gives_rounded_scores_and_components():
+    cell = make_ranked_cell(
+        drying_score=96.8402771918822,
+        components=RankingComponents(
+            s1_anom_db=-5.07678978149953,
+            rain_30d_mm=182.641991451889,
+            rain_deficit_pct=0.31234,
+            canal_dist_m=140.6,
+            peat_class=1,
+        ),
+    )
+
+    [entry] = asyncio.run(rank_areas_tool(cell).rank_areas("riau", 1))["cells"]
+
+    assert entry["drying_score"] == 96.8
+    assert entry["components"] == {
+        "s1_anom_db": -5.1,
+        "rain_30d_mm": 183,
+        "rain_deficit_pct": 0.31,
+        "canal_dist_m": 141,
+        "peat_class": 1,
+    }
+
+
+def test_get_area_facts_gives_rounded_scores_components_and_centroid():
+    rows = [
+        weekly_row(
+            week_start=THIS_WEEK,
+            drying_score=96.8402771918822,
+            s1_anom_db=-5.07678978149953,
+            rain_30d_mm=182.641991451889,
+            lat=0.799901610870263,
+            lon=102.47081267326315,
+        ),
+        weekly_row(week_start=LAST_WEEK, drying_score=80.04999),
+    ]
+    tool, _ = area_facts_tool(rows)
+
+    facts = asyncio.run(tool.get_area_facts("riau-1-1"))
+
+    assert facts["drying_score"] == 96.8
+    assert facts["components"]["s1_anom_db"] == -5.1
+    assert facts["components"]["rain_30d_mm"] == 183
+    assert facts["centroid"] == {"lat": 0.7999, "lon": 102.47081}
+    assert [week["drying_score"] for week in facts["trend"]] == [80.0, 96.8]

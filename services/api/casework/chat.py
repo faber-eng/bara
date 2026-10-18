@@ -28,7 +28,7 @@ from domain.case_view import format_local
 from domain.channels import BARA_RECIPIENT, Channel, OutboundMessage
 from domain.chat_blocked import reports_blocked
 from domain.chat_limit import decide
-from domain.chat_wording import WHAT_TO_SEND, leaks_internal_words, task_phrase
+from domain.chat_wording import leaks_internal_words, task_phrase, what_to_send
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +183,9 @@ def facts_in(context: TaskContext, language: Language) -> dict[str, str]:
         "task_phrase": task_phrase(context.task.type, context.case, language),
         "point": f"{target.lat:.4f}, {target.lon:.4f}",
         "deadline": deadline,
-        "what_to_send": WHAT_TO_SEND[language][context.task.type],
+        "what_to_send": what_to_send(
+            context.task.type, context.case.dam_id is not None, language
+        ),
     }
 
 

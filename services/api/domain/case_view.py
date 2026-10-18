@@ -18,7 +18,7 @@ from contracts import (
     Task,
     TimelineEntry,
 )
-from domain.chat_wording import TASK_PHRASES
+from domain.chat_wording import task_words
 
 LISTED_TASK_STATUSES = frozenset({"open", "overdue"})
 WIB = timezone(timedelta(hours=7))
@@ -30,6 +30,7 @@ CASE_WORDS: dict[CaseType, str] = {
     "reignition": "fire may restart",
     "hotspot": "hotspot",
 }
+AREA_AT_RISK = "area at risk"
 EVIDENCE_WORDS: dict[EvidenceKind, str] = {
     "photo": "Photo",
     "video": "Video",
@@ -132,8 +133,14 @@ def person_name(person_id: str, names: Mapping[str, str]) -> str:
     return bare.replace("-", " ").replace("_", " ").title()
 
 
+def case_words(case: Case) -> str:
+    if case.type == "dam_risk" and case.dam_id is None:
+        return AREA_AT_RISK
+    return CASE_WORDS[case.type]
+
+
 def case_entries(case: Case) -> list[TimelineEntry]:
-    opened = f"Case opened: {CASE_WORDS[case.type]}, {case_place(case)}"
+    opened = f"Case opened: {case_words(case)}, {case_place(case)}"
     entries = [TimelineEntry(at=case.opened_at, text=opened)]
     if case.closed_at is not None:
         closer = case.closed_by or "unknown"
@@ -143,8 +150,10 @@ def case_entries(case: Case) -> list[TimelineEntry]:
     return entries
 
 
-def task_entries(task: Task, names: Mapping[str, str]) -> list[TimelineEntry]:
-    phrase = TASK_PHRASES["en"][task.type]
+def task_entries(
+    task: Task, names: Mapping[str, str], has_dam: bool
+) -> list[TimelineEntry]:
+    phrase = task_words(task.type, has_dam, "en")
     person = person_name(task.assignee_id, names)
     entries = [
         TimelineEntry(
@@ -226,7 +235,7 @@ def build_timeline(
 ) -> list[TimelineEntry]:
     entries = case_entries(case)
     for task in tasks:
-        entries.extend(task_entries(task, names))
+        entries.extend(task_entries(task, names, case.dam_id is not None))
     for item in evidence:
         entries.extend(evidence_entries(item))
     entries.extend(run_entry(run) for run in runs)

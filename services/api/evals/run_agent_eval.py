@@ -14,6 +14,7 @@ from google.adk.evaluation.eval_case import (
 from google.adk.evaluation.eval_result import EvalCaseResult, EvalSetResult
 from google.adk.evaluation.evaluator import EvalStatus
 
+from bara_agent.prompts import PROMPT_VERSION
 from evals.agent_eval.eval_set import EVAL_SET_PATH, EVALS_DIR, build_eval_set
 
 AGENT_DIR = EVALS_DIR / "bara_eval"
@@ -104,6 +105,7 @@ def summarize(
     return {
         "run_at": run_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "model": models_used(result),
+        "prompt_version": PROMPT_VERSION,
         "cases": len(results),
         "passed": passed,
         "pass_rate": round(passed / len(results), 4),

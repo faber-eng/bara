@@ -28,6 +28,20 @@ HIGH_DRYING = 91.0
 REVIEW_DRYING = 72.0
 RECHECK_REIGNITE = 0.31
 PERSON_STEP_DEG = 0.004
+REGION_TIMEZONE = "Asia/Jakarta"
+PEOPLE_NAMES = {
+    "repair-1": "Budi Santoso",
+    "repair-2": "Rahmat Hidayat",
+    "repair-3": "Joko Susilo",
+    "repair-8": "Agus Salim",
+    "vol-4a": "Eko Prasetyo",
+    "vol-4b": "Siti Aminah",
+    "vol-5a": "Dewi Lestari",
+    "vol-5b": "Rina Marlina",
+    "vol-6b": "Yusuf Hakim",
+    "vol-6c": "Nur Aini",
+    "patrol-7": "Hendra Gunawan",
+}
 
 
 @dataclass(frozen=True)
@@ -99,7 +113,9 @@ def near(point: GeoPoint, steps: int) -> GeoPoint:
 
 
 def person(person_id: str, role: VolunteerRole, home: GeoPoint) -> Volunteer:
-    return make_volunteer(id=person_id, name=person_id, role=role, home=home)
+    return make_volunteer(
+        id=person_id, name=PEOPLE_NAMES[person_id], role=role, home=home
+    )
 
 
 def check_call(slug: str) -> ExpectedCall:

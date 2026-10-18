@@ -67,7 +67,7 @@ def test_instruction_carries_the_never_close_rule_and_the_fraction_glossary():
 
 
 def test_prompt_version():
-    assert PROMPT_VERSION == "agent-v7"
+    assert PROMPT_VERSION == "agent-v8"
 
 
 def test_instruction_steps_end_with_one_assign_task_call():
@@ -168,3 +168,33 @@ def test_the_weekly_ranked_cells_never_take_an_area_run():
         "Never call run_area_ranking for the case cell or the weekly ranked cells"
         in (area_check_section())
     )
+
+
+def writing_section() -> str:
+    start = INSTRUCTION.index("## Writing decision and reason")
+    return INSTRUCTION[start : INSTRUCTION.index("## Fields in tool results")]
+
+
+def test_the_decision_names_people_and_never_their_id():
+    section = writing_section()
+
+    assert "by name" in section
+    assert "never write an id" in section
+
+
+def test_the_decision_gives_the_local_deadline_not_the_iso_time():
+    section = writing_section()
+
+    assert "deadline_local" in section
+    assert "never deadline_at" in section
+
+
+def test_a_case_without_a_dam_is_an_area_check():
+    assert "area check" in writing_section()
+    assert "When the case dam is null" in INSTRUCTION
+
+
+def test_the_glossary_names_the_rounded_fields_the_tools_return():
+    assert "distance_km" in INSTRUCTION
+    assert "distance_m" not in INSTRUCTION
+    assert "assignee_name" in INSTRUCTION

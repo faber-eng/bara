@@ -71,6 +71,8 @@ class AssignmentPlan:
 class Assignment:
     task: Task
     message: Message
+    assignee_name: str
+    deadline_local: str
 
 
 def log_fields(event: str, task: Task, **fields: object) -> dict[str, object]:
@@ -169,7 +171,12 @@ class TaskAssigner:
                 messenger_prompt_version=MESSENGER_PROMPT_VERSION,
             ),
         )
-        return Assignment(task=task, message=message)
+        return Assignment(
+            task=task,
+            message=message,
+            assignee_name=volunteer.name,
+            deadline_local=plan.brief.deadline_local,
+        )
 
     def _message(
         self, case: Case, volunteer: Volunteer, composed: ComposedMessage

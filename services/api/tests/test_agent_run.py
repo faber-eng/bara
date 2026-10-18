@@ -26,6 +26,7 @@ from contracts import (
     AgentDecision,
     AgentRun,
     Case,
+    CaseRisk,
     ClockSettings,
     Dam,
     RankedCell,
@@ -106,6 +107,8 @@ class StubAssigner:
         return Assignment(
             task=make_task(id="task-1", deadline_at=SIM_NOW + timedelta(hours=72)),
             message=make_message(text="Cek sekat."),
+            assignee_name="Sari",
+            deadline_local="Tuesday 20 October 2026, 20:00 WIB",
         )
 
 
@@ -250,6 +253,19 @@ def test_the_run_input_fences_the_case_dam_trigger_and_sim_now_as_data():
     assert "top_cells" not in text
 
 
+def test_the_run_input_rounds_the_case_risk():
+    world = World(happy_script())
+    world.cases.put(
+        "c1",
+        make_case(risk=CaseRisk(drying_score=96.8402771918822, p_reignite=0.31234)),
+    )
+
+    world.run()
+
+    _, data = run_input_data(world)
+    assert data["case"]["risk"] == {"drying_score": 96.8, "p_reignite": 0.31}
+
+
 def test_an_evidence_run_carries_the_event_payload_in_the_run_input():
     world = World(happy_script())
     event = {"evidence_id": "e1", "task_id": "t1", "case_id": "c1"}
@@ -279,6 +295,31 @@ def test_evidence_naming_an_uncalled_tool_is_stored_with_a_warning(caplog):
     assert record.fields["uncalled"] == ["assign_task", "find_people", "get_area_facts"]
     assert record.fields["case_id"] == "c1"
     assert record.fields["run_id"] == "r1"
+
+
+@pytest.mark.parametrize(
+    ("reason", "problems"),
+    [
+        (
+            "Score 96.8402771918822; v1 is due 2026-10-21T12:37:01.141998+00:00.",
+            ["iso time", "long number", "person id"],
+        ),
+        ("Sari is 1.1 km away; due Tuesday 20 October 2026, 20:00 WIB.", []),
+    ],
+)
+def test_a_decision_with_raw_values_is_stored_with_a_warning(reason, problems, caplog):
+    world = World(happy_script(answer(reason=reason)))
+
+    with caplog.at_level(logging.WARNING):
+        run = world.run()
+
+    assert run.final_json.reason == reason
+    records = [
+        r
+        for r in caplog.records
+        if getattr(r, "fields", {}).get("event") == "agent_text_unreadable"
+    ]
+    assert [r.fields["problems"] for r in records] == ([problems] if problems else [])
 
 
 @pytest.mark.parametrize(

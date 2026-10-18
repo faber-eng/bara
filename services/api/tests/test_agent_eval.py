@@ -14,6 +14,7 @@ from google.adk.evaluation.eval_result import EvalSetResult
 from google.adk.evaluation.evaluator import EvalStatus
 from google.genai import types
 
+from bara_agent.prompts import PROMPT_VERSION
 from evals.agent_eval.eval_set import EVAL_SET_PATH, render_eval_set
 from evals.agent_eval.metric import trajectory_matches, trajectory_subset_args
 from evals.agent_eval.scenarios import build_scenarios
@@ -167,6 +168,8 @@ def test_the_action_tools_accept_every_call():
     escalated = asyncio.run(tools["escalate"]("case-a", "Smoke seen."))
     reviewed = asyncio.run(tools["request_human_review"]("case-a", "Blurred."))
     assert assigned["task_id"] == "task-new-case-a"
+    assert assigned["assignee_name"] == "Budi Santoso"
+    assert assigned["deadline_local"] == "Tuesday 20 October 2026, 10:00 WIB"
     assert escalated["escalation_id"] == "esc-case-a"
     assert reviewed == {"case_id": "case-a", "status": "human_review"}
 
@@ -217,6 +220,7 @@ def test_summarize_writes_the_agent_part_in_case_order():
     assert summary == {
         "run_at": "2026-10-18T05:00:00Z",
         "model": "gemini-3.1-pro-preview",
+        "prompt_version": PROMPT_VERSION,
         "cases": 2,
         "passed": 1,
         "pass_rate": 0.5,
