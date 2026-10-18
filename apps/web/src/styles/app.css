@@ -1423,58 +1423,6 @@ fieldset.join-fieldset {
   margin-left: 8px;
 }
 
-.landing {
-  max-width: 960px;
-  width: 100%;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4) var(--space-16);
-  display: grid;
-  gap: var(--space-8);
-}
-.landing-hero > * {
-  margin-top: 0;
-}
-.landing-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-top: var(--space-6);
-}
-.landing-moments {
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-.landing-moment h2 {
-  margin: 0 0 var(--space-2);
-}
-.landing-moment p {
-  margin: 0;
-  color: var(--text-2);
-}
-.landing-entries {
-  display: grid;
-  gap: var(--space-3);
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-.landing-entry {
-  display: grid;
-  gap: var(--space-1);
-  min-height: 64px;
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--text-2);
-  border-radius: var(--radius-card);
-  color: var(--text);
-  text-decoration: none;
-}
-.landing-entry:hover {
-  background: var(--sage-card);
-}
-.landing-entry-note {
-  color: var(--text-2);
-  font-size: var(--text-sm);
-}
-
 .tour-dock {
   position: fixed;
   right: var(--space-4);
