@@ -1,5 +1,7 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { setCopyLanguage } from "../../lib/copy/language";
+import { tourCopy } from "../../lib/copy/tour";
 import { TOUR_STEPS } from "../../lib/tour/steps";
 import { finishTour, getTourSnapshot, goToStep, skipTour } from "../../lib/tour/store";
 import { callsTo, initOf, renderApp, stubApi } from "../../test-utils";
@@ -9,6 +11,7 @@ vi.mock("../../lib/auth", () => ({ getIdToken: vi.fn().mockResolvedValue("token-
 describe("landing and guided tour", () => {
   beforeEach(() => {
     localStorage.clear();
+    setCopyLanguage("en");
     finishTour();
     return () => vi.unstubAllGlobals();
   });
@@ -79,5 +82,21 @@ describe("landing and guided tour", () => {
     const call = callsTo(fetchMock, "POST /api/judge/trigger")[0];
     expect(JSON.parse(String(initOf(call).body))).toEqual({ event: "drying.ranked" });
     vi.unstubAllEnvs();
+  });
+
+  it("shows the Indonesian tour copy when the page language is id", async () => {
+    stubApi({});
+    setCopyLanguage("id");
+    goToStep(2);
+    renderApp("/nope");
+
+    const copy = tourCopy("id");
+    expect(await screen.findByText(`Langkah 3 dari ${TOUR_STEPS.length}`)).toBeInTheDocument();
+    expect(screen.getByText(copy.steps.assign.title)).toBeInTheDocument();
+    expect(screen.getByText(copy.steps.assign.body)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mulai: peringkat mingguan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lanjut" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Tur terpandu" })).toBeInTheDocument();
+    setCopyLanguage("en");
   });
 });
