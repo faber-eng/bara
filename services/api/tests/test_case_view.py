@@ -27,6 +27,15 @@ def test_format_local_names_the_day_and_the_zone_of_the_region():
     assert format_wib(moment) == "Wed 21 Oct, 10:59 WIB"
 
 
+def test_format_local_writes_the_day_and_month_in_the_reader_language():
+    moment = datetime(2026, 10, 21, 6, 6, tzinfo=UTC)
+
+    assert format_local(moment, "Asia/Jakarta", "id") == "Rab 21 Okt, 13.06 WIB"
+    assert format_local(moment, "Asia/Jakarta", "en") == "Wed 21 Oct, 13:06 WIB"
+    assert format_local(moment, "Asia/Jakarta", "ms") == "Rab 21 Okt, 13:06 WIB"
+    assert format_local(moment, "Asia/Jakarta", "fr") == "mer. 21 oct., 13 h 06 WIB"
+
+
 def at(hours):
     return T0 + timedelta(hours=hours)
 
